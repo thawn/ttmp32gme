@@ -20,3 +20,5 @@ nytprof.out
 /_eumm/
 .DS_Store
 ._*
+
+/src/library/*
