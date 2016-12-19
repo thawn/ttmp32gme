@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ttmp32gme : { $strippedTitle }</title>
+<link rel="icon" type="image/vnd.microsoft.icon" href="/assets/images/favicon.ico">
+<!-- Bootstrap -->
+<link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+<link href="/assets/css/fine-uploader-new.min.css" rel="stylesheet">
+<script src="/assets/js/jquery-3.1.1.min.js"></script>
+<script src="/assets/js/jquery.matchHeight-min.js"></script>
+<script src="/assets/js/jquery.fine-uploader.min.js"></script>
+<script>
+var notify = function($caller, title, message, popover_class, timeout) \{
+	
+	   $caller.attr(\{
+		   'title': title,
+		   'data-content': message
+	   \});
+	   $caller.popover('show');
+	   $caller.next('.popover').find('.popover-content').addClass(popover_class);
+	   setTimeout(function() \{
+		   $caller.popover('destroy');
+		\}, timeout);
+\}
+
+var testCheckBox = function(s)\{
+	if ( $(s).is(':checked') )\{
+		return 'TRUE';
+	\} else \{
+		return 'FALSE';
+	\}
+\}
+
+var toggleShow = function($id) \{
+	$id.find('div.edit').toggle();
+\}
+
+var insertElement = function(data) \{
+	var id = 'el' + elementCount;
+
+	var newElement = document.getElementById('element-template').cloneNode(true);
+	newElement.id = id;
+	newElement.style.display = 'none';
+
+	$('#element-list tbody').append(newElement);
+	elementCount++;
+
+	$id = $('#' + id);
+	fillInElement($id, data);
+
+	$id.slideDown(400)
+
+	return id;
+\}
+
+var addElement = function(callback) \{
+	var $id = $('#new-element-form');
+	var filterVars = getElementValues($id);
+	$.post(document.baseURI, 'action=add&data=' + escape(JSON.stringify(filterVars)))
+			.done(function(data) \{
+				if (data.status === "Success.") \{
+					insertElement(data.element);
+					notify($('#add'), '', data.status, 'bg-success', 2000);
+				\} else \{
+					notify($('#add'), '', data.status, 'bg-danger', 4000);
+				\}
+			\}).fail(function(data) \{
+				notify($('#add'), '', 'Connection Error', 'bg-danger', 4000);
+			\}).always( function() \{ if (callback) \{callback();\}\});
+\}
+
+var updateElement = function($id) \{
+	var elementVars = getElementValues($id);
+	postUpdate($id,elementVars);
+\}
+
+var postUpdate = function($id,elementVars) \{
+	
+	$.post(document.baseURI, 'action=update&data=' + escape(JSON.stringify(elementVars)),
+			function(data) \{
+				if (data.status === 'Success.') \{
+					fillInElement($id, data.element);
+					notify($id.find('button.edit-button'), '', data.status, 'bg-success',
+							2000);
+				\} else \{
+					notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
+							4000);
+				\}
+			\}, 'json').fail(function() \{
+				notify($id.find('button.edit-button'), '', 'Connection error', 'bg-danger',
+						4000);
+			\});
+\}
+
+var deleteElement = function($id,uid) \{
+	var filterVars = \{
+		'uid' : uid
+	\};
+	$
+			.post(
+					document.baseURI,
+					'action=delete&data=' + escape(JSON.stringify(filterVars)),
+					function(data) \{
+						if (data.status === 'Success.') \{
+							var alert = "<tr id=\"dismiss\"><td colspan=\"3\"><div class=\"alert alert-success\" role=\"alert\">Deleted.</div></td></tr>";
+							$id.replaceWith(alert);
+							setTimeout(function() \{
+								$('#dismiss').remove()
+							\}, 2000);
+						\} else \{
+							notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
+									4000);
+						\}
+					\}, 'json').fail(function(data) \{
+						notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
+					\});
+\}
+
+var listElements = function(clear,callback) \{
+	$
+			.post(
+					document.baseURI,
+					'action=list',
+					function(data) \{
+						if (data.status === 'Success.') \{
+							if (clear) \{
+								for (var i = 0; i < elementCount; i++) \{
+									$('#el' + i).remove();
+								\}
+								elementCount = 0;
+							\}
+							for (var i = elementCount; i < data.list.length; i++) \{
+								insertElement(data.list[i]);
+							\}
+
+							if (callback) \{
+								callback();
+							\}
+
+						\} else \{
+							var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
+									+ data.status + "</div></td></tr>";
+							$('#element-list tbody').append(alert);
+						\}
+					\}, 'json').fail(function()\{
+						var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
+							+ "Connection error!</div></td></tr>";
+					$('#element-list tbody').append(alert);
+				\});
+\}
+
+</script>
+</head>
+
+<body>
+
+	<!-- Begin Wrapper -->
+	<div class="container">
+
+		<!-- Begin Header -->
+		<div id="header" class="row" style="padding: 10px;">
+			<img src="/assets/images/ttmp32gme_logo.png" class="img-responsive center-block"
+				alt="ttmp32gme logo" />
+		</div>
+		<!-- End Header -->
+	</div>
+		<nav class="container navbar navbar-default ">
+			<!-- Brand and toggle get grouped for better mobile display -->
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+					data-target="#main-nav" aria-expanded="false">
+					<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
+						class="icon-bar"></span> <span class="icon-bar"></span>
+				</button>
+			</div>
+
+			<!-- Collect the nav links, forms, and other content for toggling -->
+			<div class="collapse navbar-collapse" id="main-nav">
+				<ul class="nav navbar-nav">{ $navigation }
+				</ul>
+			</div>
+		</nav>
+
+	<div class="container">
+		<div class="row">
+
+			<h1>{ $title }</h1>
+
+			{ $content }
+
+
+		</div>
+
+	</div>
+	<!-- End Wrapper -->
+	<script src="/assets/js/bootstrap.min.js"></script>
+</body>
+</html>

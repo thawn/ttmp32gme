@@ -1,0 +1,60 @@
+<script type="text/javascript">
+var updateConfig = function(caller)\{
+	
+	var configVars = \{
+						'host' : $('#host').val(),
+					  'port' : $('#port').val(),
+					  'check_update' : testCheckBox('#check_update'),
+					  'open_browser' : testCheckBox('#open_browser'),
+					  'jd_address' : $('#jd_address').val(),
+					  'jd_port' : $('#jd_port').val()
+					  \};
+	$.post('/config',
+		   'action=update&data=' + escape(JSON.stringify(configVars)))
+		   .done( function(data) \{
+			   if ( data.status === "Success." ) \{
+				   notify($( '#submit' ),'',data.status,'bg-success',1000);
+		       \} else \{
+		    	   notify($( '#submit' ),'',data.status,'bg-danger',4000);
+		       \}
+		   \})
+		   .fail( function(data) \{
+			   notify($( '#submit' ),'','Connection Error','bg-danger',4000);
+		   \});
+\}
+
+$(document).ready(function()\{
+	$('[data-toggle="tooltip"]').tooltip();
+	$('#submit').click(function()\{
+		updateConfig( $(this) );
+	\});
+	$(function() \{
+	    $('.box').matchHeight();
+	\});
+\});
+
+</script>
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h4 class="panel-title">ttmp32gme configuration:</h4>
+	</div>
+	<div class="panel-body">
+		<div class="form-group">
+			<label for="host">ttmp32gme http server host:</label> <input type="text" id="host"
+				class="form-control" value="{ $host }" data-toggle="tooltip"
+				title="The TCP address which the HTTP server will listen on. By default it only listens to requests from the same machine (safe). Set this to 0.0.0.0, for a public server (only recommended if you are in a trusted network behind a firewall). Requires restart to take effect.">
+		</div>
+		<div class="form-group">
+			<label for="port">ttmp32gme http server port:</label> <input type="text" id="port"
+				class="form-control" value="{ $port }" data-toggle="tooltip"
+				title="If you modify this, you will need to restart ttmp32gme.">
+		</div>
+		<div class="checkbox">
+			<label> <input type="checkbox" id="open_browser"{ $open_browser } >
+				Open ttmp32gme web interface in default browser on startup.
+			</label>
+		</div>
+		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover">Save
+			Configuration</button>
+	</div>
+</div>

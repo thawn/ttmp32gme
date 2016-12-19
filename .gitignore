@@ -18,3 +18,5 @@ nytprof.out
 *.o
 *.bs
 /_eumm/
+.DS_Store
+._*
