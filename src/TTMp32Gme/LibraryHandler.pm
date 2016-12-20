@@ -6,6 +6,7 @@ use warnings;
 use File::Basename qw(basename dirname);
 use Data::Dumper;
 use Path::Class;
+use List::MoreUtils qw(uniq);
 
 use Music::Tag ( traditional => 1 );
 use Music::Tag::MusicBrainz;
@@ -153,8 +154,10 @@ sub createLibraryEntry {
 
 			print Dumper( \%albumData );
 			print Dumper( \@trackData );
+			print Dumper( \@tempDirs );
 		}
 	}
+	removeTempDir();
 }
 
 1;

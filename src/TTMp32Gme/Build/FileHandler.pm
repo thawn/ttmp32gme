@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use PAR;
-use File::Path qw(make_path);
+use File::Path qw(make_path remove_tree);
 use Path::Class;
 use File::Copy qw(move);
 use File::Basename qw(dirname basename);
@@ -13,7 +13,7 @@ use File::Basename qw(dirname basename);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum);
+	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDirs);
 
 my @build_imports =
 	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser);
@@ -43,7 +43,7 @@ sub loadStatic {
 
 sub makeTempAlbumDir {
 	my $albumTitle = $_[0];
-	my $albumPath = ( dir( getLibraryPath(),'temp', $albumTitle ) )->stringify;
+	my $albumPath = ( dir( getLibraryPath(), 'temp', $albumTitle ) )->stringify;
 	make_path($albumPath);
 	return $albumPath;
 }
@@ -59,15 +59,23 @@ sub makeNewAlbumDir {
 	}
 	make_path($albumPath);
 	return $albumPath;
-	
+
 }
 
 sub moveToAlbum {
-	my ($albumPath, $filePath) = @_;
+	my ( $albumPath, $filePath ) = @_;
 	my $fileName = basename($filePath);
-	my $newPath = (file($albumPath,$fileName))->stringify;
-	move($filePath, $newPath);
+	my $newPath = ( file( $albumPath, $fileName ) )->stringify;
+	move( $filePath, $newPath );
 	return $fileName;
+}
+
+sub removeTempDir {
+	my $tempPath = ( dir( getLibraryPath(), 'temp' ) )->stringify;
+	if ( $tempPath =~ /temp/ && -d $tempPath ) {
+			print "deleting $tempPath";
+			remove_tree($tempPath);
+	}
 }
 
 1;
