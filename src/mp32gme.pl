@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+package main;
+
 use strict;
 use warnings;
 
@@ -26,6 +28,8 @@ use Perl::Version;
 use DBI;
 use DBIx::MultiStatementDo;
 use Log::Message::Simple qw(msg error);
+
+use TTMp32Gme::LibraryHandler;
 
 # Set the UserAgent for external async requests.  Don't want to get flagged, do we?
 $AnyEvent::HTTP::USERAGENT = 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10 ( .NET CLR 3.5.30729)';
@@ -60,18 +64,7 @@ my($dbh, %config, $watchers, %templates, $static, %assets);
 		chdir($directory);
 	}
 
-	my @build_imports = qw(loadTemplates loadStatic loadAssets checkConfigFile openBrowser);
-	if( PAR::read_file('build.txt') ){
-		if( $^O eq 'darwin' ) {
-			require TTMp32Gme::Build::Mac; 
-			import TTMp32Gme::Build::Mac @build_imports;
-		} elsif( $^O =~ /MSWin/ ){
-			require TTMp32Gme::Build::Win;
-			import TTMp32Gme::Build::Win @build_imports;
-		}
-	} else {
-		use TTMp32Gme::Build::Perl;
-	}
+use TTMp32Gme::Build::FileHandler;
 
 	my $configFile = checkConfigFile();
 	unless ( $configFile ){
@@ -163,10 +156,7 @@ $httpd->reg_cb (
 		if( $req->method() eq 'GET' ){
 			$albumCount++;
 			$fileCount=0;
-			$currentAlbum = (dir(getLibraryPath(),$albumCount))->stringify;
-			if ( ! -d $currentAlbum ){
-				make_path($currentAlbum);
-			}			
+			$currentAlbum = makeTempAlbumDir($albumCount);
 			$req->respond ({ 
 				content => [
 					'text/html', 
@@ -184,10 +174,10 @@ $httpd->reg_cb (
 			my $statusCode = 501;
 			my $statusMessage = 'Could not parse POST data.';
 			if( $req->parm('qquuid') ){
-				print Dumper($req->parm('qquuid'));
+				#print Dumper($req->parm('qquuid'));
 				if ($req->parm('_method')){
 					my $fileToDelete=$albumList[$albumCount]{$req->parm('qquuid')};
-					print Dumper($albumList[$albumCount]);
+					#print Dumper($albumList[$albumCount]);
 					my $deleted = unlink $fileToDelete;
 					print $fileToDelete."\n";
 					if ($deleted){
@@ -203,7 +193,7 @@ $httpd->reg_cb (
 						$currentFile = (file($currentAlbum,$fileCount))->stringify;
 					} 
 					$albumList[$albumCount]{ $fileList[$fileCount]} = $currentFile;
-					print Dumper($albumList[$albumCount]);
+					#print Dumper($albumList[$albumCount]);
 					open(my $fh, '>',$currentFile);
 					print $fh $req->parm('qqfile');
 					close($fh);
@@ -212,9 +202,15 @@ $httpd->reg_cb (
 					$statusCode = 200;
 					$statusMessage = 'OK';
 				}
-				$content = encode_json($content);
-				$req->respond ([$statusCode,$statusMessage, { 'Content-Type' => 'application/json' },  $content ]);
-			}			
+			} elsif ($req->parm('action')) {
+				print "copying albums to library\n";
+				createLibraryEntry(\@albumList, $dbh);
+				$content->{'success'}=\1;
+				$statusCode = 200;
+				$statusMessage = 'OK';
+			}
+			$content = encode_json($content);
+			$req->respond ([$statusCode,$statusMessage, { 'Content-Type' => 'application/json' },  $content ]);	
 		} 
 	},
 	'/library' => sub {

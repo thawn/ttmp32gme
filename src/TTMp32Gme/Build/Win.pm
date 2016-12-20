@@ -11,7 +11,7 @@ use Path::Class;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(loadTemplates loadStatic loadAssets checkConfigFile openBrowser);
+our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser);
 
 sub loadFile {
  	my $path = $_[0];
@@ -56,24 +56,8 @@ sub loadAssets {
 		$req->respond({ content => [$mime, $content] });
 		}
 	}
-	
-	
+
 	return %assets;
-}
-
-sub loadStatic {
-	my $static = {};
-	my @staticFiles = (
-		'upload.html',
-		'library.html',
-		'print.html',
-		'help.html',
-	);
-	foreach my $file (@staticFiles) {
-		$static->{$file} = loadFile($file);
-	}
-
-	return $static;
 }
 
 sub checkConfigFile {
