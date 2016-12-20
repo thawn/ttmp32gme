@@ -50,8 +50,13 @@ sub makeTempAlbumDir {
 
 sub makeNewAlbumDir {
 	my $albumTitle = $_[0];
-	my $albumPath  = ( dir( getLibraryPath(), $albumTitle ) )->stringify;
-	my $count      = 0;
+
+	#make sure no album hogs the temp directory
+	if ( $albumTitle eq 'temp' ) {
+		$albumTitle .= '_0';
+	}
+	my $albumPath = ( dir( getLibraryPath(), $albumTitle ) )->stringify;
+	my $count = 0;
 	while ( -d $albumPath ) {
 		$albumPath =~ s/_\d*$//;
 		$albumPath .= '_' . $count;
@@ -73,8 +78,8 @@ sub moveToAlbum {
 sub removeTempDir {
 	my $tempPath = ( dir( getLibraryPath(), 'temp' ) )->stringify;
 	if ( $tempPath =~ /temp/ && -d $tempPath ) {
-			print "deleting $tempPath";
-			remove_tree($tempPath);
+		print "deleting $tempPath";
+		remove_tree($tempPath);
 	}
 }
 
