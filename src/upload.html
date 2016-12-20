@@ -84,26 +84,8 @@
 }
 </style>
 
-<p>
-	<div id="fine-uploader-manual-trigger"></div>
-</p>
-<p>
-	<button id="add_to_library" class="btn btn-primary" data-toggle="popover">Add to Library</button>
-</p>
+<div id="fine-uploader-manual-trigger"></div>
 <script>
-	$('#add_to_library').click(function(){
-		$.post(document.baseURI, 'action=add_to_library')
-		.done(function(data) {
-			if (data.success) {
-				notify($('#add_to_library'), '', 'Success.', 'bg-success', 2000);
-			} else {
-				notify($('#add_to_library'), '', data.statusText, 'bg-danger', 4000);
-			}
-		}).fail(function(data) {
-			notify($('#add_to_library'), '', 'Connection Error', 'bg-danger', 4000);
-		});
-	});
-
 	$('#fine-uploader-manual-trigger').fineUploader({
 		template: 'qq-template-manual-trigger',
 		request: {
@@ -120,6 +102,20 @@
 			enabled : true, // defaults to false
 			endpoint : '/',
 			method : 'POST'
+		},
+		callbacks: {
+	    onAllComplete: function() {
+	  		$.post(document.baseURI, 'action=add_to_library')
+	  		.done(function(data) {
+	  			if (data.success) {
+	  				notify($('#add_to_library'), '', 'Success.', 'bg-success', 2000);
+	  			} else {
+	  				notify($('#add_to_library'), '', data.statusText, 'bg-danger', 4000);
+	  			}
+	  		}).fail(function(data) {
+	  			notify($('#add_to_library'), '', 'Connection Error', 'bg-danger', 4000);
+	  		});
+			}
 		}
 	});
 
