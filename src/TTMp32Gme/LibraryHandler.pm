@@ -154,7 +154,6 @@ sub createLibraryEntry {
 
 			print Dumper( \%albumData );
 			print Dumper( \@trackData );
-			print Dumper( \@tempDirs );
 		}
 	}
 	removeTempDir();

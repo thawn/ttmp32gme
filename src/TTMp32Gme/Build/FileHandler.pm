@@ -13,7 +13,7 @@ use File::Basename qw(dirname basename);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDirs);
+	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir);
 
 my @build_imports =
 	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser);
