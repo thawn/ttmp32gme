@@ -145,7 +145,9 @@ msg("Server running on port: $config{'port'}\n" .
 
 my $fileCount=0;
 my $albumCount=0;
-my $currentAlbum;
+#normally the temp directory 0 stays empty, but we need to create it
+#in case the browser was still open with files dropped when we started
+my $currentAlbum = makeTempAlbumDir($albumCount);
 my $currentFile;
 my @fileList;
 my @albumList;
@@ -205,6 +207,12 @@ $httpd->reg_cb (
 			} elsif ($req->parm('action')) {
 				print "copying albums to library\n";
 				createLibraryEntry(\@albumList, $dbh);
+				$fileCount=0;
+				$albumCount=0;
+				$currentAlbum = makeTempAlbumDir($albumCount);
+				$currentFile = "";
+				@fileList=();
+				@albumList=();
 				$content->{'success'}=\1;
 				$statusCode = 200;
 				$statusMessage = 'OK';
