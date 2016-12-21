@@ -22,14 +22,26 @@ require Exporter;
 our @ISA    = qw(Exporter);
 our @EXPORT = qw(createLibraryEntry);
 
+sub oidExist {
+	my ( $oid, $dbh ) = $_[0];
+	my @old_oids = map { @$_ }
+		@{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid') };
+	if ( grep( /^$oid$/, @old_oids ) ) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 sub newOID {
 	my $dbh = $_[0];
 	my $oid;
 	my @old_oids =
+		map { @$_ }
 		@{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid DESC')
 		};
 	if (@old_oids) {
-		if ( $old_oids[0] lt 999 ) {
+		if ( $old_oids[0] < 999 ) {
 
 			#if we have free oids above the highest used oid, then use those
 			$oid = $old_oids[0] + 1;
@@ -39,10 +51,11 @@ sub newOID {
 			#then look for oids freed by deleting old ones
 			my %oid_test = map { $_ => 1 } @old_oids;
 			my $new_oid = $old_oids[-1] + 1;
-			while ( $new_oid lt 1001 and $oid_test{$new_oid} ) {
+			print $new_oid . "\n";
+			while ( ( $new_oid < 1001 ) and ( $oid_test{$new_oid} ) ) {
 				$new_oid++;
 			}
-			if ( $new_oid eq 1000 ) {
+			if ( $new_oid == 1000 ) {
 
 				#we still have not found a free oid,
 				#look for free oids below the default oid
@@ -50,7 +63,7 @@ sub newOID {
 				while ( $new_oid gt 0 and $oid_test{$new_oid} ) {
 					$new_oid -= 1;
 				}
-				if ( $new_oid gt 1 ) {
+				if ( $new_oid > 1 ) {
 					$oid = $new_oid;
 				} else {
 					error(
@@ -67,6 +80,21 @@ sub newOID {
 		$oid = 920;
 	}
 	return $oid;
+}
+
+sub writeToDatabase {
+			my ($table,$data,$dbh) = @_;
+			my @fields = sort keys %$data;
+			my @values = @{ $data }{@fields};
+			#print Dumper(@values);
+			my $query = sprintf(
+				"INSERT INTO $table (%s) VALUES (%s)",
+				join( ", ", @fields ),
+				join( ", ", map { '?' } @values )
+			);
+			#print $query. "\n";
+			my $qh = $dbh->prepare($query);
+			$qh->execute(@values);
 }
 
 sub createLibraryEntry {
@@ -94,8 +122,8 @@ sub createLibraryEntry {
 					} elsif ( !$albumData{'album_artist'} && $info->artist() ) {
 						$albumData{'album_artist'} = $info->artist();
 					}
-					if ( !$albumData{'year'} && $info->year() ) {
-						$albumData{'year'} = $info->get_year();
+					if ( !$albumData{'album_year'} && $info->year() ) {
+						$albumData{'album_year'} = $info->get_year();
 					}
 					if ( !$albumData{'picture_filename'} && $info->picture_exists() ) {
 						if ( $info->picture_filename() ) {
@@ -139,21 +167,23 @@ sub createLibraryEntry {
 					$albumData{'picture_filename'} = basename( $album->{$fileId} );
 				}
 			}
-			$albumData{'oid'} = $oid;
+			$albumData{'oid'}        = $oid;
+			$albumData{'num_tracks'} = scalar(@trackData);
 			if ( !$albumData{'album_title'} ) {
 				$albumData{'path'}        = 'unknown';
 				$albumData{'album_title'} = $albumData{'path'};
 			}
 			$albumData{'path'} = makeNewAlbumDir( $albumData{'path'} );
 			if ( $albumData{'picture_filename'} ) {
-				 $albumData{'picture_filename'} = moveToAlbum($albumData{'path'}, $albumData{'picture_filename'});
+				$albumData{'picture_filename'} =
+					moveToAlbum( $albumData{'path'}, $albumData{'picture_filename'} );
 			}
-			for my $track (@trackData) {
-				$track->{'filename'} = moveToAlbum($albumData{'path'}, $track->{'filename'});
+			foreach my $track (@trackData) {
+				$track->{'filename'} =
+					moveToAlbum( $albumData{'path'}, $track->{'filename'} );
+				writeToDatabase('tracks',$track,$dbh);
 			}
-
-			print Dumper( \%albumData );
-			print Dumper( \@trackData );
+			writeToDatabase('gme_library',\%albumData,$dbh);
 		}
 	}
 	removeTempDir();

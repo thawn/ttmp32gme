@@ -64,7 +64,6 @@ sub makeNewAlbumDir {
 	}
 	make_path($albumPath);
 	return $albumPath;
-
 }
 
 sub moveToAlbum {
