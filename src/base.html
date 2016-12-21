@@ -12,9 +12,9 @@
 <script src="/assets/js/jquery-3.1.1.min.js"></script>
 <script src="/assets/js/jquery.matchHeight-min.js"></script>
 <script src="/assets/js/jquery.fine-uploader.min.js"></script>
+<script src="/assets/js/jquery-ui.min.js"></script>
 <script>
 var notify = function($caller, title, message, popover_class, timeout) \{
-	
 	   $caller.attr(\{
 		   'title': title,
 		   'data-content': message
@@ -78,81 +78,91 @@ var updateElement = function($id) \{
 \}
 
 var postUpdate = function($id,elementVars) \{
-	
-	$.post(document.baseURI, 'action=update&data=' + escape(JSON.stringify(elementVars)),
-			function(data) \{
-				if (data.status === 'Success.') \{
-					fillInElement($id, data.element);
-					notify($id.find('button.edit-button'), '', data.status, 'bg-success',
-							2000);
-				\} else \{
-					notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
-							4000);
-				\}
-			\}, 'json').fail(function() \{
-				notify($id.find('button.edit-button'), '', 'Connection error', 'bg-danger',
+	$.post(
+		document.baseURI, 
+		'action=update&data=' + escape(JSON.stringify(elementVars)),
+		function(data) \{
+			if (data.success) \{
+				fillInElement($id, data.element);
+				notify($id.find('button.edit-button'), '', data.status, 'bg-success',
+						2000);
+			\} else \{
+				notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
 						4000);
-			\});
+			\}
+		\}, 'json').fail(function() \{
+			notify($id.find('button.edit-button'), '', 'Connection error', 'bg-danger',
+					4000);
+		\});
 \}
 
 var deleteElement = function($id,uid) \{
 	var filterVars = \{
 		'uid' : uid
 	\};
-	$
-			.post(
-					document.baseURI,
-					'action=delete&data=' + escape(JSON.stringify(filterVars)),
-					function(data) \{
-						if (data.status === 'Success.') \{
-							var alert = "<tr id=\"dismiss\"><td colspan=\"3\"><div class=\"alert alert-success\" role=\"alert\">Deleted.</div></td></tr>";
-							$id.replaceWith(alert);
-							setTimeout(function() \{
-								$('#dismiss').remove()
-							\}, 2000);
-						\} else \{
-							notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
-									4000);
-						\}
-					\}, 'json').fail(function(data) \{
-						notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
-					\});
+	$.post(
+		document.baseURI,
+		'action=delete&data=' + escape(JSON.stringify(filterVars)),
+		function(data) \{
+			if (data.success) \{
+				var alert = "<tr id=\"dismiss\"><td colspan=\"3\"><div class=\"alert alert-success\" role=\"alert\">Deleted.</div></td></tr>";
+				$id.replaceWith(alert);
+				setTimeout(function() \{
+					$('#dismiss').remove()
+				\}, 2000);
+			\} else \{
+				notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
+						4000);
+			\}
+		\}, 'json').fail(function(data) \{
+			notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
+		\});
 \}
 
 var listElements = function(clear,callback) \{
-	$
-			.post(
-					document.baseURI,
-					'action=list',
-					function(data) \{
-						if (data.status === 'Success.') \{
-							if (clear) \{
-								for (var i = 0; i < elementCount; i++) \{
-									$('#el' + i).remove();
-								\}
-								elementCount = 0;
-							\}
-							for (var i = elementCount; i < data.list.length; i++) \{
-								insertElement(data.list[i]);
-							\}
+	$.post(
+		document.baseURI,
+		'action=list',
+		function(data) \{
+			if (data.success) \{
+				if (clear) \{
+					for (var i = 0; i < elementCount; i++) \{
+						$('#el' + i).remove();
+					\}
+					elementCount = 0;
+				\}
+				for (var i = elementCount; i < data.list.length; i++) \{
+					insertElement(data.list[i]);
+				\}
 
-							if (callback) \{
-								callback();
-							\}
+				if (callback) \{
+					callback();
+				\}
 
-						\} else \{
-							var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
-									+ data.status + "</div></td></tr>";
-							$('#element-list tbody').append(alert);
-						\}
-					\}, 'json').fail(function()\{
-						var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
-							+ "Connection error!</div></td></tr>";
-					$('#element-list tbody').append(alert);
-				\});
+			\} else \{
+				var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
+						+ data.status + "</div></td></tr>";
+				$('#element-list tbody').append(alert);
+			\}
+		\}, 'json').fail(function()\{
+			var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
+				+ "Connection error!</div></td></tr>";
+		$('#element-list tbody').append(alert);
+	\});
 \}
 
 </script>
+<style type="text/css">
+.ui-draggable-handle {
+	-ms-touch-action: none;
+	touch-action: none
+}
+
+.ui-sortable-handle {
+	-ms-touch-action: none;
+	touch-action: none
+}
+</style>
 </head>
 
 <body>
@@ -167,22 +177,22 @@ var listElements = function(clear,callback) \{
 		</div>
 		<!-- End Header -->
 	</div>
-		<nav class="container navbar navbar-default ">
-			<!-- Brand and toggle get grouped for better mobile display -->
-			<div class="navbar-header">
-				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-					data-target="#main-nav" aria-expanded="false">
-					<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
-						class="icon-bar"></span> <span class="icon-bar"></span>
-				</button>
-			</div>
+	<nav class="container navbar navbar-default ">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+				data-target="#main-nav" aria-expanded="false">
+				<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span> <span
+					class="icon-bar"></span> <span class="icon-bar"></span>
+			</button>
+		</div>
 
-			<!-- Collect the nav links, forms, and other content for toggling -->
-			<div class="collapse navbar-collapse" id="main-nav">
-				<ul class="nav navbar-nav">{ $navigation }
-				</ul>
-			</div>
-		</nav>
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="main-nav">
+			<ul class="nav navbar-nav">{ $navigation }
+			</ul>
+		</div>
+	</nav>
 
 	<div class="container">
 		<div class="row">
