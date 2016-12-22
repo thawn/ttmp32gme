@@ -7,11 +7,13 @@ use File::Basename qw(basename dirname);
 use Data::Dumper;
 use Path::Class;
 use List::MoreUtils qw(uniq);
+use Cwd;
 
 use Music::Tag ( traditional => 1 );
 use Music::Tag::MusicBrainz;
 use Music::Tag::MP3;
 use Music::Tag::OGG;
+use MP3::Tag;
 
 #use Music::Tag:Amazon; #needs developer key
 #use Music::Tag:LyricsFetcher; #maybe use this in a future release?
@@ -20,7 +22,7 @@ use TTMp32Gme::Build::FileHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(createLibraryEntry);
+our @EXPORT = qw(createLibraryEntry getAlbumList);
 
 sub oidExist {
 	my ( $oid, $dbh ) = $_[0];
@@ -83,18 +85,20 @@ sub newOID {
 }
 
 sub writeToDatabase {
-			my ($table,$data,$dbh) = @_;
-			my @fields = sort keys %$data;
-			my @values = @{ $data }{@fields};
-			#print Dumper(@values);
-			my $query = sprintf(
-				"INSERT INTO $table (%s) VALUES (%s)",
-				join( ", ", @fields ),
-				join( ", ", map { '?' } @values )
-			);
-			#print $query. "\n";
-			my $qh = $dbh->prepare($query);
-			$qh->execute(@values);
+	my ( $table, $data, $dbh ) = @_;
+	my @fields = sort keys %$data;
+	my @values = @{$data}{@fields};
+
+	#print Dumper(@values);
+	my $query = sprintf(
+		"INSERT INTO $table (%s) VALUES (%s)",
+		join( ", ", @fields ),
+		join( ", ", map { '?' } @values )
+	);
+
+	#print $query. "\n";
+	my $qh = $dbh->prepare($query);
+	$qh->execute(@values);
 }
 
 sub createLibraryEntry {
@@ -126,22 +130,28 @@ sub createLibraryEntry {
 						$albumData{'album_year'} = $info->get_year();
 					}
 					if ( !$albumData{'picture_filename'} && $info->picture_exists() ) {
+						print "picture in metadata\n";
 						if ( $info->picture_filename() ) {
+							print "$info->picture_filename()\n";
 							$albumData{'picture_filename'} = $info->picture_filename();
 						} elsif ( $info->picture() ) {
 							my %pic = $info->picture();
+							print Dumper(%pic);
 							$pictureData = $pic{'_Data'};
-							my $pictureName = basename( $pic{'filename'} );
-							my $picturePath =
-								( file( dirname( $album->{$fileId} ), $pictureName ) )
-								->stringify;
-							if ( !-e $picturePath ) {
-								open( my $fh, '>', $picturePath );
-								print $fh $pictureData;
-								close($fh);
-							}
-							$albumData{'picture_filename'} = $picturePath;
+							$albumData{'picture_filename'} = basename( $pic{'filename'} );;
 						}
+					} elsif ( !$info->picture_exists() && $album->{$fileId} =~ /\.mp3$/i )
+					{
+						#Music::Tag::MP3 is not always reliable when extracting the picture,
+						#try to use MP3::Tag directly.
+						my $mp3 = MP3::Tag->new( $album->{$fileId} );
+						$mp3->get_tags();
+						my $id3v2_tagdata = $mp3->{ID3v2};
+						my $apic          = $id3v2_tagdata->get_frame("APIC");
+						$pictureData = $$apic{'_Data'};
+						my $mimetype = $$apic{'MIME type'};
+						$mimetype =~ s/.*\///;
+						$albumData{'picture_filename'} = 'cover.' . $mimetype;
 					}
 
 					#fill in track info
@@ -174,19 +184,65 @@ sub createLibraryEntry {
 				$albumData{'album_title'} = $albumData{'path'};
 			}
 			$albumData{'path'} = makeNewAlbumDir( $albumData{'path'} );
-			if ( $albumData{'picture_filename'} ) {
-				$albumData{'picture_filename'} =
-					moveToAlbum( $albumData{'path'}, $albumData{'picture_filename'} );
+			if ( $albumData{'picture_filename'} and $pictureData ) {
+				open(
+					my $fh,
+					'>',
+					( file( $albumData{'path'}, $albumData{'picture_filename'} ) )
+						->stringify
+				);
+				print $fh $pictureData;
+				close($fh);
 			}
 			foreach my $track (@trackData) {
 				$track->{'filename'} =
 					moveToAlbum( $albumData{'path'}, $track->{'filename'} );
-				writeToDatabase('tracks',$track,$dbh);
+				writeToDatabase( 'tracks', $track, $dbh );
 			}
-			writeToDatabase('gme_library',\%albumData,$dbh);
+			writeToDatabase( 'gme_library', \%albumData, $dbh );
 		}
 	}
 	removeTempDir();
+}
+
+sub getAlbumList {
+	my ( $dbh, $httpd ) = @_;
+	my @albumList;
+	my $albums =
+		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid ),
+		'oid' );
+	foreach my $oid ( sort keys %{$albums} ) {
+		my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
+
+		#print $query."\n";
+		my $tracks = $dbh->selectall_hashref( $query, 'track' );
+		foreach my $track ( sort keys %{$tracks} ) {
+			$albums->{$oid}->{ 'track_' . $track } = $tracks->{$track};
+		}
+		if ( $albums->{$oid}->{'picture_filename'} ) {
+			my $picturePath = (
+				file(
+					cwd(), $albums->{$oid}->{'path'},
+					$albums->{$oid}->{'picture_filename'}
+				)
+			)->stringify;
+			open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
+			my $pictureData = join( "", <$fh> );
+			close($fh);
+			$httpd->reg_cb(
+				    '/assets/images/'
+					. $oid . '/'
+					. $albums->{$oid}->{'picture_filename'} => sub {
+					my ( $httpd, $req ) = @_;
+					$req->respond( { content => [ '', $pictureData ] } );
+				}
+			);
+		}
+		push( @albumList, $albums->{$oid} );
+	}
+
+	#print Dumper(@albumList);
+	return \@albumList;
 }
 
 1;

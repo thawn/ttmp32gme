@@ -206,7 +206,7 @@ $httpd->reg_cb (
 				}
 			} elsif ($req->parm('action')) {
 				print "copying albums to library\n";
-				createLibraryEntry(\@albumList, $dbh);
+				createLibraryEntry(\@albumList, $dbh, $httpd);
 				$fileCount=0;
 				$albumCount=0;
 				$currentAlbum = makeTempAlbumDir($albumCount);
@@ -235,6 +235,22 @@ $httpd->reg_cb (
 					})
 				]
 			});
+		} elsif ( $req->method() eq 'POST' ){
+			#print Dumper($req);
+			my $content = {'success' => \0 };
+			my $statusCode = 501;
+			my $statusMessage = 'Could not parse POST data.';
+			if( $req->parm('action') eq 'list' ){
+				my $statusMessage = 'Could not get list of albums. Possible database error.';
+				$content->{'list'} = getAlbumList($dbh, $httpd);
+			}
+			if ( !$dbh->errstr ){
+				$content->{'success'}=\1;
+				$statusCode = 200;
+				$statusMessage = 'OK';
+			}
+			$content = encode_json($content);
+			$req->respond ([$statusCode,$statusMessage, { 'Content-Type' => 'application/json' },  $content ]);
 		}
 	},
 	'/print' => sub {
