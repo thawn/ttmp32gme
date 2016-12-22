@@ -12,7 +12,7 @@ our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFil
 sub loadFile {
  	my $path = $_[0];
  	my $file;
- 	open( $file, '<', $path);
+ 	open( $file, '<', $path) or die "Can't open '$path': $!";
  	my $content = join( "", <$file> );
  	close($file);
  	return $content;
