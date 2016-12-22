@@ -15,6 +15,7 @@ use AnyEvent::HTTP;
 use PAR;
 
 use Error qw(:try);
+use Encode;
 
 use Path::Class;
 use File::Path qw(make_path remove_tree);
@@ -240,7 +241,7 @@ $httpd->reg_cb (
 			my $content = {'success' => \0 };
 			my $statusCode = 501;
 			my $statusMessage = 'Could not parse POST data.';
-			if( $req->parm('action') eq 'list' ){
+			if ( $req->parm('action') eq 'list' ) {
 				my $statusMessage = 'Could not get list of albums. Possible database error.';
 				$content->{'list'} = getAlbumList($dbh, $httpd);
 			}
@@ -249,7 +250,7 @@ $httpd->reg_cb (
 				$statusCode = 200;
 				$statusMessage = 'OK';
 			}
-			$content = encode_json($content);
+			$content = Encode::decode_utf8(encode_json($content));
 			$req->respond ([$statusCode,$statusMessage, { 'Content-Type' => 'application/json' },  $content ]);
 		}
 	},
