@@ -1,8 +1,20 @@
 <script type="text/javascript">
 	var getElementValues = function($id) {
 		var filterVars = {};
+		
+		$id.find('li[class*=track_]').each( function(index) {
+			var classList = $(this).attr('class').split(/\s+/);
+			for (var i = 0; i < classList.length; i++) {
+				if (classList[i].startsWith('track_')) {
+					filterVars[classList[i]]= {
+							'track': index+1,
+							'title': $(this).find('input[name="title"]').val()
+					};
+				}
+			}
+		});
 
-		$id.find('input').not(':button').each(function() {
+		$id.find('div.album-info').find('input').not(':button').each(function() {
 			if ($(this).is(':checkbox')) {
 				filterVars[this.name] = testCheckBox(this);
 			} else {
@@ -96,15 +108,6 @@
 		$('#albums').on('click', 'button.edit-button', function() {
 			toggleShow($(this).data('item-id'));
 		});
-		$('#albums').on('change', 'input[name=title]', function() {
-			autoFill($(this).data('item-id'));
-		});
-		$('#albums').on('change', 'input[name=filter1]', function() {
-			$(this).data('changed', true);
-		});
-		$('#albums').on('click', '.filterswitch a', function() {
-			switchFilterType($(this));
-		});
 
 		// Grab the list of feeds, then grab the list of filters.
 		listElements();
@@ -139,7 +142,7 @@
 				</div>
 				<div class="panel-body">
 					<div class="row">
-						<div class="col-sm-6">
+						<div class="col-sm-6 album-info">
 							<img class="img-responsive cover" alt="cover">
 							<div class="form-group">
 								<label for="title">OID:</label> <input type="text" name="oid"

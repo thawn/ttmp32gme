@@ -9,6 +9,7 @@ use Path::Class;
 use List::MoreUtils qw(uniq);
 use Cwd;
 
+use Image::Info qw(image_type);
 use Music::Tag ( traditional => 1 );
 use Music::Tag::MusicBrainz;
 use Music::Tag::MP3;
@@ -22,10 +23,10 @@ use TTMp32Gme::Build::FileHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(createLibraryEntry getAlbumList);
+our @EXPORT = qw(createLibraryEntry getAlbumList updateAlbum);
 
-sub oidExist {
-	my ( $oid, $dbh ) = $_[0];
+sub oid_exist {
+	my ( $oid, $dbh ) = @_;
 	my @old_oids = map { @$_ }
 		@{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid') };
 	if ( grep( /^$oid$/, @old_oids ) ) {
@@ -53,7 +54,6 @@ sub newOID {
 			#then look for oids freed by deleting old ones
 			my %oid_test = map { $_ => 1 } @old_oids;
 			my $new_oid = $old_oids[-1] + 1;
-			print $new_oid . "\n";
 			while ( ( $new_oid < 1001 ) and ( $oid_test{$new_oid} ) ) {
 				$new_oid++;
 			}
@@ -88,15 +88,11 @@ sub writeToDatabase {
 	my ( $table, $data, $dbh ) = @_;
 	my @fields = sort keys %$data;
 	my @values = @{$data}{@fields};
-
-	#print Dumper(@values);
-	my $query = sprintf(
+	my $query  = sprintf(
 		"INSERT INTO $table (%s) VALUES (%s)",
 		join( ", ", @fields ),
 		join( ", ", map { '?' } @values )
 	);
-
-	#print $query. "\n";
 	my $qh = $dbh->prepare($query);
 	$qh->execute(@values);
 }
@@ -130,15 +126,12 @@ sub createLibraryEntry {
 						$albumData{'album_year'} = $info->get_year();
 					}
 					if ( !$albumData{'picture_filename'} && $info->picture_exists() ) {
-						print "picture in metadata\n";
 						if ( $info->picture_filename() ) {
-							print "$info->picture_filename()\n";
 							$albumData{'picture_filename'} = $info->picture_filename();
 						} elsif ( $info->picture() ) {
 							my %pic = $info->picture();
-							print Dumper(%pic);
 							$pictureData = $pic{'_Data'};
-							$albumData{'picture_filename'} = basename( $pic{'filename'} );;
+							$albumData{'picture_filename'} = basename( $pic{'filename'} );
 						}
 					} elsif ( !$info->picture_exists() && $album->{$fileId} =~ /\.mp3$/i )
 					{
@@ -150,8 +143,13 @@ sub createLibraryEntry {
 						my $apic          = $id3v2_tagdata->get_frame("APIC");
 						$pictureData = $$apic{'_Data'};
 						my $mimetype = $$apic{'MIME type'};
-						$mimetype =~ s/.*\///;
-						$albumData{'picture_filename'} = 'cover.' . $mimetype;
+						if ($mimetype) {
+							$mimetype =~ s/.*\///;
+							$albumData{'picture_filename'} = 'cover.' . $mimetype;
+						} elsif ($pictureData) {
+							my $imgType = image_type( \$pictureData );
+							$albumData{'picture_filename'} = 'cover.' . $imgType;
+						}
 					}
 
 					#fill in track info
@@ -209,12 +207,10 @@ sub getAlbumList {
 	my ( $dbh, $httpd ) = @_;
 	my @albumList;
 	my $albums =
-		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid ),
+		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ),
 		'oid' );
 	foreach my $oid ( sort keys %{$albums} ) {
 		my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
-
-		#print $query."\n";
 		my $tracks = $dbh->selectall_hashref( $query, 'track' );
 		foreach my $track ( sort keys %{$tracks} ) {
 			$albums->{$oid}->{ 'track_' . $track } = $tracks->{$track};
@@ -240,9 +236,66 @@ sub getAlbumList {
 		}
 		push( @albumList, $albums->{$oid} );
 	}
-
-	#print Dumper(@albumList);
 	return \@albumList;
+}
+
+sub updateTableEntry {
+	my ( $table, $keyname, $search_keys, $data, $dbh ) = @_;
+	my @fields = sort keys %$data;
+	my @values = @{$data}{@fields};
+	my $qh     = $dbh->prepare(
+		sprintf(
+			'UPDATE %s SET %s=? WHERE %s',
+			$table, join( "=?, ", @fields ), $keyname
+		)
+	);
+	push( @values, @{$search_keys} );
+	$qh->execute(@values);
+}
+
+sub updateAlbum {
+	my ( $postData, $dbh ) = @_;
+	my $old_oid = $postData->{'old_oid'};
+	delete( $postData->{'old_oid'} );
+	if ( $old_oid != $postData->{'oid'} ) {
+		if ( oid_exist( $old_oid, $dbh ) ) {
+			return 0;
+			$dbh->set_err( '',
+				'Could not update album, oid already exists. Try a different oid.' );
+		} else {
+			for my $track ( grep /^track_/, keys %{$postData} ) {
+				$postData->{$track}{'parent_oid'} = $postData->{'oid'};
+			}
+		}
+	}
+	my %new_tracks;
+	for my $track ( sort grep /^track_/, keys %{$postData} ) {
+		my $old_track = $track;
+		$old_track =~ s/^track_//;
+		$new_tracks{$old_track} = $postData->{$track}{'track'};
+		delete( $postData->{$track}{'track'} );
+		my %trackData = %{ $postData->{$track} };
+		my @selectors = ( $old_oid, $old_track );
+		updateTableEntry( 'tracks', 'parent_oid=? and track=?',
+			\@selectors, \%trackData, $dbh );
+		delete( $postData->{$track} );
+	}
+	print Dumper( \%new_tracks );
+	switchTracks( $postData->{'oid'}, \%new_tracks, $dbh );
+	my @selector = ($old_oid);
+	updateTableEntry( 'gme_library', 'oid=?', \@selector, $postData, $dbh );
+	return $postData->{'oid'};
+}
+
+sub switchTracks {
+	my ( $oid, $new_tracks, $dbh ) = @_;
+	my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
+	my $tracks = $dbh->selectall_hashref( $query, 'track' );
+	$dbh->do("DELETE FROM tracks WHERE parent_oid=$oid");
+	foreach my $track ( sort keys %{$new_tracks} ) {
+		$tracks->{$track}{'track'} = $new_tracks->{$track};
+		writeToDatabase( 'tracks', $tracks->{$track}, $dbh );
+	}
 }
 
 1;

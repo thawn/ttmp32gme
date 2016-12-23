@@ -116,8 +116,10 @@ sub fetchConfig {
 sub getNavigation {
 	my ( $url, $siteMap, $siteMapOrder ) = @_;
 	my $nav = "";
-	foreach my $path ( sort { $siteMapOrder->{$a} <=> $siteMapOrder->{$b} }
-		keys %$siteMap )
+	foreach my $path (
+		sort { $siteMapOrder->{$a} <=> $siteMapOrder->{$b} }
+		keys %$siteMap
+		)
 	{
 		if ( $url eq $path ) {
 			$nav .= "<li class='active'><a href='$path'>$siteMap->{$path}</a></li>";
@@ -280,14 +282,21 @@ $httpd->reg_cb(
 			my $statusCode    = 501;
 			my $statusMessage = 'Could not parse POST data.';
 			if ( $req->parm('action') eq 'list' ) {
-				my $statusMessage =
+				$statusMessage =
 					'Could not get list of albums. Possible database error.';
 				$content->{'list'} = getAlbumList( $dbh, $httpd );
+			} elsif ( $req->parm('action') eq 'update' ) {
+				my $postData = decode_json( uri_unescape( $req->parm('data') ) );
+				$statusMessage = 'Could not update Database.';
+				$content->{'element'}{'oid'} = updateAlbum( $postData, $dbh );
 			}
 			if ( !$dbh->errstr ) {
 				$content->{'success'} = \1;
 				$statusCode           = 200;
 				$statusMessage        = 'OK';
+			} else {
+				$statusCode = 501;
+				$statusMessage = $dbh->errstr;
 			}
 			$content = Encode::decode_utf8( encode_json($content) );
 			$req->respond(
