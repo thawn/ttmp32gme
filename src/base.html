@@ -63,9 +63,9 @@ var addElement = function(callback) \{
 			.done(function(data) \{
 				if (data.status === "Success.") \{
 					insertElement(data.element);
-					notify($('#add'), '', data.status, 'bg-success', 2000);
+					notify($('#add'), '', data.statusText, 'bg-success', 2000);
 				\} else \{
-					notify($('#add'), '', data.status, 'bg-danger', 4000);
+					notify($('#add'), '', data.statusText, 'bg-danger', 4000);
 				\}
 			\}).fail(function(data) \{
 				notify($('#add'), '', 'Connection Error', 'bg-danger', 4000);
@@ -84,10 +84,10 @@ var postUpdate = function($id,elementVars) \{
 		function(data) \{
 			if (data.success) \{
 				fillInElement($id, data.element);
-				notify($id.find('button.edit-button'), '', data.status, 'bg-success',
+				notify($id.find('button.edit-button'), '', data.statusText, 'bg-success',
 						2000);
 			\} else \{
-				notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
+				notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
 						4000);
 			\}
 		\}, 'json').fail(function() \{
@@ -111,7 +111,7 @@ var deleteElement = function($id,uid) \{
 					$('#dismiss').remove()
 				\}, 2000);
 			\} else \{
-				notify($id.find('button.edit-button'), '', data.status, 'bg-danger',
+				notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
 						4000);
 			\}
 		\}, 'json').fail(function(data) \{
