@@ -32,6 +32,7 @@
 			var title = data.album_title;
 		}
 		$id.find('td.filter-item span.item-title').text(title);
+		$id.find('ol.track-list').empty();
 		for (var i = 1; i<=data.num_tracks; i++ ) {
 			var track = '<li class="track_'+i+'" style="padding: 5px 0px"><div class="input-group" style="width: 90%;">'+
 				'<span class="input-group-addon duration"></span>'+

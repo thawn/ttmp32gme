@@ -290,7 +290,7 @@ $httpd->reg_cb(
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
 				$content->{'element'} =
-					getAlbum( updateAlbum( $postData, $dbh ) );
+					getAlbum( updateAlbum( $postData, $dbh ), $httpd, $dbh );
 			} elsif ( $req->parm('action') eq 'delete' ) {
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
