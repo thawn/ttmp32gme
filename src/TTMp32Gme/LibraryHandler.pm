@@ -22,8 +22,9 @@ use MP3::Tag;
 use TTMp32Gme::Build::FileHandler;
 
 require Exporter;
-our @ISA    = qw(Exporter);
-our @EXPORT = qw(createLibraryEntry getAlbumList getAlbum updateAlbum);
+our @ISA = qw(Exporter);
+our @EXPORT =
+	qw(createLibraryEntry getAlbumList getAlbum updateAlbum deleteAlbum cleanupAlbum);
 
 ## private methods
 
@@ -100,31 +101,29 @@ sub writeToDatabase {
 }
 
 sub format_album {
-	my ($album, $httpd, $dbh) = @_;
-		my $query = "SELECT * FROM tracks WHERE parent_oid=$album->{'oid'} ORDER BY track";
-		my $tracks = $dbh->selectall_hashref( $query, 'track' );
-		foreach my $track ( sort keys %{$tracks} ) {
-			$album->{ 'track_' . $track } = $tracks->{$track};
-		}
-		if ( $album->{'picture_filename'} ) {
-			my $picturePath = (
-				file(
-					cwd(), $album->{'path'},
-					$album->{'picture_filename'}
-				)
-			)->stringify;
-			open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
-			my $pictureData = join( "", <$fh> );
-			close($fh);
-			$httpd->reg_cb(
-				    '/assets/images/'
-					. $album->{'oid'} . '/'
-					. $album->{'picture_filename'} => sub {
-					my ( $httpd, $req ) = @_;
-					$req->respond( { content => [ '', $pictureData ] } );
-				}
-			);
-		}
+	my ( $album, $httpd, $dbh ) = @_;
+	my $query =
+		"SELECT * FROM tracks WHERE parent_oid=$album->{'oid'} ORDER BY track";
+	my $tracks = $dbh->selectall_hashref( $query, 'track' );
+	foreach my $track ( sort keys %{$tracks} ) {
+		$album->{ 'track_' . $track } = $tracks->{$track};
+	}
+	if ( $album->{'picture_filename'} ) {
+		my $picturePath =
+			( file( cwd(), $album->{'path'}, $album->{'picture_filename'} ) )
+			->stringify;
+		open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
+		my $pictureData = join( "", <$fh> );
+		close($fh);
+		$httpd->reg_cb(
+			    '/assets/images/'
+				. $album->{'oid'} . '/'
+				. $album->{'picture_filename'} => sub {
+				my ( $httpd, $req ) = @_;
+				$req->respond( { content => [ '', $pictureData ] } );
+			}
+		);
+	}
 	return $album;
 }
 
@@ -268,7 +267,7 @@ sub getAlbumList {
 		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ),
 		'oid' );
 	foreach my $oid ( sort keys %{$albums} ) {
-		$albums->{$oid} = format_album($albums->{$oid}, $httpd, $dbh);
+		$albums->{$oid} = format_album( $albums->{$oid}, $httpd, $dbh );
 		push( @albumList, $albums->{$oid} );
 	}
 	return \@albumList;
@@ -277,8 +276,9 @@ sub getAlbumList {
 sub getAlbum {
 	my ( $oid, $httpd, $dbh ) = @_;
 	my $album =
-		$dbh->selectrow_hashref( q( SELECT * FROM gme_library WHERE oid=? ), {}, $oid );
-	$album = format_album($album, $httpd, $dbh);
+		$dbh->selectrow_hashref( q( SELECT * FROM gme_library WHERE oid=? ),
+		{}, $oid );
+	$album = format_album( $album, $httpd, $dbh );
 	return $album;
 }
 
@@ -314,5 +314,37 @@ sub updateAlbum {
 	updateTableEntry( 'gme_library', 'oid=?', \@selector, $postData, $dbh );
 	return $postData->{'oid'};
 }
+
+sub deleteAlbum {
+	my ( $oid, $httpd, $dbh ) = @_;
+	my $albumData = $dbh->selectrow_hashref(
+		q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
+		{}, $oid );
+	if ( $albumData->{'picture_filename'} ) {
+		$httpd->unreg_cb(
+			'/assets/images/' . $oid . '/' . $albumData->{'picture_filename'} );
+	}
+	if ( removeAlbum( $albumData->{'path'} ) ) {
+		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
+		$dbh->do( q( DELETE FROM gme_library WHERE oid=? ), {}, $oid );
+	}
+	return $oid;
+}
+
+sub cleanupAlbum {
+	my ( $oid, $httpd, $dbh ) = @_;
+	my $albumData = $dbh->selectrow_hashref(
+		q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
+		{}, $oid );
+	my $query = q(SELECT filename FROM tracks WHERE parent_oid=? ORDER BY track);
+	my @file_list =
+		map { @$_ } @{ $dbh->selectall_arrayref( $query, {}, $oid ) };
+	my $data = {'filename' => undef};
+	if ( clearAlbum( $albumData->{'path'}, \@file_list ) ) {
+		updateTableEntry( 'tracks', 'parent_oid=?', [$oid], $data, $dbh )
+	}
+	return $oid;
+}
+
 
 1;

@@ -295,7 +295,15 @@ $httpd->reg_cb(
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
-				$content->{'element'} = deleteAlbum( $postData, $dbh );
+				$content->{'element'}{'oid'} =
+					deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
+			} elsif ( $req->parm('action') eq 'cleanup' ) {
+				my $postData =
+					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				$statusMessage = 'Could not update Database.';
+				$content->{'element'} =
+					getAlbum( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
+					$httpd, $dbh );
 			}
 			if ( !$dbh->errstr ) {
 				$content->{'success'} = \1;

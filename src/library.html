@@ -37,6 +37,7 @@
 			var track = '<li class="track_'+i+'" style="padding: 5px 0px"><div class="input-group" style="width: 90%;">'+
 				'<span class="input-group-addon duration"></span>'+
 				'<input type="text" name="title" class="form-control">'+
+				'<input type="hidden" name="filename">'+
 				'<span class="input-group-addon"><span class="glyphicon glyphicon-resize-vertical"></span></span>'+
 				'</div></li>';
 			$id.find('ol.track-list').append(track);
@@ -56,6 +57,7 @@
 				var ms=parseInt(data[i].duration), min = (ms/1000/60) | 0, sec = Math.round((ms/1000) % 60);
 				$track.find('span.duration').text(pad(min,2)+':'+pad(sec,2));
 				$track.find('input[name=title]').val(data[i].title)
+				$track.find('input[name=filename]').val(data[i].filename)
 			} else if (i === 'picture_filename') {
 				if (data[i]) {
 					$id.find('img.cover').prop('src', '/assets/images/'+data['oid']+'/'+data[i]);
@@ -65,6 +67,13 @@
 			} else {
 				$id.find('input[name=' + i + ']').val(data[i]);
 			}
+		}
+		var filenames=$id.find('input[name="filename"]').val();
+	//cleanup only makes sens once we have a gme file and mp3 files in the library
+		if (data.gme_file && filenames) {
+			$id.find('button.cleanup').show();
+		} else {
+			$id.find('button.cleanup').hide();
 		}
 		$id.find('input[name=old_oid]').val(data.oid);
 		$id.find('button').each(function() {
@@ -90,6 +99,29 @@
        return results[1] || 0;
     }
 	}
+	
+	var cleanupElement = function($id,uid) {
+		var filterVars = {
+			'uid' : uid
+		};
+		$.post(
+			document.baseURI,
+			'action=cleanup&data=' + escape(JSON.stringify(filterVars)),
+			function(data) {
+				if (data.success) {
+					fillInElement($id, data.element);
+					notify($id.find('button.edit-button'), '', data.statusText, 'bg-success',
+							2000);
+				} else {
+					notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
+							4000);
+				}
+			}, 'json').fail(function(data) {
+				notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
+			});
+	}
+
+
 
 	$(document).ready( function() {
 		// Add tips for the new filter input
@@ -101,7 +133,16 @@
 			toggleShow($(this).data('item-id'));
 		});
 		$('#albums').on('click','button.delete',function() {
-			deleteElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+			var ok = confirm('Are you sure? This will delete the entire album including the gme file from your library. This cannot be undone.');
+			if (ok) {
+				deleteElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+			}
+		});
+		$('#albums').on('click','button.cleanup',function() {
+			var ok = confirm('Are you sure? This will delete all music files from this album. The gme file and the picture (if any) will remain in your library. This cannot be undone.');
+			if (ok) {
+				cleanupElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+			}
 		});
 		$('#albums').on('click', 'button.cancel', function() {
 			toggleShow($(this).data('item-id'));
@@ -182,6 +223,7 @@
 							<div class="btn-group" role="group"
 								aria-label="save cancel delete button group">
 								<button type="button" class="btn btn-primary update">Update</button>
+								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
 								<button type="button" class="btn btn-danger delete">Delete</button>
 								<button type="button" class="btn btn-info cancel">Cancel</button>
 							</div>
