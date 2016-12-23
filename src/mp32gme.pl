@@ -289,13 +289,13 @@ $httpd->reg_cb(
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
-				$content->{'element'}{'oid'} = updateAlbum( $postData, $dbh );
+				$content->{'element'} =
+					getAlbum( updateAlbum( $postData, $dbh ) );
 			} elsif ( $req->parm('action') eq 'delete' ) {
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
-				$content->{'element'} =
-					getAlbum( deleteAlbum( $postData, $dbh ), $httpd, $dbh );
+				$content->{'element'} = deleteAlbum( $postData, $dbh );
 			}
 			if ( !$dbh->errstr ) {
 				$content->{'success'} = \1;
