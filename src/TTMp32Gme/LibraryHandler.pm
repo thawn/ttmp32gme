@@ -23,7 +23,9 @@ use TTMp32Gme::Build::FileHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(createLibraryEntry getAlbumList updateAlbum);
+our @EXPORT = qw(createLibraryEntry getAlbumList getAlbum updateAlbum);
+
+## private methods
 
 sub oid_exist {
 	my ( $oid, $dbh ) = @_;
@@ -96,6 +98,62 @@ sub writeToDatabase {
 	my $qh = $dbh->prepare($query);
 	$qh->execute(@values);
 }
+
+sub format_album {
+	my ($album, $httpd, $dbh) = @_;
+		my $query = "SELECT * FROM tracks WHERE parent_oid=$album->{'oid'} ORDER BY track";
+		my $tracks = $dbh->selectall_hashref( $query, 'track' );
+		foreach my $track ( sort keys %{$tracks} ) {
+			$album->{ 'track_' . $track } = $tracks->{$track};
+		}
+		if ( $album->{'picture_filename'} ) {
+			my $picturePath = (
+				file(
+					cwd(), $album->{'path'},
+					$album->{'picture_filename'}
+				)
+			)->stringify;
+			open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
+			my $pictureData = join( "", <$fh> );
+			close($fh);
+			$httpd->reg_cb(
+				    '/assets/images/'
+					. $album->{'oid'} . '/'
+					. $album->{'picture_filename'} => sub {
+					my ( $httpd, $req ) = @_;
+					$req->respond( { content => [ '', $pictureData ] } );
+				}
+			);
+		}
+	return $album;
+}
+
+sub updateTableEntry {
+	my ( $table, $keyname, $search_keys, $data, $dbh ) = @_;
+	my @fields = sort keys %$data;
+	my @values = @{$data}{@fields};
+	my $qh     = $dbh->prepare(
+		sprintf(
+			'UPDATE %s SET %s=? WHERE %s',
+			$table, join( "=?, ", @fields ), $keyname
+		)
+	);
+	push( @values, @{$search_keys} );
+	$qh->execute(@values);
+}
+
+sub switchTracks {
+	my ( $oid, $new_tracks, $dbh ) = @_;
+	my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
+	my $tracks = $dbh->selectall_hashref( $query, 'track' );
+	$dbh->do("DELETE FROM tracks WHERE parent_oid=$oid");
+	foreach my $track ( sort keys %{$new_tracks} ) {
+		$tracks->{$track}{'track'} = $new_tracks->{$track};
+		writeToDatabase( 'tracks', $tracks->{$track}, $dbh );
+	}
+}
+
+## public methods:
 
 sub createLibraryEntry {
 	my ( $albumList, $dbh ) = @_;
@@ -210,47 +268,18 @@ sub getAlbumList {
 		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ),
 		'oid' );
 	foreach my $oid ( sort keys %{$albums} ) {
-		my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
-		my $tracks = $dbh->selectall_hashref( $query, 'track' );
-		foreach my $track ( sort keys %{$tracks} ) {
-			$albums->{$oid}->{ 'track_' . $track } = $tracks->{$track};
-		}
-		if ( $albums->{$oid}->{'picture_filename'} ) {
-			my $picturePath = (
-				file(
-					cwd(), $albums->{$oid}->{'path'},
-					$albums->{$oid}->{'picture_filename'}
-				)
-			)->stringify;
-			open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
-			my $pictureData = join( "", <$fh> );
-			close($fh);
-			$httpd->reg_cb(
-				    '/assets/images/'
-					. $oid . '/'
-					. $albums->{$oid}->{'picture_filename'} => sub {
-					my ( $httpd, $req ) = @_;
-					$req->respond( { content => [ '', $pictureData ] } );
-				}
-			);
-		}
+		$albums->{$oid} = format_album($albums->{$oid}, $httpd, $dbh);
 		push( @albumList, $albums->{$oid} );
 	}
 	return \@albumList;
 }
 
-sub updateTableEntry {
-	my ( $table, $keyname, $search_keys, $data, $dbh ) = @_;
-	my @fields = sort keys %$data;
-	my @values = @{$data}{@fields};
-	my $qh     = $dbh->prepare(
-		sprintf(
-			'UPDATE %s SET %s=? WHERE %s',
-			$table, join( "=?, ", @fields ), $keyname
-		)
-	);
-	push( @values, @{$search_keys} );
-	$qh->execute(@values);
+sub getAlbum {
+	my ( $oid, $httpd, $dbh ) = @_;
+	my $album =
+		$dbh->selectrow_hashref( q( SELECT * FROM gme_library WHERE oid=? ), {}, $oid );
+	$album = format_album($album, $httpd, $dbh);
+	return $album;
 }
 
 sub updateAlbum {
@@ -280,22 +309,10 @@ sub updateAlbum {
 			\@selectors, \%trackData, $dbh );
 		delete( $postData->{$track} );
 	}
-	print Dumper( \%new_tracks );
 	switchTracks( $postData->{'oid'}, \%new_tracks, $dbh );
 	my @selector = ($old_oid);
 	updateTableEntry( 'gme_library', 'oid=?', \@selector, $postData, $dbh );
 	return $postData->{'oid'};
-}
-
-sub switchTracks {
-	my ( $oid, $new_tracks, $dbh ) = @_;
-	my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
-	my $tracks = $dbh->selectall_hashref( $query, 'track' );
-	$dbh->do("DELETE FROM tracks WHERE parent_oid=$oid");
-	foreach my $track ( sort keys %{$new_tracks} ) {
-		$tracks->{$track}{'track'} = $new_tracks->{$track};
-		writeToDatabase( 'tracks', $tracks->{$track}, $dbh );
-	}
 }
 
 1;
