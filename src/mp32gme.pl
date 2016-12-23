@@ -15,7 +15,7 @@ use AnyEvent::HTTP;
 use PAR;
 
 use Error qw(:try);
-use Encode;
+use Encode qw(decode_utf8 encode_utf8);
 
 use Path::Class;
 use File::Path qw(make_path remove_tree);
@@ -286,19 +286,26 @@ $httpd->reg_cb(
 					'Could not get list of albums. Possible database error.';
 				$content->{'list'} = getAlbumList( $dbh, $httpd );
 			} elsif ( $req->parm('action') eq 'update' ) {
-				my $postData = decode_json( uri_unescape( $req->parm('data') ) );
+				my $postData =
+					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
 				$content->{'element'}{'oid'} = updateAlbum( $postData, $dbh );
+			} elsif ( $req->parm('action') eq 'delete' ) {
+				my $postData =
+					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				$statusMessage = 'Could not update Database.';
+				$content->{'element'} =
+					getAlbum( deleteAlbum( $postData, $dbh ), $httpd, $dbh );
 			}
 			if ( !$dbh->errstr ) {
 				$content->{'success'} = \1;
 				$statusCode           = 200;
 				$statusMessage        = 'OK';
 			} else {
-				$statusCode = 501;
+				$statusCode    = 501;
 				$statusMessage = $dbh->errstr;
 			}
-			$content = Encode::decode_utf8( encode_json($content) );
+			$content = decode_utf8( encode_json($content) );
 			$req->respond(
 				[
 					$statusCode, $statusMessage,
