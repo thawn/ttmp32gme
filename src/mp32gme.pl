@@ -284,13 +284,13 @@ $httpd->reg_cb(
 			if ( $req->parm('action') eq 'list' ) {
 				$statusMessage =
 					'Could not get list of albums. Possible database error.';
-				$content->{'list'} = getAlbumList( $dbh, $httpd );
+				$content->{'list'} = get_album_list( $dbh, $httpd );
 			} elsif ( $req->parm('action') eq 'update' ) {
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
 				$content->{'element'} =
-					getAlbum( updateAlbum( $postData, $dbh ), $httpd, $dbh );
+					get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
 			} elsif ( $req->parm('action') eq 'delete' ) {
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
@@ -302,7 +302,7 @@ $httpd->reg_cb(
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				$statusMessage = 'Could not update Database.';
 				$content->{'element'} =
-					getAlbum( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
+					get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
 					$httpd, $dbh );
 			}
 			if ( !$dbh->errstr ) {

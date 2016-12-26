@@ -24,7 +24,7 @@ use TTMp32Gme::Build::FileHandler;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(createLibraryEntry getAlbumList getAlbum updateAlbum deleteAlbum cleanupAlbum);
+	qw(createLibraryEntry get_album_list get_album get_album_online updateAlbum deleteAlbum cleanupAlbum);
 
 ## private methods
 
@@ -100,14 +100,18 @@ sub writeToDatabase {
 	$qh->execute(@values);
 }
 
-sub format_album {
-	my ( $album, $httpd, $dbh ) = @_;
+sub get_tracks {
+	my ( $album, $dbh ) = @_;
 	my $query =
 		"SELECT * FROM tracks WHERE parent_oid=$album->{'oid'} ORDER BY track";
 	my $tracks = $dbh->selectall_hashref( $query, 'track' );
 	foreach my $track ( sort keys %{$tracks} ) {
 		$album->{ 'track_' . $track } = $tracks->{$track};
 	}
+}
+
+sub put_cover_online {
+	my ( $album, $httpd ) = @_;
 	if ( $album->{'picture_filename'} ) {
 		my $picturePath =
 			( file( cwd(), $album->{'path'}, $album->{'picture_filename'} ) )
@@ -123,8 +127,10 @@ sub format_album {
 				$req->respond( { content => [ '', $pictureData ] } );
 			}
 		);
+		return 1;
+	} else {
+		return 0;
 	}
-	return $album;
 }
 
 sub updateTableEntry {
@@ -260,25 +266,33 @@ sub createLibraryEntry {
 	removeTempDir();
 }
 
-sub getAlbumList {
+sub get_album_list {
 	my ( $dbh, $httpd ) = @_;
 	my @albumList;
 	my $albums =
 		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ),
 		'oid' );
 	foreach my $oid ( sort keys %{$albums} ) {
-		$albums->{$oid} = format_album( $albums->{$oid}, $httpd, $dbh );
+		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
 		push( @albumList, $albums->{$oid} );
+		put_cover_online( $albums->{$oid}, $httpd );
 	}
 	return \@albumList;
 }
 
-sub getAlbum {
-	my ( $oid, $httpd, $dbh ) = @_;
+sub get_album {
+	my ( $oid, $dbh ) = @_;
 	my $album =
 		$dbh->selectrow_hashref( q( SELECT * FROM gme_library WHERE oid=? ),
 		{}, $oid );
-	$album = format_album( $album, $httpd, $dbh );
+	$album = get_tracks( $album, $dbh );
+	return $album;
+}
+
+sub get_album_online {
+	my ( $oid, $httpd, $dbh ) = @_;
+	my $album = get_album( $oid, $dbh );
+	put_cover_online( $album, $httpd );
 	return $album;
 }
 
