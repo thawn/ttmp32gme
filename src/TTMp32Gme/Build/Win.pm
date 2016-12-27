@@ -28,10 +28,14 @@ sub getLibraryPath {
 }
 
 sub loadTemplates {
-	our %templates = ();
-	$templates{'base'} = Text::Template->new(TYPE => 'STRING',  SOURCE => PAR::read_file('base.html'));
-	$templates{'config'} = Text::Template->new(TYPE => 'STRING',  SOURCE => PAR::read_file('config.html'));
-	
+	my %templates = ();
+	my $manifest = PAR::read_file('templates.list');
+	open my $fh, '<', \$manifest;
+	while(my $path = <$fh>) {
+		$path =~ s/\R//g;
+		my ($name) = $path =~ /.*\/(.*)\.html$/;
+		$templates{$name} = Text::Template->new(TYPE => 'STRING',  SOURCE => loadFile($path));
+	}
 	return %templates;
 }
 

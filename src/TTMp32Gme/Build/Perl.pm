@@ -24,11 +24,11 @@ sub getLibraryPath {
 
 sub loadTemplates {
 	my %templates = ();
-	$templates{'base'} =
-	  Text::Template->new( TYPE => 'FILE', SOURCE => 'base.html' );
-	$templates{'config'} =
-	  Text::Template->new( TYPE => 'FILE', SOURCE => 'config.html' );
-
+	find(sub {
+		my ($name) = $File::Find::name =~ /.*\/(.*)\.html$/;
+	$templates{$name} = 
+	  Text::Template->new( TYPE => 'FILE', SOURCE => $_ ) if -f;
+	}, 'templates/');
 	return %templates;
 }
 

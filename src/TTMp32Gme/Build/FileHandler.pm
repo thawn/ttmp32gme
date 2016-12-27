@@ -33,7 +33,7 @@ if ( PAR::read_file('build.txt') ) {
 sub loadStatic {
 	my $static = {};
 	my @staticFiles =
-		( 'upload.html', 'library.html', 'print.html', 'help.html', );
+		( 'upload.html', 'library.html', 'help.html', );
 	foreach my $file (@staticFiles) {
 		$static->{$file} = loadFile($file);
 	}
