@@ -135,7 +135,6 @@ sub convert_tracks {
 			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
 		}
 	}
-	#todo: fill in tracks to config 'max_track_controls'
 
 	# add track code to the yaml file:
 	my $fh = $yaml_file->opena();
