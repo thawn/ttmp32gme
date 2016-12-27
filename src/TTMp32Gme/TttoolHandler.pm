@@ -127,6 +127,15 @@ sub convert_tracks {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) C\n";
 		}
 	}
+	if (scalar @tracks < $config->{'max_track_controls'}) {
+		#in case we use general track controls, we just play the last available
+		#track if the user selects a track number that does not exist in this album.
+		my $lastTrack=$#tracks;
+		foreach my $i (scalar @tracks .. $config->{'max_track_controls'}-1) {
+			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
+		}
+	}
+	#todo: fill in tracks to config 'max_track_controls'
 
 	# add track code to the yaml file:
 	my $fh = $yaml_file->opena();
