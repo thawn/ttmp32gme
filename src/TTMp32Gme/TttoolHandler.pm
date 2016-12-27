@@ -141,7 +141,7 @@ sub convert_tracks {
 	print $fh "  stop:\n  - C C\n";
 	print $fh $track_scripts;
 	close($fh);
-	return $#tracks;
+	return $media_path;
 }
 
 sub get_tttool_command {
@@ -169,12 +169,11 @@ sub make_gme {
 	print $fh "#this file was generated automatically by ttmp32gme\n";
 	print $fh "product-id: $oid\n";
 	close($fh);
-	my $num_tracks = convert_tracks( $album, $yaml_file, $config );
+	my $media_path = convert_tracks( $album, $yaml_file, $config );
 	my $codes_file = generate_codes_yaml( $yaml_file, $dbh );
 	my $maindir = cwd();
 	chdir( $album->{'path'} ) or die "Can't open '$album->{'path'}': $!";
-	my $tt_command = get_executable_path('tttool');
-	my $tt_params  = get_tttool_command($dbh);
+	my $tt_command  = get_tttool_command($dbh);
 
 	#todo: detect errors in the output of tttool
 	my $yaml      = $yaml_file->basename();
@@ -188,6 +187,7 @@ sub make_gme {
 	$album->{'gme_file'} = $gme_filename;
 	my @selector = ($oid);
 	updateAlbum( $album, $dbh );
+	remove_library_dir($media_path);
 	return $oid;
 }
 
