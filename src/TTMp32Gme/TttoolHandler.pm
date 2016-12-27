@@ -96,9 +96,9 @@ sub convert_tracks {
 	my $media_path = dir( $album->{'path'}, "audio" );
 	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
 	$media_path->mkpath();
-	if ( $config->{'tt_audio_format'} eq 'ogg' ) {
+	if ( $config->{'audio_format'} eq 'ogg' ) {
 
-		#todo: convert mp3s to ogg if desired
+		#todo: convert mp3s to ogg if desired and necessary
 	} else {
 		foreach my $i ( 0 .. $#tracks ) {
 			file( $album->{'path'}, $album->{ $tracks[$i] }->{'filename'} )
