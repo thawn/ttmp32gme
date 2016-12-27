@@ -13,7 +13,7 @@ use File::Basename qw(dirname basename);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename);
+	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir);
 
 my @build_imports =
 	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
@@ -95,8 +95,10 @@ sub clearAlbum {
 				}
 			}
 		}
+		return 1;
+	} else {
+		return 0;
 	}
-	return 1;
 }
 
 sub removeAlbum {
@@ -104,8 +106,10 @@ sub removeAlbum {
 	my $libraryPath = getLibraryPath();
 	if ( $path =~ /^$libraryPath/ ) {
 		remove_tree($path);
+		return 1;
+	} else {
+		return 0;
 	}
-	return 1;
 }
 
 sub cleanup_filename {
@@ -114,6 +118,17 @@ sub cleanup_filename {
 	$filename =~ s/[^A-Za-z0-9_\-\.]//g;
 	print $filename."\n";
 	return $filename;
+}
+
+sub remove_library_dir{
+	my ($media_dir) = @_;
+	my $libraryPath = getLibraryPath();
+	if ($media_dir->stringify() =~ /^$libraryPath/) {
+		$media_dir->rmtree();
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 1;

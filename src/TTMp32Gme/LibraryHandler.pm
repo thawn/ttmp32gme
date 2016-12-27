@@ -340,7 +340,7 @@ sub deleteAlbum {
 		$httpd->unreg_cb(
 			'/assets/images/' . $oid . '/' . $albumData->{'picture_filename'} );
 	}
-	if ( removeAlbum( $albumData->{'path'} ) ) {
+	if ( remove_library_dir( dir($albumData->{'path'}) ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
 		$dbh->do( q( DELETE FROM gme_library WHERE oid=? ), {}, $oid );
 	}
