@@ -13,10 +13,10 @@ use File::Basename qw(dirname basename);
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum);
+	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename);
 
 my @build_imports =
-	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser);
+	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
 if ( PAR::read_file('build.txt') ) {
 	if ( $^O eq 'darwin' ) {
 		require TTMp32Gme::Build::Mac;
@@ -106,6 +106,14 @@ sub removeAlbum {
 		remove_tree($path);
 	}
 	return 1;
+}
+
+sub cleanup_filename {
+	my $filename = $_[0];
+	$filename =~ s/\s/_/g;
+	$filename =~ s/[^A-Za-z0-9_\-\.]//g;
+	print $filename."\n";
+	return $filename;
 }
 
 1;

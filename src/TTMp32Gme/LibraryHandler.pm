@@ -108,6 +108,7 @@ sub get_tracks {
 	foreach my $track ( sort keys %{$tracks} ) {
 		$album->{ 'track_' . $track } = $tracks->{$track};
 	}
+	return $album;
 }
 
 sub put_cover_online {
@@ -145,6 +146,7 @@ sub updateTableEntry {
 	);
 	push( @values, @{$search_keys} );
 	$qh->execute(@values);
+	return !$dbh->errstr;
 }
 
 sub switchTracks {
@@ -196,7 +198,7 @@ sub createLibraryEntry {
 							$pictureData = $pic{'_Data'};
 							$albumData{'picture_filename'} = basename( $pic{'filename'} );
 						}
-					} elsif ( !$info->picture_exists() && $album->{$fileId} =~ /\.mp3$/i )
+					} elsif ( !$albumData{'picture_filename'} && !$info->picture_exists() && $album->{$fileId} =~ /\.mp3$/i )
 					{
 						#Music::Tag::MP3 is not always reliable when extracting the picture,
 						#try to use MP3::Tag directly.
@@ -274,8 +276,8 @@ sub get_album_list {
 		'oid' );
 	foreach my $oid ( sort keys %{$albums} ) {
 		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
-		push( @albumList, $albums->{$oid} );
 		put_cover_online( $albums->{$oid}, $httpd );
+		push( @albumList, $albums->{$oid} );
 	}
 	return \@albumList;
 }
@@ -353,12 +355,11 @@ sub cleanupAlbum {
 	my $query = q(SELECT filename FROM tracks WHERE parent_oid=? ORDER BY track);
 	my @file_list =
 		map { @$_ } @{ $dbh->selectall_arrayref( $query, {}, $oid ) };
-	my $data = {'filename' => undef};
+	my $data = { 'filename' => undef };
 	if ( clearAlbum( $albumData->{'path'}, \@file_list ) ) {
-		updateTableEntry( 'tracks', 'parent_oid=?', [$oid], $data, $dbh )
+		updateTableEntry( 'tracks', 'parent_oid=?', [$oid], $data, $dbh );
 	}
 	return $oid;
 }
-
 
 1;

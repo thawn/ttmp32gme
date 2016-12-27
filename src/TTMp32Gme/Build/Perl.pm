@@ -7,7 +7,7 @@ use warnings;
 use File::Find;
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser);
+our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
 
 sub loadFile {
  	my $path = $_[0];
@@ -68,6 +68,11 @@ sub openBrowser {
 
 	#Do nothing
 	return 1;
+}
+
+sub get_executable_path {
+	my $exe_name = $_[0];
+	return '../../../lib/'. $exe_name;
 }
 
 1;

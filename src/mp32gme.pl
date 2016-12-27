@@ -31,6 +31,7 @@ use DBIx::MultiStatementDo;
 use Log::Message::Simple qw(msg error);
 
 use TTMp32Gme::LibraryHandler;
+use TTMp32Gme::TttoolHandler;
 
 # Set the UserAgent for external async requests.  Don't want to get flagged, do we?
 $AnyEvent::HTTP::USERAGENT =
@@ -285,25 +286,28 @@ $httpd->reg_cb(
 				$statusMessage =
 					'Could not get list of albums. Possible database error.';
 				$content->{'list'} = get_album_list( $dbh, $httpd );
-			} elsif ( $req->parm('action') eq 'update' ) {
+			} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme)/ ) {
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				$statusMessage = 'Could not update Database.';
-				$content->{'element'} =
-					get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
-			} elsif ( $req->parm('action') eq 'delete' ) {
-				my $postData =
-					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				$statusMessage = 'Could not update Database.';
-				$content->{'element'}{'oid'} =
-					deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
-			} elsif ( $req->parm('action') eq 'cleanup' ) {
-				my $postData =
-					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				$statusMessage = 'Could not update Database.';
-				$content->{'element'} =
-					get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
-					$httpd, $dbh );
+				if ( $req->parm('action') eq 'update' ) {
+					$statusMessage = 'Could not update Database.';
+					$content->{'element'} =
+						get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
+				} elsif ( $req->parm('action') eq 'delete' ) {
+					$statusMessage = 'Could not update Database.';
+					$content->{'element'}{'oid'} =
+						deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
+				} elsif ( $req->parm('action') eq 'cleanup' ) {
+					$statusMessage = 'Could not clean up album folder.';
+					$content->{'element'} =
+						get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
+						$httpd, $dbh );
+				} elsif ( $req->parm('action') eq 'make_gme' ) {
+					$statusMessage = 'Could not create gme file.';
+					$content->{'element'} =
+						get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ),
+						$httpd, $dbh );
+				}
 			}
 			if ( !$dbh->errstr ) {
 				$content->{'success'} = \1;

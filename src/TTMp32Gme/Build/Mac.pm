@@ -10,7 +10,7 @@ use File::Path qw(make_path);
 use Path::Class;
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser);
+our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
 
 print "Mac include\n";
 
@@ -81,6 +81,11 @@ sub openBrowser {
 	my %config = @_;
 	`open http://127.0.0.1:$config{'port'}/`;
 	return 1;
+}
+
+sub get_executable_path {
+	my $exe_name = $_[0];
+	return (file($ENV{'PAR_TEMP'}, 'lib', $exe_name))->stringify();
 }
 
 1;

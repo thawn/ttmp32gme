@@ -100,13 +100,13 @@
     }
 	}
 	
-	var cleanupElement = function($id,uid) {
+	var triggerElementAction = function(action,$id,uid) {
 		var filterVars = {
 			'uid' : uid
 		};
 		$.post(
 			document.baseURI,
-			'action=cleanup&data=' + escape(JSON.stringify(filterVars)),
+			'action='+action+'&data=' + escape(JSON.stringify(filterVars)),
 			function(data) {
 				if (data.success) {
 					fillInElement($id, data.element);
@@ -132,6 +132,8 @@
 			updateElement($(this).data('item-id'));
 			toggleShow($(this).data('item-id'));
 		});
+		$('#albums').on('click', 'button.make-gme', function() {
+			triggerElementAction('make_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());		});
 		$('#albums').on('click','button.delete',function() {
 			var ok = confirm('Are you sure? This will delete the entire album including the gme file from your library. This cannot be undone.');
 			if (ok) {
@@ -141,7 +143,7 @@
 		$('#albums').on('click','button.cleanup',function() {
 			var ok = confirm('Are you sure? This will delete all music files from this album. The gme file and the picture (if any) will remain in your library. This cannot be undone.');
 			if (ok) {
-				cleanupElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+				triggerElementAction('cleanup', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 			}
 		});
 		$('#albums').on('click', 'button.cancel', function() {
@@ -183,6 +185,18 @@
 					<h4 class="panel-title">Edit album:</h4>
 				</div>
 				<div class="panel-body">
+					<div class="row" style="padding-bottom:15px;">
+						<div class="col-sm-12">
+							<div class="btn-group" role="group"
+								aria-label="save cancel delete button group">
+								<button type="button" class="btn btn-primary update">Update</button>
+								<button type="button" class="btn btn-success make-gme">Create GME</button>
+								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
+								<button type="button" class="btn btn-danger delete">Delete</button>
+								<button type="button" class="btn btn-info cancel">Cancel</button>
+							</div>
+						</div>
+					</div>
 					<div class="row">
 						<div class="col-sm-6 album-info">
 							<img class="img-responsive cover" alt="cover">
@@ -215,17 +229,6 @@
 							<div class="form-inline">
 								<label>Tracks (drag &amp; drop to change order):</label>
 								<ol class="track-list"></ol>
-							</div>
-						</div>
-					</div>
-					<div class="row">
-						<div class="col-sm-12">
-							<div class="btn-group" role="group"
-								aria-label="save cancel delete button group">
-								<button type="button" class="btn btn-primary update">Update</button>
-								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
-								<button type="button" class="btn btn-danger delete">Delete</button>
-								<button type="button" class="btn btn-info cancel">Cancel</button>
 							</div>
 						</div>
 					</div>
