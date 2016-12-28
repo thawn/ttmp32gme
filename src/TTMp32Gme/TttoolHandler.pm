@@ -160,7 +160,9 @@ q(SELECT * FROM config WHERE param LIKE 'tt\_%' ESCAPE '\' AND value IS NOT NULL
 		'param'
 	);
 	foreach my $param ( keys %{$tt_params} ) {
-		$tt_command .= " -$param $tt_params->{$param}";
+		my $parameter = $param;
+		$parameter =~ s/^tt_//;
+		$tt_command .= " --$parameter $tt_params->{$param}{'value'}";
 	}
 	return $tt_command;
 }
