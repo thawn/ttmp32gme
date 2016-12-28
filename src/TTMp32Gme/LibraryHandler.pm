@@ -198,7 +198,9 @@ sub createLibraryEntry {
 							$pictureData = $pic{'_Data'};
 							$albumData{'picture_filename'} = basename( $pic{'filename'} );
 						}
-					} elsif ( !$albumData{'picture_filename'} && !$info->picture_exists() && $album->{$fileId} =~ /\.mp3$/i )
+					} elsif ( !$albumData{'picture_filename'}
+						&& !$info->picture_exists()
+						&& $album->{$fileId} =~ /\.mp3$/i )
 					{
 						#Music::Tag::MP3 is not always reliable when extracting the picture,
 						#try to use MP3::Tag directly.
@@ -340,7 +342,7 @@ sub deleteAlbum {
 		$httpd->unreg_cb(
 			'/assets/images/' . $oid . '/' . $albumData->{'picture_filename'} );
 	}
-	if ( remove_library_dir( dir($albumData->{'path'}) ) ) {
+	if ( remove_library_dir( dir( $albumData->{'path'} ) ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
 		$dbh->do( q( DELETE FROM gme_library WHERE oid=? ), {}, $oid );
 	}
