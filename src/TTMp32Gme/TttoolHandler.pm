@@ -172,7 +172,7 @@ sub get_tttool_command {
 	my ($dbh)      = @_;
 	my $tt_command = get_executable_path('tttool');
 	my $tt_params  = get_tttool_parameters($dbh);
-	foreach my $param (sort keys %{$tt_params} ) {
+	foreach my $param ( sort keys %{$tt_params} ) {
 		$tt_command .= " --$param $tt_params->{$param}";
 	}
 	return $tt_command;
@@ -223,18 +223,20 @@ sub make_gme {
 
 sub create_oid {
 	my ( $oids, $size, $dbh ) = @_;
-	my $oid_list = join( ',', @{$oids} );
+	my $oid_list    = join( ',', @{$oids} );
 	my $target_path = get_oid_cache();
-	my $tt_params = get_tttool_parameters();
+	my $tt_params   = get_tttool_parameters();
 	my @files;
 	my $tt_command = " --code-dim " . $size . "oid-code " . $oid_list;
 	foreach my $oid ( @{$oids} ) {
-		my $oid_file = file( $target_path, "$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );
-		if (! -f $oid_file) {
-			run_tttool( $tt_command, "", $dbh ) or die "Could not create oid file: $!";
-			file("oid-$oid.png")->move_to( $oid_file );
+		my $oid_file = file( $target_path,
+			"$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );
+		if ( !-f $oid_file ) {
+			run_tttool( $tt_command, "", $dbh )
+				or die "Could not create oid file: $!";
+			file("oid-$oid.png")->move_to($oid_file);
 		}
-		push( @files,$oid_file );
+		push( @files, $oid_file );
 	}
 	return \@files;
 }
