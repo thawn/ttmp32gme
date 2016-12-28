@@ -224,16 +224,19 @@ sub make_gme {
 sub create_oid {
 	my ( $oids, $size, $dbh ) = @_;
 	my $oid_list = join( ',', @{$oids} );
-	my $target_path = dir( getLibraryPath(), 'temp', 'oid_cache' );
-	$target_path->mkpath();
+	my $target_path = get_oid_cache();
+	my $tt_params = get_tttool_parameters();
 	my @files;
 	my $tt_command = " --code-dim " . $size . "oid-code " . $oid_list;
-	if ( run_tttool( $tt_command, "", $dbh ) ) {
-		foreach my $oid ( @{$oids} ) {
-			push( @files,
-				( file("oid-$oid.png") )->move_to( dir( $target_path, "$oid-" ) ) );
+	foreach my $oid ( @{$oids} ) {
+		my $oid_file = file( $target_path, "$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );
+		if (! -f $oid_file) {
+			run_tttool( $tt_command, "", $dbh ) or die "Could not create oid file: $!";
+			file("oid-$oid.png")->move_to( $oid_file );
 		}
+		push( @files,$oid_file );
 	}
+	return \@files;
 }
 
 1;
