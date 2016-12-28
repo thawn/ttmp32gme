@@ -5,17 +5,22 @@ use strict;
 use warnings;
 
 use File::Find;
+use Cwd;
+
 require Exporter;
-our @ISA    = qw(Exporter);
-our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
+our @ISA = qw(Exporter);
+our @EXPORT =
+	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
+
+my $maindir = cwd();
 
 sub loadFile {
- 	my $path = $_[0];
- 	my $file;
- 	open( $file, '<', $path) or die "Can't open '$path': $!";
- 	my $content = join( "", <$file> );
- 	close($file);
- 	return $content;
+	my $path = $_[0];
+	my $file;
+	open( $file, '<', $path ) or die "Can't open '$path': $!";
+	my $content = join( "", <$file> );
+	close($file);
+	return $content;
 }
 
 sub getLibraryPath {
@@ -24,42 +29,46 @@ sub getLibraryPath {
 
 sub loadTemplates {
 	my %templates = ();
-	find(sub {
-		my ($name) = $File::Find::name =~ /.*\/(.*)\.html$/;
-	$templates{$name} = 
-	  Text::Template->new( TYPE => 'FILE', SOURCE => $_ ) if -f;
-	}, 'templates/');
+	find(
+		sub {
+			my ($name) = $File::Find::name =~ /.*\/(.*)\.html$/;
+			$templates{$name} = Text::Template->new( TYPE => 'FILE', SOURCE => $_ )
+				if -f;
+		},
+		'templates/'
+	);
 	return %templates;
 }
 
 sub loadAssets {
 	my %assets = ();
-	find(sub {
-		my $content = loadFile($_) if -f;
-		my $mime;
-		if ( $_ =~ /.js$/ ) {
-			$mime = 'text/javascript';
-		} elsif ( $_ =~ /.css$/ ) {
-			$mime = 'text/css';
-		} else {
-			$mime = '';
-		}
-		$assets{"/".$File::Find::name} = sub {
-		my ($httpd, $req) = @_;
+	find(
+		sub {
+			my $content = loadFile($_) if -f;
+			my $mime;
+			if ( $_ =~ /.js$/ ) {
+				$mime = 'text/javascript';
+			} elsif ( $_ =~ /.css$/ ) {
+				$mime = 'text/css';
+			} else {
+				$mime = '';
+			}
+			$assets{ "/" . $File::Find::name } = sub {
+				my ( $httpd, $req ) = @_;
 
-		$req->respond({ content => [$mime, $content] });
-		}
-	}, 'assets/');
-	
-	
+				$req->respond( { content => [ $mime, $content ] } );
+				}
+		},
+		'assets/'
+	);
+
 	return %assets;
 }
 
 sub checkConfigFile {
 	if ( -f 'config.sqlite' ) {
 		return 'config.sqlite';
-	}
-	else {
+	} else {
 		return 0;
 	}
 }
@@ -72,7 +81,7 @@ sub openBrowser {
 
 sub get_executable_path {
 	my $exe_name = $_[0];
-	return '../../../lib/'. $exe_name;
+	return $maindir . '/../lib/' . $exe_name;
 }
 
 1;

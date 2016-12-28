@@ -1,4 +1,3 @@
-
 package TTMp32Gme::Build::FileHandler;
 
 use strict;
@@ -17,6 +16,7 @@ our @EXPORT =
 
 my @build_imports =
 	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
+
 if ( PAR::read_file('build.txt') ) {
 	if ( $^O eq 'darwin' ) {
 		require TTMp32Gme::Build::Mac;
