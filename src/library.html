@@ -75,6 +75,11 @@
 		} else {
 			$id.find('button.cleanup').hide();
 		}
+		if (data.gme_file) {
+			$id.find('button.print').show();
+		} else {
+			$id.find('button.print').hide();
+		}
 		$id.find('input[name=old_oid]').val(data.oid);
 		$id.find('button').each(function() {
 			$(this).data('item-id', $id);
@@ -121,6 +126,11 @@
 			});
 	}
 
+	var printAlbum = function(oids) {
+		//expects an array of oids
+		var url = "print?data=" + encodeURIComponent(JSON.stringify({'oids': oids}));
+		window.open(url, '_self');
+	}
 
 
 	$(document).ready( function() {
@@ -145,6 +155,9 @@
 			if (ok) {
 				triggerElementAction('cleanup', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 			}
+		});
+		$('#albums').on('click','button.print',function() {
+			printAlbum([$(this).data('item-id').find('input[name=old_oid]').val()]);
 		});
 		$('#albums').on('click', 'button.cancel', function() {
 			toggleShow($(this).data('item-id'));
@@ -185,12 +198,13 @@
 					<h4 class="panel-title">Edit album:</h4>
 				</div>
 				<div class="panel-body">
-					<div class="row" style="padding-bottom:15px;">
+					<div class="row" style="padding-bottom: 15px;">
 						<div class="col-sm-12">
 							<div class="btn-group" role="group"
 								aria-label="save cancel delete button group">
 								<button type="button" class="btn btn-primary update">Update</button>
 								<button type="button" class="btn btn-success make-gme">Create GME</button>
+								<button type="button" class="btn btn-success print" style="display: none;">Print</button>
 								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
 								<button type="button" class="btn btn-danger delete">Delete</button>
 								<button type="button" class="btn btn-info cancel">Cancel</button>

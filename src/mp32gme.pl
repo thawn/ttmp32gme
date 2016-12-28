@@ -32,6 +32,7 @@ use Log::Message::Simple qw(msg error);
 
 use TTMp32Gme::LibraryHandler;
 use TTMp32Gme::TttoolHandler;
+use TTMp32Gme::PrintHandler;
 
 # Set the UserAgent for external async requests.  Don't want to get flagged, do we?
 $AnyEvent::HTTP::USERAGENT =
@@ -137,7 +138,7 @@ my %siteMap = (
 	'/library' =>
 '<span class="glyphicon glyphicon-th-list" aria-hidden="true"></span> Library',
 
-#	'/print' => '<span class="glyphicon glyphicon-print" aria-hidden="true"> Print',
+#	'/print' => '<span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print',
 	'/config' =>
 '<span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Configuration',
 	'/help' =>
@@ -329,23 +330,25 @@ $httpd->reg_cb(
 	'/print' => sub {
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
+			my $getData = decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 			$req->respond(
 				{
 					content => [
 						'text/html',
-						$templates{'base'}->fill_in(
+						$templates{'print'}->fill_in(
 							HASH => {
-								'title'         => $siteMap{ $req->url },
-								'strippedTitle' => $siteMap{ $req->url } =~ s/<span.*span> //r,
+								'title'         => '<span class="hidden-print"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</span>',
+								'strippedTitle' => 'Print',
 								'navigation' =>
 									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content' => $static->{'print.html'}
+								'content' => create_print_layout($getData->{'oids'}, $templates{'printing_contents'},$httpd, $dbh)
 							}
 						)
 					]
 				}
 			);
 		}
+		#todo: print configuration
 	},
 	'/config' => sub {
 		my ( $httpd, $req ) = @_;

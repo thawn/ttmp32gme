@@ -1,0 +1,39 @@
+<div class="row">
+	<div class="panel panel-default album">
+		<div class="panel-heading">
+			<h4 class="panel-title">{ $album_title }</h4>
+		</div>
+		<div class="panel-body">
+			<div class="row">
+				<div class="col-xs-4 cover">
+					<img class="img-responsive cover" 
+						src="/assets/images/{$oid}/{$picture_filename}" alt="cover">
+				</div>
+				<div class="col-xs-4 album-info">
+					<ol class="list-group">
+						<li class="list-group-item">
+							<h5 class="list-group-item-heading">Album title:</h5>
+							<p class="list-group-item-text">{ $album_title }</p>
+						</li>
+						<li class="list-group-item">
+							<h5 class="list-group-item-heading">Album artist:</h5>
+							<p class="list-group-item-text">{ $album_artist }</p>
+						</li>
+						<li class="list-group-item">
+							<h5 class="list-group-item-heading">Album year:</h5>
+							<p class="list-group-item-text">{ $album_year }</p>
+						</li>
+					</ol>
+					<div class="album-controls">{$album_controls}</div>
+				</div>
+				<div class="col-xs-4 tracks">
+					<ul class="list-group track-list">{ $track_list }
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+{ $controls }
+</div>

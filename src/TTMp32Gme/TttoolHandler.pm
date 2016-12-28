@@ -94,7 +94,7 @@ scriptcodes:
 sub convert_tracks {
 	my ( $album, $yaml_file, $config ) = @_;
 	my $media_path = dir( $album->{'path'}, "audio" );
-	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
+	my @tracks = sort grep { $_ =~ /^track_/ } keys %{$album};
 	$media_path->mkpath();
 	if ( $config->{'audio_format'} eq 'ogg' ) {
 
