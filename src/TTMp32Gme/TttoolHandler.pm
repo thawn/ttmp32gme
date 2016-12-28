@@ -38,16 +38,16 @@ sub generate_codes_yaml {
 		}
 	}
 	close($fh);
-	my $query        = "SELECT * FROM script_codes";
-	my $codes        = $dbh->selectall_hashref( $query, 'script' );
-	
+	my $query = "SELECT * FROM script_codes";
+	my $codes = $dbh->selectall_hashref( $query, 'script' );
+
 	my @sorted_codes;
-	foreach my $script (keys %{$codes}) {
-		push(@sorted_codes, $codes->{$script}{'code'});
+	foreach my $script ( keys %{$codes} ) {
+		push( @sorted_codes, $codes->{$script}{'code'} );
 	}
-	
-	@sorted_codes = sort { $b <=> $a } @sorted_codes ;
-	my $last_code    = $sorted_codes[0];
+
+	@sorted_codes = sort { $b <=> $a } @sorted_codes;
+	my $last_code = $sorted_codes[0];
 
 	my $filename = $yaml_file->basename();
 	$filename =~ s/yaml$/codes.yaml/;
@@ -127,11 +127,12 @@ sub convert_tracks {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) C\n";
 		}
 	}
-	if (scalar @tracks < $config->{'max_track_controls'}) {
+	if ( scalar @tracks < $config->{'max_track_controls'} ) {
+
 		#in case we use general track controls, we just play the last available
 		#track if the user selects a track number that does not exist in this album.
-		my $lastTrack=$#tracks;
-		foreach my $i (scalar @tracks .. $config->{'max_track_controls'}-1) {
+		my $lastTrack = $#tracks;
+		foreach my $i ( scalar @tracks .. $config->{'max_track_controls'} - 1 ) {
 			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
 		}
 	}
@@ -152,19 +153,45 @@ sub convert_tracks {
 	return $media_path;
 }
 
-sub get_tttool_command {
-	my ($dbh)      = @_;
-	my $tt_command = get_executable_path('tttool');
-	my $tt_params  = $dbh->selectall_hashref(
+sub get_tttool_parameters {
+	my ($dbh) = @_;
+	my $tt_params = $dbh->selectall_hashref(
 q(SELECT * FROM config WHERE param LIKE 'tt\_%' ESCAPE '\' AND value IS NOT NULL),
 		'param'
 	);
+	my %formatted_parameters;
 	foreach my $param ( keys %{$tt_params} ) {
 		my $parameter = $param;
 		$parameter =~ s/^tt_//;
-		$tt_command .= " --$parameter $tt_params->{$param}{'value'}";
+		$formatted_parameters{$parameter} = $tt_params->{$param}{'value'};
+	}
+	return \%formatted_parameters;
+}
+
+sub get_tttool_command {
+	my ($dbh)      = @_;
+	my $tt_command = get_executable_path('tttool');
+	my $tt_params  = get_tttool_parameters($dbh);
+	foreach my $param (sort keys %{$tt_params} ) {
+		$tt_command .= " --$param $tt_params->{$param}";
 	}
 	return $tt_command;
+}
+
+sub run_tttool {
+	my ( $arguments, $path, $dbh ) = @_;
+	my $maindir = cwd();
+	chdir($path) or die "Can't open '$path': $!";
+	my $tt_command = get_tttool_command($dbh);
+	my $tt_output  = `$tt_command $arguments`;
+	chdir($maindir);
+	if ($?) {
+		error( $tt_output, 1 );
+		return 0;
+	} else {
+		msg( $tt_output, 1 );
+		return 1;
+	}
 }
 
 ##exported functions
@@ -181,24 +208,32 @@ sub make_gme {
 	close($fh);
 	my $media_path = convert_tracks( $album, $yaml_file, $config );
 	my $codes_file = generate_codes_yaml( $yaml_file, $dbh );
-	my $maindir = cwd();
-	chdir( $album->{'path'} ) or die "Can't open '$album->{'path'}': $!";
-	my $tt_command  = get_tttool_command($dbh);
+	my $yaml = $yaml_file->basename();
 
-	#todo: detect errors in the output of tttool
-	my $yaml      = $yaml_file->basename();
-	my $tt_output = `$tt_command assemble $yaml`;
-	msg( $tt_output, 1 );
-	$tt_output = `$tt_command oid-codes $yaml`;
-	msg( $tt_output, 1 );
-	chdir($maindir);
-	my $gme_filename = $yaml_file->basename();
-	$gme_filename =~ s/yaml$/gme/;
-	$album->{'gme_file'} = $gme_filename;
-	my @selector = ($oid);
-	updateAlbum( $album, $dbh );
+	if ( run_tttool( "assemble $yaml", $album->{'path'}, $dbh ) ) {
+		my $gme_filename = $yaml_file->basename();
+		$gme_filename =~ s/yaml$/gme/;
+		$album->{'gme_file'} = $gme_filename;
+		my @selector = ($oid);
+		updateAlbum( $album, $dbh );
+	}
 	remove_library_dir($media_path);
 	return $oid;
+}
+
+sub create_oid {
+	my ( $oids, $size, $dbh ) = @_;
+	my $oid_list = join( ',', @{$oids} );
+	my $target_path = dir( getLibraryPath(), 'temp', 'oid_cache' );
+	$target_path->mkpath();
+	my @files;
+	my $tt_command = " --code-dim " . $size . "oid-code " . $oid_list;
+	if ( run_tttool( $tt_command, "", $dbh ) ) {
+		foreach my $oid ( @{$oids} ) {
+			push( @files,
+				( file("oid-$oid.png") )->move_to( dir( $target_path, "$oid-" ) ) );
+		}
+	}
 }
 
 1;

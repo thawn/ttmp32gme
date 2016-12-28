@@ -5,12 +5,13 @@ use strict;
 use warnings;
 
 use File::Find;
+use Path::Class;
 use Cwd;
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
+	qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 my $maindir = cwd();
 
@@ -23,8 +24,13 @@ sub loadFile {
 	return $content;
 }
 
-sub getLibraryPath {
-	return 'library';
+sub get_local_storage {
+	my $storage = dir($maindir);
+	return $storage;
+}
+
+sub get_par_tmp {
+	return get_local_storage();
 }
 
 sub loadTemplates {
@@ -61,27 +67,12 @@ sub loadAssets {
 		},
 		'assets/'
 	);
-
 	return %assets;
 }
 
-sub checkConfigFile {
-	if ( -f 'config.sqlite' ) {
-		return 'config.sqlite';
-	} else {
-		return 0;
-	}
-}
-
 sub openBrowser {
-
 	#Do nothing
 	return 1;
-}
-
-sub get_executable_path {
-	my $exe_name = $_[0];
-	return $maindir . '/../lib/' . $exe_name;
 }
 
 1;

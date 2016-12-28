@@ -4,18 +4,15 @@ use strict;
 use warnings;
 
 use PAR;
-use File::Path qw(make_path remove_tree);
 use Path::Class;
-use File::Copy qw(move);
-use File::Basename qw(dirname basename);
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir);
+	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache);
 
 my @build_imports =
-	qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
+	qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 if ( PAR::read_file('build.txt') ) {
 	if ( $^O eq 'darwin' ) {
@@ -30,6 +27,22 @@ if ( PAR::read_file('build.txt') ) {
 	import TTMp32Gme::Build::Perl @build_imports;
 }
 
+sub getLibraryPath {
+	my $library = dir(get_local_storage(), 'library');
+	$library->mkpath();
+	return $library->stringify();
+}
+
+sub checkConfigFile {
+	my $configdir = get_local_storage();
+	my $configfile = file($configdir, 'config.sqlite');
+	if(! -f $configfile){
+		my $cfgToCopy = file(get_par_tmp(), 'config.sqlite');
+		$cfgToCopy->copy_to($configfile) or die "Could not create local copy of config file '$configfile': $!";
+	}
+	return $configfile;
+}
+
 sub loadStatic {
 	my $static = {};
 	my @staticFiles =
@@ -42,10 +55,9 @@ sub loadStatic {
 }
 
 sub makeTempAlbumDir {
-	my $albumTitle = $_[0];
-	my $albumPath = ( dir( getLibraryPath(), 'temp', $albumTitle ) )->stringify;
-	make_path($albumPath);
-	return $albumPath;
+	my $albumPath = dir( getLibraryPath(), 'temp', $_[0] );
+	$albumPath->mkpath();
+	return $albumPath->stringify();
 }
 
 sub makeNewAlbumDir {
@@ -62,23 +74,23 @@ sub makeNewAlbumDir {
 		$albumPath .= '_' . $count;
 		$count++;
 	}
-	make_path($albumPath);
-	return $albumPath;
+	$albumPath = dir($albumPath);
+	$albumPath->mkpath();
+	return $albumPath->stringify;
 }
 
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
-	my $fileName = basename($filePath);
-	my $newPath = ( file( $albumPath, $fileName ) )->stringify;
-	move( $filePath, $newPath );
-	return $fileName;
+	my $file=file($filePath);
+	my $album_file = $file->move_to( file( $albumPath, $file->basename() ) );
+	return $album_file->basename();
 }
 
 sub removeTempDir {
-	my $tempPath = ( dir( getLibraryPath(), 'temp' ) )->stringify;
+	my $tempPath = dir( getLibraryPath(), 'temp' );
 	if ( $tempPath =~ /temp/ && -d $tempPath ) {
-		print "deleting $tempPath";
-		remove_tree($tempPath);
+		print "deleting $tempPath\n";
+		$tempPath->rmtree();
 	}
 	return 1;
 }
@@ -89,9 +101,9 @@ sub clearAlbum {
 	if ( $path =~ /^$libraryPath/ ) {
 		foreach my $file ( @{$file_list} ) {
 			if ($file) {
-				my $full_path = ( file( $path, $file ) )->stringify;
-				if ( -f $full_path ) {
-					unlink($full_path);
+				my $full_file = file( $path, $file );
+				if ( -f $full_file ) {
+					$full_file->remove();
 				}
 			}
 		}
@@ -105,7 +117,7 @@ sub removeAlbum {
 	my ($path) = @_;
 	my $libraryPath = getLibraryPath();
 	if ( $path =~ /^$libraryPath/ ) {
-		remove_tree($path);
+		(dir($path))->rmtree();
 		return 1;
 	} else {
 		return 0;
@@ -116,19 +128,38 @@ sub cleanup_filename {
 	my $filename = $_[0];
 	$filename =~ s/\s/_/g;
 	$filename =~ s/[^A-Za-z0-9_\-\.]//g;
-	print $filename."\n";
 	return $filename;
 }
 
 sub remove_library_dir{
-	my ($media_dir) = @_;
+	my ($media_path) = @_;
+	my $media_dir = dir( $media_path );
 	my $libraryPath = getLibraryPath();
-	if ($media_dir->stringify() =~ /^$libraryPath/) {
+	if ($media_dir =~ /^$libraryPath/) {
 		$media_dir->rmtree();
 		return 1;
 	} else {
 		return 0;
 	}
+}
+
+sub get_executable_path {
+	my $exe_name = $_[0];
+	return (file(get_par_tmp(), 'lib', $exe_name))->stringify();
+}
+
+sub get_oid_cache {
+	my $oid_cache = dir(get_local_storage(),'oid_cache');
+	if (! -d $oid_cache) {
+		$oid_cache->mkpath();
+		my $cache = dir(get_par_tmp(), 'oid_cache');
+		$cache->recurse( callback => sub {
+			if ( -f $_ && $_ =~ /\.png$/ ) {
+				$_->copy_to( file( $oid_cache, $_->basename() ) );
+			}
+		});
+	}
+	return $oid_cache->stringify();
 }
 
 1;

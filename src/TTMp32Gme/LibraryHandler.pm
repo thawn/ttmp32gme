@@ -115,7 +115,7 @@ sub put_cover_online {
 	my ( $album, $httpd ) = @_;
 	if ( $album->{'picture_filename'} ) {
 		my $picturePath =
-			( file( cwd(), $album->{'path'}, $album->{'picture_filename'} ) )
+			( file( $album->{'path'}, $album->{'picture_filename'} ) )
 			->stringify;
 		open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
 		my $pictureData = join( "", <$fh> );
@@ -342,7 +342,7 @@ sub deleteAlbum {
 		$httpd->unreg_cb(
 			'/assets/images/' . $oid . '/' . $albumData->{'picture_filename'} );
 	}
-	if ( remove_library_dir( dir( $albumData->{'path'} ) ) ) {
+	if ( remove_library_dir( $albumData->{'path'} ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
 		$dbh->do( q( DELETE FROM gme_library WHERE oid=? ), {}, $oid );
 	}

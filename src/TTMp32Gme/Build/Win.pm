@@ -4,14 +4,11 @@ package TTMp32Gme::Build::Win;
 use strict;
 use warnings;
 
-use File::Copy;
-use File::Find;
-use File::Path qw(make_path);
 use Path::Class;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(loadFile getLibraryPath loadTemplates loadAssets checkConfigFile openBrowser get_executable_path);
+our @EXPORT = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 sub loadFile {
  	my $path = $_[0];
@@ -19,12 +16,14 @@ sub loadFile {
  	return $content;
 }
 
-sub getLibraryPath {
-	my $library = (dir($ENV{'APPDATA'} , 'ttmp32gme', 'library'))->stringify;
-	if ( ! -d $library ){
-		make_path($library);
-	}
-	return $library;
+sub get_local_storage {
+	my $storage = dir($ENV{'APPDATA'} , 'ttmp32gme');
+	$storage->mkpath();
+	return $storage;
+}
+
+sub get_par_tmp {
+	return  dir($ENV{'PAR_TEMP'}, 'inc');
 }
 
 sub loadTemplates {
@@ -64,30 +63,10 @@ sub loadAssets {
 	return %assets;
 }
 
-sub checkConfigFile {
-	my $configdir = (dir($ENV{'APPDATA'} , 'ttmp32gme'))->stringify;
-	if ( ! -d $configdir ){
-		make_path($configdir);
-	}
-
-	my $configfile = (file($configdir, 'config.sqlite'))->stringify;
-	if(! -f $configfile){
-		my $cfgToCopy = (file($ENV{'PAR_TEMP'}, 'inc', 'config.sqlite'))->stringify;
-		copy($cfgToCopy, $configfile);
-	}
-
-	return $configfile;
-}
-
 sub openBrowser {
 	my %config = @_;
 	`start http://127.0.0.1:$config{'port'}/`;
 	return 1;
-}
-
-sub get_executable_path {
-	my $exe_name = $_[0];
-	return (file($ENV{'PAR_TEMP'}, 'lib', $exe_name))->stringify().".exe";
 }
 
 1;
