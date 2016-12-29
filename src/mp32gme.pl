@@ -115,6 +115,16 @@ sub fetchConfig {
 	return %tempConfig;
 }
 
+sub save_config {
+	my ($configParams) =@_;
+	my $qh = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
+	foreach my $param (%$configParams) {
+		$qh->execute( $configParams->{$param}, $param );
+		if ( $qh->errstr ) { last; }
+	}
+	return fetchConfig();
+}
+
 sub getNavigation {
 	my ( $url, $siteMap, $siteMapOrder ) = @_;
 	my $nav = "";
@@ -291,11 +301,11 @@ $httpd->reg_cb(
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				if ( $req->parm('action') eq 'update' ) {
-					$statusMessage = 'Could not update Database.';
+					$statusMessage = 'Could not update database.';
 					$content->{'element'} =
 						get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
 				} elsif ( $req->parm('action') eq 'delete' ) {
-					$statusMessage = 'Could not update Database.';
+					$statusMessage = 'Could not update database.';
 					$content->{'element'}{'oid'} =
 						deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
 				} elsif ( $req->parm('action') eq 'cleanup' ) {
@@ -347,8 +357,39 @@ $httpd->reg_cb(
 					]
 				}
 			);
+		} elsif ( $req->method() eq 'POST' ) {
+
+			#print Dumper($req);
+			my $content       = { 'success' => \0 };
+			my $statusCode    = 501;
+			my $statusMessage = 'Could not parse POST data.';
+			if ( $req->parm('action') eq 'get_config' ) {
+				$statusMessage =
+					'Could not get configuration. Possible database error.';
+				$content->{'element'} = \%config;
+			} elsif ( $req->parm('action') eq 'save_config' ) {
+				my $postData =
+				decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				$statusMessage = 'Could not save configuration.';
+				%config = save_config( $postData );
+				$content->{'element'} = \%config;
+			}
+			if ( !$dbh->errstr ) {
+				$content->{'success'} = \1;
+				$statusCode           = 200;
+				$statusMessage        = 'OK';
+			} else {
+				$statusCode    = 501;
+				$statusMessage = $dbh->errstr;
+			}
+			$content = decode_utf8( encode_json($content) );
+			$req->respond(
+				[
+					$statusCode, $statusMessage,
+					{ 'Content-Type' => 'application/json' }, $content
+				]
+			);
 		}
-		#todo: print configuration
 	},
 	'/config' => sub {
 		my ( $httpd, $req ) = @_;
@@ -381,16 +422,10 @@ $httpd->reg_cb(
 			);
 		} elsif ( $req->method() eq 'POST' ) {
 			if ( $req->parm('action') eq 'update' ) {
-				my $configParams = decode_json( uri_unescape( $req->parm('data') ) );
-				my $qh = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
-				foreach my $param (%$configParams) {
-					$qh->execute( $configParams->{$param}, $param );
-					if ( $qh->errstr ) { last; }
-				}
-
+				my $configParams = decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				%config = save_config($configParams);
 				my $status;
-				if ( !$qh->errstr ) {
-					%config = fetchConfig();
+				if ( !$dbh->errstr ) {
 					$status = 'Success.';
 				} else {
 					$status = 'Could not update config.  Try reloading ttmp32gme.';

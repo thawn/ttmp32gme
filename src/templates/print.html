@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ttmp32gme : { $strippedTitle }</title>
+<title>ttmp32gme - { $strippedTitle }</title>
 <link rel="icon" type="image/vnd.microsoft.icon" href="/assets/images/favicon.ico">
 <!-- Bootstrap -->
 <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
 <link href="/assets/css/fine-uploader-new.min.css" rel="stylesheet">
+<link href="/assets/css/print.css" rel="stylesheet">
 <script src="/assets/js/jquery-3.1.1.min.js"></script>
 <script src="/assets/js/jquery.matchHeight-min.js"></script>
 <script src="/assets/js/print.js"></script>
@@ -47,41 +48,121 @@
 				<div class="panel panel-default">
 					<div class="panel-heading">
 						<h4 class="panel-title">
-							<a role="button" data-toggle="collapse" href="#config">Configure print layout</a>
+							<a role="button" data-toggle="collapse" href="#config">Configure print
+								layout</a>
 						</h4>
 					</div>
 					<div id="config" class="panel-collapse collapse">
 						<div class="panel-body">
-							<div class="form-group">
-								<label for="movie_filter1">Filter 1:</label> &nbsp;&nbsp;
-								<div class="input-group">
-									<input type="text" name="movie_filter1" class="form-control"
-										data-toggle="tooltip" data-placement="left"
-										title="Default expression for movie filter 1.  %t will be automatically replaced with the filter title.">
-									<span class="input-group-addon"> <input type="checkbox"
-										name="movie_regex1"> Regex?
-									</span>
+							<div class="row">
+								<div class="col-sm-6">
+									<div class="panel panel-default box">
+										<div class="panel-heading">
+											<h4 class="panel-title">
+												<a role="button" data-toggle="collapse" href="#config">Layout options</a>
+											</h4>
+										</div>
+										<div class="panel-body">
+											<ul class="nav nav-tabs nav-justified">
+												<li id="list" class="preset active"><a data-toggle="tooltip"
+													data-placement="top"
+													title="Choose this preset for a list layout that includes all album details."><span
+														class="glyphicon glyphicon-th-list"></span>&nbsp;List</a></li>
+												<li id="tiles" class="preset"><a data-toggle="tooltip"
+													data-placement="top"
+													title="Choose this preset for a iled layout that includes only minimal album details and general controls that work with all albums."><span
+														class="glyphicon glyphicon-th"></span>&nbsp;Tiles</a></li>
+												<li id="cd" class="preset"><a data-toggle="tooltip"
+													data-placement="top"
+													title="Choose this preset for a layout that is optimized for printing CD booklets."><span
+														class="glyphicon glyphicon-list-alt"></span>&nbsp;CD&nbsp;booklet</a></li>
+											</ul>
+											<input type="hidden" name="print_preset">
+											<div class="form-group">
+												<label>Visible components:</label>
+												<div class="checkbox">
+													<label class="checkbox-inline"> <input type="checkbox"
+														name="print_show_cover"> cover
+													</label> <label class="checkbox-inline"> <input type="checkbox"
+														name="print_show_album_info"> album info
+													</label> <label class="checkbox-inline"> <input type="checkbox"
+														name="print_show_album_controls"> album controls
+													</label> <label class="checkbox-inline"> <input type="checkbox"
+														name="print_show_tracks"> tracks
+													</label>
+												</div>
+												<div class="checkbox">
+													<label> <input type="checkbox"
+														name="print_show_general_controls"> general controls
+													</label>
+												</div>
+											</div>
+											<div class="form-group" style="display: none;">
+												<label for="print_max_track_controls">Maximum number of tracks in
+													general controls:</label> <input type="number" name="print_max_track_controls"
+													class="form-control">
+											</div>
+											<div class="form-group">
+												<label for="print_num_cols">Number of columns:</label> <input
+													type="number" name="print_num_cols" class="form-control">
+											</div>
+											<div class="form-group tile-size" style="display: none;">
+												<label for="print_tile_size">Tile size:</label>
+												<div class="input-group">
+													<input type="text" name="print_tile_size" class="form-control"
+														data-toggle="tooltip" data-placement="left"
+														title="For the tiled layout: size of each tile. Useful if you want to cut out the tiles and put them somewhere like a CD case.">
+														<span class="input-group-addon">cm</span>
+												</div>
+											</div>
+											<div class="form-group">
+												<label for="print_page_size">Paper size:</label> <input type="text"
+													name="print_page_size" class="form-control" data-toggle="tooltip"
+													data-placement=top
+													title="Paper size for printing. Valid entries are for example: A4; A4 landscape; 21cm 27.9cm; letter; 5.5in 8.5in.">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-sm-6">
+									<div class="panel panel-default box">
+										<div class="panel-heading">
+											<h4 class="panel-title">
+												<a role="button" data-toggle="collapse" href="#config">General
+													options</a>
+											</h4>
+										</div>
+										<div class="panel-body">
+											<div class="form-group">
+												<label for="tt_dpi">OID code resolution</label>
+												<div class="input-group">
+													<input type="text" name="tt_dpi" class="form-control"
+														data-toggle="tooltip" data-placement="left"
+														title="Resolution at which OID codes will be generated."> <span
+														class="input-group-addon">DPI</span>
+												</div>
+											</div>
+											<div class="form-group">
+												<label for="tt_pixel-size">OID pixel size.</label>
+												<div class="input-group">
+													<input type="text" name="tt_pixel-size" class="form-control"
+														data-toggle="tooltip" data-placement="left"
+														title="Number of pixels (squared) for each dot in the OID code.">
+													<span class="input-group-addon">px</span>
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
-							<div class="form-group">
-								<label for="movie_filter2">Filter 2:</label> &nbsp;&nbsp;
-								<div class="input-group">
-									<input type="text" name="movie_filter2" class="form-control"
-										data-toggle="tooltip" data-placement="left"
-										title="Default expression for movie filter 2.  %t will be automatically replaced with the filter title.">
-									<span class="input-group-addon"> <input type="checkbox"
-										name="movie_regex2"> Regex?
-									</span>
+							<div class="row">
+								<div class="col-sm-12" style="margin-top: 15px;">
+									<p>
+										<button type="button" id="config-save" class="btn btn-primary"
+											data-toggle="popover">Save</button>
+									</p>
 								</div>
 							</div>
-							<div class="form-group" style="display: none;">
-								<label for="movie_path">Default Save Path:</label> <input type="text"
-									name="movie_path" class="form-control" data-toggle="tooltip"
-									data-placement="left"
-									title="Default expression for TV shows. %t will be automatically replaced with the filter title.">
-							</div>
-							<button type="button" id="config-save" class="btn btn-primary"
-								data-toggle="popover">Save</button>
 						</div>
 					</div>
 				</div>
@@ -89,6 +170,6 @@
 		</div>
 	</div>
 	<div class="container">{ $content }</div>
-	
+
 	<script src="/assets/js/bootstrap.min.js"></script>
 </body>

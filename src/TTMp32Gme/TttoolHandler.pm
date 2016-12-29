@@ -15,7 +15,7 @@ use TTMp32Gme::LibraryHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(make_gme generate_oid_images);
+our @EXPORT = qw(make_gme generate_oid_images create_oids);
 
 ## internal functions:
 
@@ -92,7 +92,7 @@ scriptcodes:
 }
 
 sub convert_tracks {
-	my ( $album, $yaml_file, $config ) = @_;
+	my ( $album, $yaml_file, $config, $dbh ) = @_;
 	my $media_path = dir( $album->{'path'}, "audio" );
 	my @tracks = sort grep { $_ =~ /^track_/ } keys %{$album};
 	$media_path->mkpath();
@@ -126,13 +126,16 @@ sub convert_tracks {
 		} else {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) C\n";
 		}
+		my %data = ( 'tt_script' => "t$i" );
+		my @selectors = ( $album->{ $tracks[$i] }->{'parent_oid'}, $album->{ $tracks[$i] }->{'track'} );
+		updateTableEntry( 'tracks', 'parent_oid=? and track=?', \@selectors, \%data, $dbh );
 	}
-	if ( scalar @tracks < $config->{'max_track_controls'} ) {
+	if ( scalar @tracks < $config->{'print_max_track_controls'} ) {
 
 		#in case we use general track controls, we just play the last available
 		#track if the user selects a track number that does not exist in this album.
 		my $lastTrack = $#tracks;
-		foreach my $i ( scalar @tracks .. $config->{'max_track_controls'} - 1 ) {
+		foreach my $i ( scalar @tracks .. $config->{'print_max_track_controls'} - 1 ) {
 			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
 		}
 	}
@@ -181,8 +184,11 @@ sub get_tttool_command {
 sub run_tttool {
 	my ( $arguments, $path, $dbh ) = @_;
 	my $maindir = cwd();
-	chdir($path) or die "Can't open '$path': $!";
+	if ($path) {
+		chdir($path) or die "Can't open '$path': $!";
+	}
 	my $tt_command = get_tttool_command($dbh);
+	print "$tt_command $arguments\n";
 	my $tt_output  = `$tt_command $arguments`;
 	chdir($maindir);
 	if ($?) {
@@ -206,7 +212,7 @@ sub make_gme {
 	print $fh "#this file was generated automatically by ttmp32gme\n";
 	print $fh "product-id: $oid\n";
 	close($fh);
-	my $media_path = convert_tracks( $album, $yaml_file, $config );
+	my $media_path = convert_tracks( $album, $yaml_file, $config, $dbh );
 	my $codes_file = generate_codes_yaml( $yaml_file, $dbh );
 	my $yaml = $yaml_file->basename();
 
@@ -221,13 +227,13 @@ sub make_gme {
 	return $oid;
 }
 
-sub create_oid {
+sub create_oids {
 	my ( $oids, $size, $dbh ) = @_;
 	my $oid_list    = join( ',', @{$oids} );
 	my $target_path = get_oid_cache();
-	my $tt_params   = get_tttool_parameters();
+	my $tt_params   = get_tttool_parameters($dbh);
 	my @files;
-	my $tt_command = " --code-dim " . $size . "oid-code " . $oid_list;
+	my $tt_command = " --code-dim " . $size . " oid-code " . $oid_list;
 	foreach my $oid ( @{$oids} ) {
 		my $oid_file = file( $target_path,
 			"$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );

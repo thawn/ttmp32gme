@@ -24,7 +24,7 @@ use TTMp32Gme::Build::FileHandler;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(createLibraryEntry get_album_list get_album get_album_online updateAlbum deleteAlbum cleanupAlbum);
+	qw(updateTableEntry put_file_online createLibraryEntry get_album_list get_album get_album_online updateAlbum deleteAlbum cleanupAlbum);
 
 ## private methods
 
@@ -114,25 +114,27 @@ sub get_tracks {
 sub put_cover_online {
 	my ( $album, $httpd ) = @_;
 	if ( $album->{'picture_filename'} ) {
-		my $picturePath =
-			( file( $album->{'path'}, $album->{'picture_filename'} ) )
-			->stringify;
-		open( my $fh, '<', $picturePath ) or die "Can't open '$picturePath': $!";
-		my $pictureData = join( "", <$fh> );
-		close($fh);
-		$httpd->reg_cb(
-			    '/assets/images/'
-				. $album->{'oid'} . '/'
-				. $album->{'picture_filename'} => sub {
-				my ( $httpd, $req ) = @_;
-				$req->respond( { content => [ '', $pictureData ] } );
-			}
-		);
+		my $picture_file = file( $album->{'path'}, $album->{'picture_filename'} );
+		my $online_path = '/assets/images/' . $album->{'oid'} . '/' . $album->{'picture_filename'};
+		put_file_online( $picture_file, $online_path, $httpd );
 		return 1;
 	} else {
 		return 0;
 	}
 }
+
+sub switchTracks {
+	my ( $oid, $new_tracks, $dbh ) = @_;
+	my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
+	my $tracks = $dbh->selectall_hashref( $query, 'track' );
+	$dbh->do("DELETE FROM tracks WHERE parent_oid=$oid");
+	foreach my $track ( sort keys %{$new_tracks} ) {
+		$tracks->{$track}{'track'} = $new_tracks->{$track};
+		writeToDatabase( 'tracks', $tracks->{$track}, $dbh );
+	}
+}
+
+## public methods:
 
 sub updateTableEntry {
 	my ( $table, $keyname, $search_keys, $data, $dbh ) = @_;
@@ -149,18 +151,17 @@ sub updateTableEntry {
 	return !$dbh->errstr;
 }
 
-sub switchTracks {
-	my ( $oid, $new_tracks, $dbh ) = @_;
-	my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
-	my $tracks = $dbh->selectall_hashref( $query, 'track' );
-	$dbh->do("DELETE FROM tracks WHERE parent_oid=$oid");
-	foreach my $track ( sort keys %{$new_tracks} ) {
-		$tracks->{$track}{'track'} = $new_tracks->{$track};
-		writeToDatabase( 'tracks', $tracks->{$track}, $dbh );
-	}
+sub put_file_online {
+	my ( $file, $online_path, $httpd ) = @_;
+	my $file_data = $file->slurp();
+	$httpd->reg_cb(
+		$online_path => sub {
+			my ( $httpd, $req ) = @_;
+			$req->respond( { content => [ '', $file_data ] } );
+		}
+	);
+	return 1;
 }
-
-## public methods:
 
 sub createLibraryEntry {
 	my ( $albumList, $dbh ) = @_;

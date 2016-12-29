@@ -1,0 +1,44 @@
+.img-6mm {
+	width: 34px !important;
+	min-width: 34px !important;
+	height: 34px !important;
+	min-height: 34px !important;
+}
+
+.track-img {
+	border-radius: 5px;
+	border: 1px solid #cccccc;
+	margin-right: 10px;
+}
+
+.img-18mm {
+	width: 102px !important;
+	min-width: 102px !important;
+	height: 102px !important;
+	min-height: 102px !important;
+}
+
+.play-img {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+}
+
+.power-on {
+	position: absolute;
+	width: 81px;
+	height: 81px;
+	left: 15px;
+	top: 0px;
+	background-color: #fff;
+	font-size: 68px;
+	z-index: 1000;
+	border-radius: 100px;
+	overflow: hidden;
+	text-align: center;
+}
+
+.play-control {
+	padding: 17px !important;
+	overflow: hidden;
+}
