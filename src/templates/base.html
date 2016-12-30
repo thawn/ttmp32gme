@@ -67,7 +67,7 @@ var addElement = function(callback) \{
 				\} else \{
 					notify($('#add'), '', jqXHR.statusText, 'bg-danger', 4000);
 				\}
-			\}).fail(function(data) \{
+			\}).fail(function() \{
 				notify($('#add'), '', 'Connection Error', 'bg-danger', 4000);
 			\}).always( function() \{ if (callback) \{callback();\}\});
 \}
@@ -114,7 +114,7 @@ var deleteElement = function($id,uid) \{
 				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 						4000);
 			\}
-		\}, 'json').fail(function(data) \{
+		\}, 'json').fail(function() \{
 			notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
 		\});
 \}
