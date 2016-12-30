@@ -94,7 +94,11 @@ scriptcodes:
 sub convert_tracks {
 	my ( $album, $yaml_file, $config, $dbh ) = @_;
 	my $media_path = dir( $album->{'path'}, "audio" );
-	my @tracks = sort grep { $_ =~ /^track_/ } keys %{$album};
+	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
+	#nned to jump through some hoops here to get proper numeric sorting:
+	@tracks = sort { $a <=> $b } map {$_ =~ s/^track_//r } @tracks;
+	@tracks = map { 'track_'. $_ } @tracks;
+	
 	$media_path->mkpath();
 	if ( $config->{'audio_format'} eq 'ogg' ) {
 
@@ -108,6 +112,7 @@ sub convert_tracks {
 	my $next = "  next:\n";
 	my $prev = "  prev:\n";
 	my $track_scripts;
+	#print Dumper($album);
 	foreach my $i ( 0 .. $#tracks ) {
 		if ( $i < $#tracks ) {
 			if ( $i < $#tracks - 1 ) {
@@ -219,9 +224,9 @@ sub make_gme {
 	if ( run_tttool( "assemble $yaml", $album->{'path'}, $dbh ) ) {
 		my $gme_filename = $yaml_file->basename();
 		$gme_filename =~ s/yaml$/gme/;
-		$album->{'gme_file'} = $gme_filename;
+		my %data = ('gme_file' => $gme_filename);
 		my @selector = ($oid);
-		updateAlbum( $album, $dbh );
+		updateTableEntry( 'gme_library', 'oid=?', \@selector, \%data, $dbh );
 	}
 	remove_library_dir($media_path);
 	return $oid;
