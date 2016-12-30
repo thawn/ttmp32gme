@@ -81,9 +81,7 @@
 			$id.find('button.print').hide();
 		}
 		$id.find('input[name=old_oid]').val(data.oid);
-		$id.find('button').each(function() {
-			$(this).data('item-id', $id);
-		});
+		$id.find('button').data('item-id', $id);
 		$id.find('input').data('item-id', $id);
 	}
 	
@@ -112,13 +110,13 @@
 		$.post(
 			document.baseURI,
 			'action='+action+'&data=' + escape(JSON.stringify(filterVars)),
-			function(data) {
+			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					fillInElement($id, data.element);
-					notify($id.find('button.edit-button'), '', data.statusText, 'bg-success',
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
 							2000);
 				} else {
-					notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 							4000);
 				}
 			}, 'json').fail(function(data) {
@@ -250,7 +248,7 @@
 			</div></td>
 		<td>
 			<button type="button" class="btn btn-info btn-xs hidden-xs edit-button"
-				data-placement="top">Edit</button>
+				data-toggle="tooltip" data-placement="top">Edit</button>
 			<button type="button" class="btn btn-info visible-xs-block edit-button"
 				data-placement="top">Edit</button>
 		</td>

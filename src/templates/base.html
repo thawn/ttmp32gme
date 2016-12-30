@@ -60,12 +60,12 @@ var addElement = function(callback) \{
 	var $id = $('#new-element-form');
 	var filterVars = getElementValues($id);
 	$.post(document.baseURI, 'action=add&data=' + escape(JSON.stringify(filterVars)))
-			.done(function(data) \{
+			.done(function(data,textStatus,jqXHR) \{
 				if (data.status === "Success.") \{
 					insertElement(data.element);
-					notify($('#add'), '', data.statusText, 'bg-success', 2000);
+					notify($('#add'), '', jqXHR.statusText, 'bg-success', 2000);
 				\} else \{
-					notify($('#add'), '', data.statusText, 'bg-danger', 4000);
+					notify($('#add'), '', jqXHR.statusText, 'bg-danger', 4000);
 				\}
 			\}).fail(function(data) \{
 				notify($('#add'), '', 'Connection Error', 'bg-danger', 4000);
@@ -81,13 +81,13 @@ var postUpdate = function($id,elementVars) \{
 	$.post(
 		document.baseURI, 
 		'action=update&data=' + escape(JSON.stringify(elementVars)),
-		function(data) \{
+		function(data,textStatus,jqXHR) \{
 			if (data.success) \{
 				fillInElement($id, data.element);
-				notify($id.find('button.edit-button'), '', data.statusText, 'bg-success',
+				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
 						2000);
 			\} else \{
-				notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
+				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 						4000);
 			\}
 		\}, 'json').fail(function() \{
@@ -103,7 +103,7 @@ var deleteElement = function($id,uid) \{
 	$.post(
 		document.baseURI,
 		'action=delete&data=' + escape(JSON.stringify(filterVars)),
-		function(data) \{
+		function(data,textStatus,jqXHR) \{
 			if (data.success) \{
 				var alert = "<tr id=\"dismiss\"><td colspan=\"3\"><div class=\"alert alert-success\" role=\"alert\">Deleted.</div></td></tr>";
 				$id.replaceWith(alert);
@@ -111,7 +111,7 @@ var deleteElement = function($id,uid) \{
 					$('#dismiss').remove()
 				\}, 2000);
 			\} else \{
-				notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
+				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 						4000);
 			\}
 		\}, 'json').fail(function(data) \{
@@ -123,7 +123,7 @@ var listElements = function(clear,callback) \{
 	$.post(
 		document.baseURI,
 		'action=list',
-		function(data) \{
+		function(data,textStatus,jqXHR) \{
 			if (data.success) \{
 				if (clear) \{
 					for (var i = 0; i < elementCount; i++) \{
