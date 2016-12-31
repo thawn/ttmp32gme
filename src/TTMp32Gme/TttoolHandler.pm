@@ -135,14 +135,23 @@ sub convert_tracks {
 		my @selectors = ( $album->{ $tracks[$i] }->{'parent_oid'}, $album->{ $tracks[$i] }->{'track'} );
 		updateTableEntry( 'tracks', 'parent_oid=? and track=?', \@selectors, \%data, $dbh );
 	}
+	my $lastTrack = $#tracks;
 	if ( scalar @tracks < $config->{'print_max_track_controls'} ) {
 
 		#in case we use general track controls, we just play the last available
 		#track if the user selects a track number that does not exist in this album.
-		my $lastTrack = $#tracks;
 		foreach my $i ( scalar @tracks .. $config->{'print_max_track_controls'} - 1 ) {
 			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
 		}
+	}
+	my $welcome;
+	if ($#tracks == 0) {
+		#if there is only one track, the next and prev buttons just play that track.
+		$next .= "  - \$current:=$lastTrack P($lastTrack) C\n";
+		$prev .="  - \$current:=$lastTrack P($lastTrack) C\n";
+		$welcome = "welcome: " . "'$lastTrack'" . "\n";
+	} else {
+		$welcome = "welcome: " . join( ', ', ( 0 .. $#tracks ) ) . "\n";
 	}
 
 	# add track code to the yaml file:
@@ -151,7 +160,7 @@ sub convert_tracks {
 	#todo: test, if windows systems need a different path separator in yaml file
 	print $fh "media-path: audio/track_%s\n";
 	print $fh "init: \$current:=0\n";
-	print $fh "welcome: " . join( ', ', ( 0 .. $#tracks ) ) . "\n";
+	print $fh $welcome;
 	print $fh "scripts:\n";
 	print $fh $next;
 	print $fh $prev;
