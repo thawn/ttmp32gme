@@ -124,7 +124,7 @@
 			});
 	}
 
-	var printAlbum = function(oids) {
+	var printAlbums = function(oids) {
 		//expects an array of oids
 		var url = "print?data=" + encodeURIComponent(JSON.stringify({'oids': oids}));
 		window.open(url, '_self');
@@ -155,7 +155,7 @@
 			}
 		});
 		$('#albums').on('click','button.print',function() {
-			printAlbum([$(this).data('item-id').find('input[name=old_oid]').val()]);
+			printAlbums([$(this).data('item-id').find('input[name=old_oid]').val()]);
 		});
 		$('#albums').on('click', 'button.cancel', function() {
 			toggleShow($(this).data('item-id'));
@@ -170,14 +170,36 @@
 		if ($.urlParam('oid')) {
 			toggleShow($('#albums').find('input[value="'+$.urlParam('oid')+'"]').parents('div.edit'));
 		}
+		$('#toggle-all').click(function(){
+			$('input[name=enabled]').each(function(){
+				if ($(this).prop('checked')) {
+					$(this).prop('checked', false);
+				} else {
+					$(this).prop('checked', true);
+				}
+			});
+		});
+		$('#print-selected').click(function(){
+			var oids = [];
+			$('input[name=enabled]:checked').each(function(){
+				oids.push($(this).parents('tr.library-entry').find('input[name=old_oid]').val());
+			});
+			printAlbums(oids);
+		});
 	});
 </script>
+<p>
+	<button id="toggle-all" class="btn btn-default">Select/deselect all</button>
+	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print
+		selected</button>
+</p>
 <div class="row" id="albums">
 	<div class="panel panel-default">
 		<div class="panel-body">
 			<table id="element-list" class="table table-striped">
 				<thead>
 					<tr>
+						<th style="white-space: nowrap;">Select</th>
 						<th style="width: 99%;">Album</th>
 						<th style="white-space: nowrap;">Edit</th>
 					</tr>
@@ -189,7 +211,8 @@
 	</div>
 </div>
 <table style="display: none;">
-	<tr id="element-template" style="display: none;">
+	<tr id="element-template" class="library-entry" style="display: none;">
+		<td><input type="checkbox" name="enabled"></td>
 		<td class="filter-item"><span class="item-title"></span>
 			<div class="panel panel-default edit" style="display: none;">
 				<div class="panel-heading">

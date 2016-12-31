@@ -33,7 +33,8 @@ sub format_tracks {
 		my $oid_path = '/assets/images/' . $oid_file->basename();
 		put_file_online( $oid_file, $oid_path, $httpd );
 		$content .= "<li class='list-group-item'>";
-		$content .= "<img class='img-6mm track-img' src='$oid_path' alt='oid $oid[0]'>";
+		$content .=
+			"<img class='img-6mm track-img' src='$oid_path' alt='oid $oid[0]'>";
 		$content .= sprintf(
 			"%d. %s<span class='badge'>%02d:%02d</span></li>\n",
 			$i + 1,
@@ -51,7 +52,7 @@ sub format_controls {
 		$oid_map->{'prev'}{'code'}, $oid_map->{'t0'}{'code'},
 		$oid_map->{'stop'}{'code'}, $oid_map->{'next'}{'code'}
 	);
-	my @icons = ('backward', 'play', 'stop', 'forward');
+	my @icons = ( 'backward', 'play', 'stop', 'forward' );
 	my $files = create_oids( \@oids, 18, $dbh );
 	my $template =
 '<a class="btn btn-default play-control"><img class="img-18mm play-img" src="%s" alt="oid: %d">'
@@ -61,18 +62,19 @@ sub format_controls {
 		my $oid_file = $files->[$i];
 		my $oid_path = '/assets/images/' . $oid_file->basename();
 		put_file_online( $oid_file, $oid_path, $httpd );
-		$content .= sprintf( $template, $oid_path,$oids[$i], $icons[$i] );
+		$content .= sprintf( $template, $oid_path, $oids[$i], $icons[$i] );
 	}
 	return $content;
 }
 
 sub format_main_oid {
-	my ($oid, $oid_map, $httpd, $dbh) = @_;
-	my @oids= ($oid);
-	my $files = create_oids( \@oids, 18, $dbh );
+	my ( $oid, $oid_map, $httpd, $dbh ) = @_;
+	my @oids     = ($oid);
+	my $files    = create_oids( \@oids, 18, $dbh );
 	my $oid_path = '/assets/images/' . $files->[0]->basename();
 	put_file_online( $files->[0], $oid_path, $httpd );
-	return "<img class='img-circle img-18mm play-img' src='$oid_path' alt='oid: $oid'>";
+	return
+"<img class='img-circle img-18mm play-img' src='$oid_path' alt='oid: $oid'>";
 }
 
 ## external functions:
@@ -82,15 +84,27 @@ sub create_print_layout {
 	my $content;
 	my $oid_map =
 		$dbh->selectall_hashref( "SELECT * FROM script_codes", 'script' );
+	my $controls = format_controls( $oid_map, $httpd, $dbh );
 	foreach my $oid ( @{$oids} ) {
-		my $album = get_album_online( $oid, $httpd, $dbh );
-		$album->{'track_list'} = format_tracks( $album, $oid_map, $httpd, $dbh );
-		$album->{'play_controls'} = format_controls( $oid_map, $httpd, $dbh );
-		$album->{'main_oid_image'} = format_main_oid($oid, $oid_map, $httpd, $dbh);
-		$content .= $template->fill_in( HASH => $album );
+		if ($oid) {
+			my $album = get_album_online( $oid, $httpd, $dbh );
+			$album->{'track_list'} = format_tracks( $album, $oid_map, $httpd, $dbh );
+			$album->{'play_controls'} = $controls;
+			$album->{'main_oid_image'} =
+				format_main_oid( $oid, $oid_map, $httpd, $dbh );
+			$content .= $template->fill_in( HASH => $album );
+		}
 	}
 
-	#todo: add general controls
+	#add general controls:
+	$content .= '<div class="row general-controls">';
+	$content .= '  <div class="col-xs-6 col-xs-offset-3 general-controls">';
+	$content .=
+		"<div class=\"btn-group btn-group-lg btn-group-justified\">$controls</div>";
+	$content .= '  </div>';
+
+	#todo: add general track controls
+	$content .= '</div>';
 	return $content;
 
 }

@@ -128,6 +128,8 @@ sub cleanup_filename {
 	my $filename = $_[0];
 	$filename =~ s/\s/_/g;
 	$filename =~ s/[^A-Za-z0-9_\-\.]//g;
+	$filename =~ s/\.\./\./g;
+	$filename =~ s/\.$//g;
 	return $filename;
 }
 

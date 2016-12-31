@@ -38,6 +38,7 @@ var fillInElement = function($id, data) {
 			}
 		} else {
 			$id.find('input[name=' + i + ']').val(data[i]);
+			$id.find('input[name=' + i + ']').change();
 		}
 	}
 	cssPagedMedia.size($id.find('input[name=page_size]').val());
@@ -92,16 +93,16 @@ var getConfig = function() {
 	var filterVars = {};
 	$.post(document.baseURI,
 			'action=get_config&data=' + escape(JSON.stringify(filterVars)),
-			function(data) {
+			function(data, textStatus, jqXHR) {
 				if (data.success) {
 					var $id = $('#config');
 					fillInElement($id, data.element);
 
 				} else {
-					notify($('#config-save'), '', data.statusText, 'bg-danger', 4000);
+					notify($('#config-save'), '', jqXHR.statusText, 'bg-danger', 4000);
 				}
-			}, 'json').fail(function(data) {
-		notify($('#config-save'), '', data.statusText, 'bg-danger', 4000);
+			}, 'json').fail(function() {
+		notify($('#config-save'), '', 'Connection error', 'bg-danger', 4000);
 	});
 }
 
@@ -126,6 +127,108 @@ var saveConfig = function($id) {
 			});
 }
 
+var adaptLayout = function($id) {
+	if ($id.is(':checkbox')) {
+		toggleField($id);
+	}
+	var albumColumns = 0;
+	$(
+			'input[name=print_show_cover], ' + 'input[name=print_show_album_info], '
+					+ 'input[name=print_show_tracks]').each(function() {
+		if ($(this).prop('checked')) {
+			albumColumns++;
+		}
+	});
+	// adjust the width of the columns for each album
+	var numCols = 12 / albumColumns << 0;
+	var columnClass = 'col-xs-' + numCols;
+	$('.cover').removeClass().addClass(columnClass + ' cover');
+	$('.album-info').removeClass().addClass(columnClass + ' album-info');
+	$('.tracks').removeClass().addClass(columnClass + ' tracks');
+
+	// move around the album controls if necessary
+	if ($('input[name=print_show_album_controls]').prop('checked')) {
+		if ($('input[name=print_show_album_info]').prop('checked')) {
+			attachAlbumControlsTo('.album-info');
+		} else if ($('input[name=print_show_cover]').prop('checked')) {
+			attachAlbumControlsTo('.cover');
+		} else {
+			attachAlbumControlsTo('.tracks');
+		}
+	}
+	
+	//make sure we always see the power-on button
+	if ($('input[name=print_show_cover]').prop('checked')) {
+		attachPowerOnTo('.cover');
+		$('.power-on').css('position', 'absolute');
+	} else if ($('input[name=print_show_album_info]').prop('checked')) {
+		attachPowerOnTo('.album-info');
+		$('.power-on').css('position', 'relative');
+	} else {
+		attachPowerOnTo('.tracks');
+		$('.power-on').css('position', 'relative');
+	}
+}
+
+var attachAlbumControlsTo = function(selector) {
+	$('.album').each(function() {
+		if (selector === '.tracks') {
+			$(this).find('.album-controls').prependTo($(this).find(selector));
+		} else {
+			$(this).find('.album-controls').appendTo($(this).find(selector));
+		}
+	});
+}
+
+var attachPowerOnTo = function(selector) {
+	$('.album').each(function() {
+		$(this).find('.power-on').prependTo($(this).find(selector));
+	});
+}
+
+var toggleField = function($checkbox) {
+	var selector = '.' + $checkbox.attr('name').slice(11).replace(/_/g, '-')
+	if ($checkbox.prop('checked')) {
+		$(selector).show();
+	} else {
+		$(selector).hide();
+	}
+}
+
+var changeTileSize = function($id) {
+	if ($id.val()) {
+		var DPcm = 34 / 0.6;
+		var size = $id.val() * DPcm;
+		$('.album').css({
+			'min-width' : size + 'px',
+			'min-height' : size + 'px',
+			'max-width' : size + 'px',
+			'max-height' : size + 'px',
+			'overflow' : 'hidden'
+		});
+	} else {
+		$('.album').css({
+			'min-width' : 0,
+			'min-height' : 0,
+			'max-width' : 'none',
+			'max-height' : 'none',
+			'overflow' : 'visible'
+		});
+	}
+}
+
+var changeNumberOfColumns = function($id) {
+	if ($id.val() > 1) {
+		var numCols = 12 / $id.val() << 0;
+		var columnClass = 'col-xs-' + numCols;
+		$('.album').parent().removeClass().addClass(columnClass);
+		$('#wrap-all-print').removeClass().addClass('row');
+	} else {
+		$('.album').parent().removeClass().addClass('row');
+		$('#wrap-all-print').removeClass();
+	}
+}
+
 $(function() {
 	// fetch the configuration from the database
 	getConfig();
@@ -141,20 +244,36 @@ $(function() {
 	$('#config-save').click(function() {
 		saveConfig($(this).data('item-id'));
 	});
-	
+
 	// select presets
-	$('#list').click( function() {
+	$('#list').click(function() {
 		selectPreset('list');
 	});
-	$('#tiles').click( function() {
+	$('#tiles').click(function() {
 		selectPreset('tiles');
 	});
-	$('#cd').click( function() {
+	$('#cd').click(function() {
 		selectPreset('cd');
 	});
 
 	// Change page media size if option is changed
 	$('input[name=page_size]').change(function() {
 		cssPagedMedia.size($(this).val());
+	});
+	// change print layout according to layout options
+	$(
+			'input[name=print_show_cover], ' + 'input[name=print_show_album_info], '
+					+ 'input[name=print_preset], ' + 'input[name=print_show_album_controls], '
+					+ 'input[name=print_show_tracks]').change(function() {
+		adaptLayout($(this));
+	});
+	$('input[name=print_show_general_controls]').change(function() {
+		toggleField($(this));
+	});
+	$('input[name=print_num_cols]').change(function() {
+		changeNumberOfColumns($(this));
+	});
+	$('input[name=print_tile_size]').change(function() {
+		changeTileSize($(this));
 	});
 });

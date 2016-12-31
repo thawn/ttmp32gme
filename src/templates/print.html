@@ -48,8 +48,8 @@
 				<div class="panel panel-default">
 					<div class="panel-heading">
 						<h4 class="panel-title">
-							<a role="button" data-toggle="collapse" href="#config">Configure print
-								layout</a>
+							<a role="button" data-toggle="collapse" href="#config"><span
+								class="glyphicon glyphicon-cog"></span> Configure print layout</a>
 						</h4>
 					</div>
 					<div id="config" class="panel-collapse collapse">
@@ -70,7 +70,7 @@
 														class="glyphicon glyphicon-th-list"></span>&nbsp;List</a></li>
 												<li id="tiles" class="preset"><a data-toggle="tooltip"
 													data-placement="top"
-													title="Choose this preset for a iled layout that includes only minimal album details and general controls that work with all albums."><span
+													title="Choose this preset for a tiled layout that includes only minimal album details and general controls that work with all albums."><span
 														class="glyphicon glyphicon-th"></span>&nbsp;Tiles</a></li>
 												<li id="cd" class="preset"><a data-toggle="tooltip"
 													data-placement="top"
@@ -97,29 +97,18 @@
 													</label>
 												</div>
 											</div>
-											<div class="form-group" style="display: none;">
-												<label for="print_max_track_controls">Maximum number of tracks in
-													general controls:</label> <input type="number" name="print_max_track_controls"
-													class="form-control">
-											</div>
 											<div class="form-group">
 												<label for="print_num_cols">Number of columns:</label> <input
 													type="number" name="print_num_cols" class="form-control">
 											</div>
-											<div class="form-group tile-size" style="display: none;">
+											<div class="form-group">
 												<label for="print_tile_size">Tile size:</label>
 												<div class="input-group">
 													<input type="text" name="print_tile_size" class="form-control"
 														data-toggle="tooltip" data-placement="left"
 														title="For the tiled layout: size of each tile. Useful if you want to cut out the tiles and put them somewhere like a CD case.">
-														<span class="input-group-addon">cm</span>
+													<span class="input-group-addon">cm</span>
 												</div>
-											</div>
-											<div class="form-group">
-												<label for="print_page_size">Paper size:</label> <input type="text"
-													name="print_page_size" class="form-control" data-toggle="tooltip"
-													data-placement=top
-													title="Paper size for printing. Valid entries are for example: A4; A4 landscape; 21cm 27.9cm; letter; 5.5in 8.5in.">
 											</div>
 										</div>
 									</div>
@@ -151,6 +140,18 @@
 													<span class="input-group-addon">px</span>
 												</div>
 											</div>
+											<div class="form-group" style="display: none;">
+												<label for="print_page_size">Paper size:</label> <input type="text"
+													name="print_page_size" class="form-control" data-toggle="tooltip"
+													data-placement="left"
+													title="Paper size for printing. Valid entries are for example: A4; A4 landscape; 21cm 27.9cm; letter; 5.5in 8.5in.">
+											</div>
+											<div id="max-tracks" class="form-group">
+												<label for="print_max_track_controls">Maximum number of tracks in
+													general controls:</label> <input type="number" name="print_max_track_controls"
+													class="form-control" data-toggle="tooltip" data-placement="left"
+													title="The maximum number of track controls to appear in the general control panel (if that panel is activated). Highly recommended to leavt this at default: If you increase this number, you will have to rebuild gme files that have been generated while this value was lower.">
+											</div>
 										</div>
 									</div>
 								</div>
@@ -169,7 +170,9 @@
 			</div>
 		</div>
 	</div>
-	<div class="container">{ $content }</div>
+	<div class="container">
+		<div id="wrap-all-print">{ $content }</div>
+	</div>
 
 	<script src="/assets/js/bootstrap.min.js"></script>
 </body>
