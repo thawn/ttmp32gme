@@ -9,17 +9,24 @@
 	min-height: 36px !important;
 }
 
-.track-img {
-	border-radius: 5px;
-	border: 1px solid #cccccc;
-	margin-right: 10px;
-}
-
 .img-18mm {
 	max-width: 102px !important;
 	min-width: 102px !important;
 	max-height: 102px !important;
 	min-height: 102px !important;
+}
+
+.img-24mm {
+	max-width: 136px !important;
+	min-width: 136px !important;
+	max-height: 136px !important;
+	min-height: 136px !important;
+}
+
+.track-img {
+	border-radius: 5px;
+	border: 1px solid #cccccc;
+	margin-right: 10px;
 }
 
 .play-img {

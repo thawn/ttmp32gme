@@ -53,9 +53,9 @@ sub format_controls {
 		$oid_map->{'stop'}{'code'}, $oid_map->{'next'}{'code'}
 	);
 	my @icons = ( 'backward', 'play', 'stop', 'forward' );
-	my $files = create_oids( \@oids, 18, $dbh );
+	my $files = create_oids( \@oids, 24, $dbh );
 	my $template =
-'<a class="btn btn-default play-control"><img class="img-18mm play-img" src="%s" alt="oid: %d">'
+'<a class="btn btn-default play-control"><img class="img-24mm play-img" src="%s" alt="oid: %d">'
 		. '<span class="glyphicon glyphicon-%s"></span></a>';
 	my $content;
 	foreach my $i ( 0 .. $#oids ) {
@@ -65,6 +65,17 @@ sub format_controls {
 		$content .= sprintf( $template, $oid_path, $oids[$i], $icons[$i] );
 	}
 	return $content;
+}
+
+sub format_track_control {
+	my ( $track_no, $oid_map, $httpd, $dbh ) = @_;
+	my @oids = ( $oid_map->{ 't' . ( $track_no - 1 ) }{'code'} );
+	my $files = create_oids( \@oids, 18, $dbh );
+	my $template = '<a class="btn btn-default play-control">'
+		. '<img class="img-18mm play-img" src="%s" alt="oid: %d">%d</a>';
+	my $oid_path = '/assets/images/' . $files->[0]->basename();
+	put_file_online( $files->[0], $oid_path, $httpd );
+	return sprintf( $template, $oid_path, $oids[0], $track_no );
 }
 
 sub format_main_oid {
@@ -102,13 +113,28 @@ sub create_print_layout {
 
 	#add general controls:
 	$content .= '<div class="row general-controls">';
-	$content .= '  <div class="col-xs-6 col-xs-offset-3 general-controls">';
+	$content .=
+'  <div class="col-xs-6 col-xs-offset-3 general-controls" style="margin-bottom:10px;">';
 	$content .=
 		"<div class=\"btn-group btn-group-lg btn-group-justified\">$controls</div>";
 	$content .= '  </div>';
 
-	#todo: add general track controls
-	$content .= '</div>';
+	#add general track controls
+	$content .= '<div class="col-xs-12" style="margin-bottom:10px;">';
+	$content .= '<div class="btn-group btn-group-lg btn-group-justified">';
+	my $counter = 1;
+	while ( $counter <= $config->{'print_max_track_controls'} ) {
+		$content .= format_track_control( $counter, $oid_map, $httpd, $dbh );
+		if ( ( $counter < $config->{'print_max_track_controls'} )
+			&& ( ( $counter % 12 ) == 0 ) )
+		{
+			$content .= '</div></div>';
+			$content .= '<div class="col-xs-12" style="margin-bottom:10px;">';
+			$content .= '<div class="btn-group btn-group-lg btn-group-justified">';
+		}
+		$counter++;
+	}
+	$content .= '</div></div></div>';
 	return $content;
 
 }
