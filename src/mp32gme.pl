@@ -116,7 +116,7 @@ sub fetchConfig {
 }
 
 sub save_config {
-	my ($configParams) =@_;
+	my ($configParams) = @_;
 	my $qh = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
 	foreach my $param (%$configParams) {
 		$qh->execute( $configParams->{$param}, $param );
@@ -217,6 +217,7 @@ $httpd->reg_cb(
 
 				#print Dumper($req->parm('qquuid'));
 				if ( $req->parm('_method') ) {
+
 					#delete temporary uploaded files
 					my $fileToDelete = $albumList[$albumCount]{ $req->parm('qquuid') };
 
@@ -295,7 +296,7 @@ $httpd->reg_cb(
 			my $statusCode    = 501;
 			my $statusMessage = 'Could not parse POST data.';
 			if ( $req->parm('action') ) {
-				if  ( $req->parm('action') eq 'list' ) {
+				if ( $req->parm('action') eq 'list' ) {
 					$statusMessage =
 						'Could not get list of albums. Possible database error.';
 					$content->{'list'} = get_album_list( $dbh, $httpd );
@@ -313,7 +314,8 @@ $httpd->reg_cb(
 					} elsif ( $req->parm('action') eq 'cleanup' ) {
 						$statusMessage = 'Could not clean up album folder.';
 						$content->{'element'} =
-							get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
+							get_album_online(
+							cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
 							$httpd, $dbh );
 					} elsif ( $req->parm('action') eq 'make_gme' ) {
 						$statusMessage = 'Could not create gme file.';
@@ -322,9 +324,15 @@ $httpd->reg_cb(
 							$httpd, $dbh );
 					}
 				} elsif ( $req->parm('action') eq 'add_cover' ) {
-					$statusMessage =
-						'Could not update cover. Possible i/o error.';
-					$content->{'uid'} = get_album_online( replace_cover( $req->parm('uid'), $req->parm('qqfilename'), $req->parm('qqfile'), $httpd, $dbh ), $httpd, $dbh );
+					$statusMessage = 'Could not update cover. Possible i/o error.';
+					$content->{'uid'} = get_album_online(
+						replace_cover(
+							$req->parm('uid'),    $req->parm('qqfilename'),
+							$req->parm('qqfile'), $httpd,
+							$dbh
+						),
+						$httpd, $dbh
+					);
 				}
 			}
 			if ( !$dbh->errstr ) {
@@ -347,18 +355,23 @@ $httpd->reg_cb(
 	'/print' => sub {
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
-			my $getData = decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+			my $getData =
+				decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 			$req->respond(
 				{
 					content => [
 						'text/html',
 						$templates{'print'}->fill_in(
 							HASH => {
-								'title'         => '<span class="hidden-print"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</span>',
+								'title' =>
+'<span class="hidden-print"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</span>',
 								'strippedTitle' => 'Print',
 								'navigation' =>
 									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content' => create_print_layout($getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh)
+								'content' => create_print_layout(
+									$getData->{'oids'}, $templates{'printing_contents'},
+									\%config, $httpd, $dbh
+								)
 							}
 						)
 					]
@@ -376,9 +389,9 @@ $httpd->reg_cb(
 				$content->{'element'} = \%config;
 			} elsif ( $req->parm('action') eq 'save_config' ) {
 				my $postData =
-				decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				$statusMessage = 'Could not save configuration.';
-				%config = save_config( $postData );
+					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				$statusMessage        = 'Could not save configuration.';
+				%config               = save_config($postData);
 				$content->{'element'} = \%config;
 			}
 			if ( !$dbh->errstr ) {
@@ -429,7 +442,8 @@ $httpd->reg_cb(
 			);
 		} elsif ( $req->method() eq 'POST' ) {
 			if ( $req->parm('action') eq 'update' ) {
-				my $configParams = decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				my $configParams =
+					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				%config = save_config($configParams);
 				my $status;
 				if ( !$dbh->errstr ) {

@@ -4,4 +4,4 @@ a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet
 ## ToDo
 * write better documentation.
 * upload multiple albums at once
-* upload new image and music files from library page
+* add and remove music files from library page

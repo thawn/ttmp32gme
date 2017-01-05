@@ -28,25 +28,25 @@ if ( PAR::read_file('build.txt') ) {
 }
 
 sub getLibraryPath {
-	my $library = dir(get_local_storage(), 'library');
+	my $library = dir( get_local_storage(), 'library' );
 	$library->mkpath();
 	return $library->stringify();
 }
 
 sub checkConfigFile {
 	my $configdir = get_local_storage();
-	my $configfile = file($configdir, 'config.sqlite');
-	if(! -f $configfile){
-		my $cfgToCopy = file(get_par_tmp(), 'config.sqlite');
-		$cfgToCopy->copy_to($configfile) or die "Could not create local copy of config file '$configfile': $!";
+	my $configfile = file( $configdir, 'config.sqlite' );
+	if ( !-f $configfile ) {
+		my $cfgToCopy = file( get_par_tmp(), 'config.sqlite' );
+		$cfgToCopy->copy_to($configfile)
+			or die "Could not create local copy of config file '$configfile': $!";
 	}
 	return $configfile;
 }
 
 sub loadStatic {
 	my $static = {};
-	my @staticFiles =
-		( 'upload.html', 'library.html', 'help.html', );
+	my @staticFiles = ( 'upload.html', 'library.html', 'help.html', );
 	foreach my $file (@staticFiles) {
 		$static->{$file} = loadFile($file);
 	}
@@ -81,7 +81,7 @@ sub makeNewAlbumDir {
 
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
-	my $file=file($filePath);
+	my $file = file($filePath);
 	my $album_file = $file->move_to( file( $albumPath, $file->basename() ) );
 	return $album_file->basename();
 }
@@ -117,7 +117,7 @@ sub removeAlbum {
 	my ($path) = @_;
 	my $libraryPath = getLibraryPath();
 	if ( $path =~ /^$libraryPath/ ) {
-		(dir($path))->rmtree();
+		( dir($path) )->rmtree();
 		return 1;
 	} else {
 		return 0;
@@ -133,11 +133,11 @@ sub cleanup_filename {
 	return $filename;
 }
 
-sub remove_library_dir{
+sub remove_library_dir {
 	my ($media_path) = @_;
-	my $media_dir = dir( $media_path );
-	my $libraryPath = getLibraryPath();
-	if ($media_dir =~ /^$libraryPath/) {
+	my $media_dir    = dir($media_path);
+	my $libraryPath  = getLibraryPath();
+	if ( $media_dir =~ /^$libraryPath/ ) {
 		$media_dir->rmtree();
 		return 1;
 	} else {
@@ -147,19 +147,21 @@ sub remove_library_dir{
 
 sub get_executable_path {
 	my $exe_name = $_[0];
-	return (file(get_par_tmp(), 'lib', $exe_name))->stringify();
+	return ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
 }
 
 sub get_oid_cache {
-	my $oid_cache = dir(get_local_storage(),'oid_cache');
-	if (! -d $oid_cache) {
+	my $oid_cache = dir( get_local_storage(), 'oid_cache' );
+	if ( !-d $oid_cache ) {
 		$oid_cache->mkpath();
-		my $cache = dir(get_par_tmp(), 'oid_cache');
-		$cache->recurse( callback => sub {
-			if ( -f $_ && $_ =~ /\.png$/ ) {
-				$_->copy_to( file( $oid_cache, $_->basename() ) );
+		my $cache = dir( get_par_tmp(), 'oid_cache' );
+		$cache->recurse(
+			callback => sub {
+				if ( -f $_ && $_ =~ /\.png$/ ) {
+					$_->copy_to( file( $oid_cache, $_->basename() ) );
+				}
 			}
-		});
+		);
 	}
 	return $oid_cache->stringify();
 }

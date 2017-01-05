@@ -95,10 +95,11 @@ sub convert_tracks {
 	my ( $album, $yaml_file, $config, $dbh ) = @_;
 	my $media_path = dir( $album->{'path'}, "audio" );
 	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
+
 	#nned to jump through some hoops here to get proper numeric sorting:
-	@tracks = sort { $a <=> $b } map {$_ =~ s/^track_//r } @tracks;
-	@tracks = map { 'track_'. $_ } @tracks;
-	
+	@tracks = sort { $a <=> $b } map { $_ =~ s/^track_//r } @tracks;
+	@tracks = map { 'track_' . $_ } @tracks;
+
 	$media_path->mkpath();
 	if ( $config->{'audio_format'} eq 'ogg' ) {
 
@@ -112,6 +113,7 @@ sub convert_tracks {
 	my $next = "  next:\n";
 	my $prev = "  prev:\n";
 	my $track_scripts;
+
 	#print Dumper($album);
 	foreach my $i ( 0 .. $#tracks ) {
 		if ( $i < $#tracks ) {
@@ -132,23 +134,30 @@ sub convert_tracks {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) C\n";
 		}
 		my %data = ( 'tt_script' => "t$i" );
-		my @selectors = ( $album->{ $tracks[$i] }->{'parent_oid'}, $album->{ $tracks[$i] }->{'track'} );
-		updateTableEntry( 'tracks', 'parent_oid=? and track=?', \@selectors, \%data, $dbh );
+		my @selectors = (
+			$album->{ $tracks[$i] }->{'parent_oid'},
+			$album->{ $tracks[$i] }->{'track'}
+		);
+		updateTableEntry( 'tracks', 'parent_oid=? and track=?',
+			\@selectors, \%data, $dbh );
 	}
 	my $lastTrack = $#tracks;
 	if ( scalar @tracks < $config->{'print_max_track_controls'} ) {
 
 		#in case we use general track controls, we just play the last available
 		#track if the user selects a track number that does not exist in this album.
-		foreach my $i ( scalar @tracks .. $config->{'print_max_track_controls'} - 1 ) {
+		foreach
+			my $i ( scalar @tracks .. $config->{'print_max_track_controls'} - 1 )
+		{
 			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
 		}
 	}
 	my $welcome;
-	if ($#tracks == 0) {
+	if ( $#tracks == 0 ) {
+
 		#if there is only one track, the next and prev buttons just play that track.
 		$next .= "  - \$current:=$lastTrack P($lastTrack) C\n";
-		$prev .="  - \$current:=$lastTrack P($lastTrack) C\n";
+		$prev .= "  - \$current:=$lastTrack P($lastTrack) C\n";
 		$welcome = "welcome: " . "'$lastTrack'" . "\n";
 	} else {
 		$welcome = "welcome: " . join( ', ', ( 0 .. $#tracks ) ) . "\n";
@@ -203,7 +212,7 @@ sub run_tttool {
 	}
 	my $tt_command = get_tttool_command($dbh);
 	print "$tt_command $arguments\n";
-	my $tt_output  = `$tt_command $arguments`;
+	my $tt_output = `$tt_command $arguments`;
 	chdir($maindir);
 	if ($?) {
 		error( $tt_output, 1 );
@@ -233,7 +242,7 @@ sub make_gme {
 	if ( run_tttool( "assemble $yaml", $album->{'path'}, $dbh ) ) {
 		my $gme_filename = $yaml_file->basename();
 		$gme_filename =~ s/yaml$/gme/;
-		my %data = ('gme_file' => $gme_filename);
+		my %data = ( 'gme_file' => $gme_filename );
 		my @selector = ($oid);
 		updateTableEntry( 'gme_library', 'oid=?', \@selector, \%data, $dbh );
 	}

@@ -1,4 +1,3 @@
-
 package TTMp32Gme::Build::Perl;
 
 use strict;
@@ -71,6 +70,7 @@ sub loadAssets {
 }
 
 sub openBrowser {
+
 	#Do nothing
 	return 1;
 }
