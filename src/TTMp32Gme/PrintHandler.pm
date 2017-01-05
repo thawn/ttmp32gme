@@ -80,7 +80,7 @@ sub format_main_oid {
 ## external functions:
 
 sub create_print_layout {
-	my ( $oids, $template, $httpd, $dbh ) = @_;
+	my ( $oids, $template, $config, $httpd, $dbh ) = @_;
 	my $content;
 	my $oid_map =
 		$dbh->selectall_hashref( "SELECT * FROM script_codes", 'script' );
@@ -88,6 +88,10 @@ sub create_print_layout {
 	foreach my $oid ( @{$oids} ) {
 		if ($oid) {
 			my $album = get_album_online( $oid, $httpd, $dbh );
+			if ( !$album->{'gme_file'} ) {
+				$album =
+					get_album_online( make_gme( $oid, $config, $dbh ), $httpd, $dbh );
+			}
 			$album->{'track_list'} = format_tracks( $album, $oid_map, $httpd, $dbh );
 			$album->{'play_controls'} = $controls;
 			$album->{'main_oid_image'} =

@@ -24,7 +24,7 @@ use TTMp32Gme::Build::FileHandler;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(updateTableEntry put_file_online createLibraryEntry get_album_list get_album get_album_online updateAlbum deleteAlbum cleanupAlbum);
+	qw(updateTableEntry put_file_online createLibraryEntry get_album_list get_album get_album_online updateAlbum deleteAlbum cleanupAlbum replace_cover);
 
 ## private methods
 
@@ -115,7 +115,8 @@ sub put_cover_online {
 	my ( $album, $httpd ) = @_;
 	if ( $album->{'picture_filename'} ) {
 		my $picture_file = file( $album->{'path'}, $album->{'picture_filename'} );
-		my $online_path = '/assets/images/' . $album->{'oid'} . '/' . $album->{'picture_filename'};
+		my $online_path =
+			'/assets/images/' . $album->{'oid'} . '/' . $album->{'picture_filename'};
 		put_file_online( $picture_file, $online_path, $httpd );
 		return 1;
 	} else {
@@ -153,9 +154,9 @@ sub updateTableEntry {
 
 sub put_file_online {
 	my ( $file, $online_path, $httpd ) = @_;
-	my $file_data = $file->slurp();
 	$httpd->reg_cb(
 		$online_path => sub {
+			my $file_data = $file->slurp();
 			my ( $httpd, $req ) = @_;
 			$req->respond( { content => [ '', $file_data ] } );
 		}
@@ -168,8 +169,8 @@ sub createLibraryEntry {
 	foreach my $album ( @{$albumList} ) {
 		if ($album) {
 			my $oid = newOID($dbh);
-			my %albumData;
-			my @trackData;
+			my %album_data;
+			my @track_data;
 			my $pictureData;
 			foreach my $fileId ( sort keys %{$album} ) {
 				if ( $album->{$fileId} =~ /\.(mp3|ogg)$/i ) {
@@ -179,27 +180,27 @@ sub createLibraryEntry {
 					$info->get_tag( $album->{$fileId} );
 
 					#fill in album info
-					if ( !$albumData{'album_title'} && $info->album() ) {
-						$albumData{'album_title'} = $info->album();
-						$albumData{'path'}        = $albumData{'album_title'};
+					if ( !$album_data{'album_title'} && $info->album() ) {
+						$album_data{'album_title'} = $info->album();
+						$album_data{'path'}        = $album_data{'album_title'};
 					}
-					if ( !$albumData{'album_artist'} && $info->albumartist() ) {
-						$albumData{'album_artist'} = $info->albumartist();
-					} elsif ( !$albumData{'album_artist'} && $info->artist() ) {
-						$albumData{'album_artist'} = $info->artist();
+					if ( !$album_data{'album_artist'} && $info->albumartist() ) {
+						$album_data{'album_artist'} = $info->albumartist();
+					} elsif ( !$album_data{'album_artist'} && $info->artist() ) {
+						$album_data{'album_artist'} = $info->artist();
 					}
-					if ( !$albumData{'album_year'} && $info->year() ) {
-						$albumData{'album_year'} = $info->get_year();
+					if ( !$album_data{'album_year'} && $info->year() ) {
+						$album_data{'album_year'} = $info->get_year();
 					}
-					if ( !$albumData{'picture_filename'} && $info->picture_exists() ) {
+					if ( !$album_data{'picture_filename'} && $info->picture_exists() ) {
 						if ( $info->picture_filename() ) {
-							$albumData{'picture_filename'} = $info->picture_filename();
+							$album_data{'picture_filename'} = $info->picture_filename();
 						} elsif ( $info->picture() ) {
 							my %pic = $info->picture();
 							$pictureData = $pic{'_Data'};
-							$albumData{'picture_filename'} = basename( $pic{'filename'} );
+							$album_data{'picture_filename'} = basename( $pic{'filename'} );
 						}
-					} elsif ( !$albumData{'picture_filename'}
+					} elsif ( !$album_data{'picture_filename'}
 						&& !$info->picture_exists()
 						&& $album->{$fileId} =~ /\.mp3$/i )
 					{
@@ -213,10 +214,10 @@ sub createLibraryEntry {
 						my $mimetype = $$apic{'MIME type'};
 						if ($mimetype) {
 							$mimetype =~ s/.*\///;
-							$albumData{'picture_filename'} = 'cover.' . $mimetype;
+							$album_data{'picture_filename'} = 'cover.' . $mimetype;
 						} elsif ($pictureData) {
 							my $imgType = image_type( \$pictureData );
-							$albumData{'picture_filename'} = 'cover.' . $imgType;
+							$album_data{'picture_filename'} = 'cover.' . $imgType;
 						}
 					}
 
@@ -233,39 +234,39 @@ sub createLibraryEntry {
 						'track'      => $info->track(),
 						'filename'   => $album->{$fileId},
 					);
-					push( @trackData, \%trackInfo );
+					push( @track_data, \%trackInfo );
 				} elsif ( $album->{$fileId} =~ /\.(jpg|jpeg|tif|tiff|png|gif)$/i ) {
 
 					#handle pictures
 					open( my $file, '<', $album->{$fileId} );
 					$pictureData = join( "", <$file> );
 					close($file);
-					$albumData{'picture_filename'} = basename( $album->{$fileId} );
+					$album_data{'picture_filename'} = basename( $album->{$fileId} );
 				}
 			}
-			$albumData{'oid'}        = $oid;
-			$albumData{'num_tracks'} = scalar(@trackData);
-			if ( !$albumData{'album_title'} ) {
-				$albumData{'path'}        = 'unknown';
-				$albumData{'album_title'} = $albumData{'path'};
+			$album_data{'oid'}        = $oid;
+			$album_data{'num_tracks'} = scalar(@track_data);
+			if ( !$album_data{'album_title'} ) {
+				$album_data{'path'}        = 'unknown';
+				$album_data{'album_title'} = $album_data{'path'};
 			}
-			$albumData{'path'} = makeNewAlbumDir( $albumData{'path'} );
-			if ( $albumData{'picture_filename'} and $pictureData ) {
+			$album_data{'path'} = makeNewAlbumDir( $album_data{'path'} );
+			if ( $album_data{'picture_filename'} and $pictureData ) {
 				open(
 					my $fh,
 					'>',
-					( file( $albumData{'path'}, $albumData{'picture_filename'} ) )
+					( file( $album_data{'path'}, $album_data{'picture_filename'} ) )
 						->stringify
 				);
 				print $fh $pictureData;
 				close($fh);
 			}
-			foreach my $track (@trackData) {
+			foreach my $track (@track_data) {
 				$track->{'filename'} =
-					moveToAlbum( $albumData{'path'}, $track->{'filename'} );
+					moveToAlbum( $album_data{'path'}, $track->{'filename'} );
 				writeToDatabase( 'tracks', $track, $dbh );
 			}
-			writeToDatabase( 'gme_library', \%albumData, $dbh );
+			writeToDatabase( 'gme_library', \%album_data, $dbh );
 		}
 	}
 	removeTempDir();
@@ -322,10 +323,10 @@ sub updateAlbum {
 		$old_track =~ s/^track_//;
 		$new_tracks{$old_track} = $postData->{$track}{'track'};
 		delete( $postData->{$track}{'track'} );
-		my %trackData = %{ $postData->{$track} };
+		my %track_data = %{ $postData->{$track} };
 		my @selectors = ( $old_oid, $old_track );
 		updateTableEntry( 'tracks', 'parent_oid=? and track=?',
-			\@selectors, \%trackData, $dbh );
+			\@selectors, \%track_data, $dbh );
 		delete( $postData->{$track} );
 	}
 	switchTracks( $postData->{'oid'}, \%new_tracks, $dbh );
@@ -336,14 +337,14 @@ sub updateAlbum {
 
 sub deleteAlbum {
 	my ( $oid, $httpd, $dbh ) = @_;
-	my $albumData = $dbh->selectrow_hashref(
+	my $album_data = $dbh->selectrow_hashref(
 		q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
 		{}, $oid );
-	if ( $albumData->{'picture_filename'} ) {
+	if ( $album_data->{'picture_filename'} ) {
 		$httpd->unreg_cb(
-			'/assets/images/' . $oid . '/' . $albumData->{'picture_filename'} );
+			'/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
 	}
-	if ( remove_library_dir( $albumData->{'path'} ) ) {
+	if ( remove_library_dir( $album_data->{'path'} ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
 		$dbh->do( q( DELETE FROM gme_library WHERE oid=? ), {}, $oid );
 	}
@@ -352,17 +353,47 @@ sub deleteAlbum {
 
 sub cleanupAlbum {
 	my ( $oid, $httpd, $dbh ) = @_;
-	my $albumData = $dbh->selectrow_hashref(
+	my $album_data = $dbh->selectrow_hashref(
 		q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
 		{}, $oid );
 	my $query = q(SELECT filename FROM tracks WHERE parent_oid=? ORDER BY track);
 	my @file_list =
 		map { @$_ } @{ $dbh->selectall_arrayref( $query, {}, $oid ) };
 	my $data = { 'filename' => undef };
-	if ( clearAlbum( $albumData->{'path'}, \@file_list ) ) {
+	if ( clearAlbum( $album_data->{'path'}, \@file_list ) ) {
 		updateTableEntry( 'tracks', 'parent_oid=?', [$oid], $data, $dbh );
 	}
 	return $oid;
+}
+
+sub replace_cover {
+	my ( $oid, $filename, $file_data, $httpd, $dbh ) = @_;
+	if ( $filename && $file_data ) {
+		my $album_data = $dbh->selectrow_hashref(
+			q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
+			{}, $oid );
+		if ( $album_data->{'picture_filename'} ) {
+			$httpd->unreg_cb(
+				'/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
+			file( $album_data->{'path'}, $album_data->{'picture_filename'} )
+				->remove();
+			if ( $filename eq $album_data->{'picture_filename'} ) {
+
+				#hack to make sure the cover is refreshed properly
+				#despite browser caching.
+				$filename = "0_$filename";
+			}
+		}
+		my @selector = ($oid);
+		$album_data->{'picture_filename'} = $filename;
+		updateTableEntry( 'gme_library', 'oid=?', \@selector, $album_data, $dbh );
+		my $picture_file =
+			file( $album_data->{'path'}, $album_data->{'picture_filename'} );
+		$picture_file->spew($file_data);
+		return $oid;
+	} else {
+		return 0;
+	}
 }
 
 1;

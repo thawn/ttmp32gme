@@ -217,6 +217,7 @@ $httpd->reg_cb(
 
 				#print Dumper($req->parm('qquuid'));
 				if ( $req->parm('_method') ) {
+					#delete temporary uploaded files
 					my $fileToDelete = $albumList[$albumCount]{ $req->parm('qquuid') };
 
 					#print Dumper($albumList[$albumCount]);
@@ -293,31 +294,37 @@ $httpd->reg_cb(
 			my $content       = { 'success' => \0 };
 			my $statusCode    = 501;
 			my $statusMessage = 'Could not parse POST data.';
-			if ( $req->parm('action') eq 'list' ) {
-				$statusMessage =
-					'Could not get list of albums. Possible database error.';
-				$content->{'list'} = get_album_list( $dbh, $httpd );
-			} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme)/ ) {
-				my $postData =
-					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				if ( $req->parm('action') eq 'update' ) {
-					$statusMessage = 'Could not update database.';
-					$content->{'element'} =
-						get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
-				} elsif ( $req->parm('action') eq 'delete' ) {
-					$statusMessage = 'Could not update database.';
-					$content->{'element'}{'oid'} =
-						deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
-				} elsif ( $req->parm('action') eq 'cleanup' ) {
-					$statusMessage = 'Could not clean up album folder.';
-					$content->{'element'} =
-						get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
-						$httpd, $dbh );
-				} elsif ( $req->parm('action') eq 'make_gme' ) {
-					$statusMessage = 'Could not create gme file.';
-					$content->{'element'} =
-						get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ),
-						$httpd, $dbh );
+			if ( $req->parm('action') ) {
+				if  ( $req->parm('action') eq 'list' ) {
+					$statusMessage =
+						'Could not get list of albums. Possible database error.';
+					$content->{'list'} = get_album_list( $dbh, $httpd );
+				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme)/ ) {
+					my $postData =
+						decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+					if ( $req->parm('action') eq 'update' ) {
+						$statusMessage = 'Could not update database.';
+						$content->{'element'} =
+							get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
+					} elsif ( $req->parm('action') eq 'delete' ) {
+						$statusMessage = 'Could not update database.';
+						$content->{'element'}{'oid'} =
+							deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
+					} elsif ( $req->parm('action') eq 'cleanup' ) {
+						$statusMessage = 'Could not clean up album folder.';
+						$content->{'element'} =
+							get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
+							$httpd, $dbh );
+					} elsif ( $req->parm('action') eq 'make_gme' ) {
+						$statusMessage = 'Could not create gme file.';
+						$content->{'element'} =
+							get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ),
+							$httpd, $dbh );
+					}
+				} elsif ( $req->parm('action') eq 'add_cover' ) {
+					$statusMessage =
+						'Could not update cover. Possible i/o error.';
+					$content->{'uid'} = get_album_online( replace_cover( $req->parm('uid'), $req->parm('qqfilename'), $req->parm('qqfile'), $httpd, $dbh ), $httpd, $dbh );
 				}
 			}
 			if ( !$dbh->errstr ) {
@@ -351,7 +358,7 @@ $httpd->reg_cb(
 								'strippedTitle' => 'Print',
 								'navigation' =>
 									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content' => create_print_layout($getData->{'oids'}, $templates{'printing_contents'},$httpd, $dbh)
+								'content' => create_print_layout($getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh)
 							}
 						)
 					]

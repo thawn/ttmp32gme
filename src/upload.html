@@ -11,7 +11,7 @@
                     <div>Select files</div>
                 </div>
                 <button type="button" id="trigger-upload" class="btn btn-primary">
-                    <i class="icon-upload icon-white"></i> Upload
+                    <i class="icon-upload icon-white"></i> Add Album to Library
                 </button>
             </div>
             <span class="qq-drop-processing-selector qq-drop-processing">
@@ -60,7 +60,7 @@
                 </div>
             </dialog>
         </div>
-    </script>
+</script>
 
 <style>
 #trigger-upload {
@@ -84,38 +84,41 @@
 }
 </style>
 
+<p>Add files by dragging and dropping them into the box below or by clicking on
+	"Select files". Please add only one album/audiobook at a time (the album information
+	will be extracted from the id3 tag of the first file that is uploaded).</p>
+
 <div id="fine-uploader-manual-trigger"></div>
 <script>
 	$('#fine-uploader-manual-trigger').fineUploader({
-		template: 'qq-template-manual-trigger',
-		request: {
-			endpoint: '/'
+		template : 'qq-template-manual-trigger',
+		request : {
+			endpoint : '/'
 		},
-		thumbnails: {
-			placeholders: {
+		thumbnails : {
+			placeholders : {
 				waitingPath : '/assets/images/waiting-generic.png',
 				notAvailablePath : '/assets/images/not_available-generic.png'
 			}
 		},
-		autoUpload: false,
+		autoUpload : false,
 		deleteFile : {
 			enabled : true, // defaults to false
 			endpoint : '/',
 			method : 'POST'
 		},
-		callbacks: {
-	    onAllComplete: function() {
-	  		$.post(document.baseURI, 'action=add_to_library')
-	  		.done(function(data) {
-	  			if (data.success) {
-	  				notify($('#add_to_library'), '', 'Success.', 'bg-success', 2000);
-	  				window.open('/library','_self')
-	  			} else {
-	  				notify($('#add_to_library'), '', data.statusText, 'bg-danger', 4000);
-	  			}
-	  		}).fail(function(data) {
-	  			notify($('#add_to_library'), '', 'Connection Error', 'bg-danger', 4000);
-	  		});
+		callbacks : {
+			onAllComplete : function() {
+				$.post(document.baseURI, 'action=add_to_library').done(function(data) {
+					if (data.success) {
+						notify($('#add_to_library'), '', 'Success.', 'bg-success', 2000);
+						window.open('/library', '_self')
+					} else {
+						notify($('#add_to_library'), '', data.statusText, 'bg-danger', 4000);
+					}
+				}).fail(function(data) {
+					notify($('#add_to_library'), '', 'Connection Error', 'bg-danger', 4000);
+				});
 			}
 		}
 	});
