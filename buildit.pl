@@ -5,12 +5,11 @@
 #  v5.10.0 will produce strange behavior in PAR applications
 #  Use Perl v5.10.1 and above only.
 
-use File::Copy;
-use File::Copy::Recursive qw(fcopy rcopy dircopy);
+use File::Copy::Recursive qw(dircopy);
 use Path::Class;
-use File::Path qw(make_path remove_tree);
-use File::Find;
 use Cwd;
+
+use Data::Dumper;
 
 my $modulesToAdd = "-M Moose::Meta::Object::Trait -M Package::Stash::XS -M URI::Find";
 $modulesToAdd .= " -M DateTime::Format::Natural::Compat -M DateTime::Format::Natural::Calc";
@@ -21,9 +20,9 @@ $modulesToAdd .= " -M DateTime::Format::Natural::Expand -M " . (file('DateTime',
 
 my $filesToAdd = "";
 
-my $copyTo = (dir( cwd , 'build', 'current' ))->stringify;
-my $copyFrom = (dir( cwd ))->stringify;
-my $path_sep = '\/';
+my $copyTo = dir( cwd , 'build', 'current' );
+$copyTo->mkpath();
+my $copyFrom = dir( cwd );
 
 print "Copying source files into build/current\n\n";
 
@@ -31,43 +30,37 @@ my $assetsList = "";
 my $templatesList = "";
 $filesToAdd .= " -a assets.list -a templates.list";
 
-find( { wanted => sub {
-	if( $_ !~ /^\./ ){
-		if( -f (file($copyFrom , $File::Find::name))->stringify ){
-			my $toName = $File::Find::name;
-			$toName =~ s/^src$path_sep//;
-			print "$toName\n";
-			rcopy( (file($copyFrom , $File::Find::name))->stringify , (file($copyTo , $toName))->stringify );
-			$filesToAdd .= " -a ". qq($toName);
-			if ($toName =~ /^assets/) {
-				$assetsList .= "$toName\n";
-			} elsif ($toName =~ /^templates/) {
-				$templatesList .= "$toName\n";
-			}
+my $src_dir = dir('src');
+$src_dir->recurse( callback => sub {
+	my ($source) = @_;
+	my @components = $source->components();
+	shift @components;
+	if (-d $source) {
+		(dir($copyTo,@components))->mkpath();
+	} elsif ( -f $source && $source->basename() !~ /^\./ ) {
+		my $file = file(@components);
+		print $file."\n";
+		$source->copy_to(file($copyTo,$file));
+		$filesToAdd .= " -a ". qq($file);
+		if ($file =~ /^assets/) {
+			$assetsList .= "$file\n";
+		} elsif ($file =~ /^templates/) {
+			$templatesList .= "$file\n";
 		}
 	}
-} , no_chdir => 0 }, 'src');
+});
 
-my $builddir = (dir('build', 'current'))->stringify;
-if ( ! -d $builddir ){
-	make_path($builddir);
-}
+(file($copyTo,'assets.list'))->spew($assetsList);
 
-my $fh = (file($copyTo,'assets.list'))->openw();
-print $fh $assetsList;
-close($fh);
-
-$fh = (file($copyTo,'templates.list'))->openw();
-print $fh $templatesList;
-close($fh);
+(file($copyTo,'templates.list'))->spew($templatesList);
 
 if ( $^O =~ /MSWin/ ){
 	use Win32::Exe;
 	print "\nWindows build.\n\n";
 	
-	copy((file('build', 'win', 'ttmp32gme.ico'))->stringify, (file($builddir, 'ttmp32gme.ico'))->stringify);
+	(file('build', 'win', 'ttmp32gme.ico'))->copy_to(file($copyTo, 'ttmp32gme.ico'));
 	
-	chdir($builddir);
+	chdir($copyTo);
 	my $result = `pp -M attributes -M UNIVERSAL $filesToAdd $modulesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 	
 	# newer versions of pp don't support the --icon option any more, use Win32::Exe to manually replace the icon:
@@ -79,43 +72,29 @@ if ( $^O =~ /MSWin/ ){
 	if ( $? != 0 ){ die "Build failed.\n"; }
 	
 	chdir('..\..');
-	my $distdir = 'dist';
-	if ( ! -d $distdir ){
-		make_path($distdir);
-	}
+	my $distdir = dir('dist');
+	$distdir->mkpath();
 	
-	fcopy((file($builddir , 'ttmp32gme.exe'))->stringify, (file('dist', 'ttmp32gme.exe'))->stringify);
+	(file($copyTo , 'ttmp32gme.exe'))->copy_to(file($distdir, 'ttmp32gme.exe'));
 	`explorer dist`;
 	print "Build successful.\n";
 	
 } elsif ( $^O eq 'darwin' ){
 	print "\nMac OS X build.\n\n";
 	
-	chdir($builddir);
-	my $libxml = '-l /usr/lib/libxml2.dylib';
-	if( `which brew` ){
-		my $brew_xml_dir = `brew --cellar libxml2`;
-		$brew_xml_dir =~ s/\n|\r//g;
-		if( -d "$brew_xml_dir" ){
-			$brew_xml_dir = `brew --prefix libxml2`;
-			$brew_xml_dir =~ s/\n|\r//g;
-			$libxml = "-l $brew_xml_dir/lib/libxml2.dylib";
-		}
-	}
-	
+	chdir($copyTo);
+
 	my $result = `pp $filesToAdd $modulesToAdd -o mp32gme ttmp32gme.pl`;
 	
 	print $result;
 	if ( $? != 0 ){ die "Build failed.\n"; }
 	
 	chdir('../..');
-	my $distdir = 'dist';
-	if ( ! -d $distdir ){
-		make_path($distdir);
-	}
-	
-	dircopy((dir('build', 'mac', 'ttmp32gme.app'))->stringify,(dir('dist', 'ttmp32gme.app'))->stringify );
-	fcopy((file('build', 'current', 'mp32gme'))->stringify, (file('dist', 'ttmp32gme.app', 'Contents', 'Resources', 'ttmp32gme'))->stringify);
+	my $distdir = dir('dist');
+	$distdir->mkpath();
+	my $app_dir = dir($distdir, 'ttmp32gme.app');
+	dircopy((dir('build', 'mac', 'ttmp32gme.app'))->stringify,($app_dir)->stringify );
+	(file($copyTo, 'mp32gme'))->copy_to(file($app_dir, 'Contents', 'Resources', 'ttmp32gme'));
 	`open dist`;
 	print "Build successful.\n";
 } else {
@@ -124,7 +103,7 @@ if ( $^O =~ /MSWin/ ){
 }
 
 print "Cleaning build folders.\n";
-remove_tree($builddir, {keep_root => 1});
+$copyTo->rmtree();
 
 print "Done.\n";
 exit(0);

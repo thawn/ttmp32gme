@@ -52,7 +52,7 @@ my ( $dbh, %config, $watchers, %templates, $static, %assets );
 	my $version = Perl::Version->new("0.1.0");
 
 # Command line startup options
-#  Usage: ttmp32gme(.exe) [-d|--directory=dir] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
+# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
 	GetOptions(
 		"port=i" => \$port,    # Port for the local web server to run on
 		"directory=s" =>
@@ -215,14 +215,10 @@ $httpd->reg_cb(
 			my $statusCode    = 501;
 			my $statusMessage = 'Could not parse POST data.';
 			if ( $req->parm('qquuid') ) {
-
-				#print Dumper($req->parm('qquuid'));
 				if ( $req->parm('_method') ) {
 
 					#delete temporary uploaded files
 					my $fileToDelete = $albumList[$albumCount]{ $req->parm('qquuid') };
-
-					#print Dumper($albumList[$albumCount]);
 					my $deleted = unlink $fileToDelete;
 					print $fileToDelete. "\n";
 					if ($deleted) {
@@ -239,9 +235,6 @@ $httpd->reg_cb(
 						$currentFile = file( $currentAlbum, $fileCount );
 					}
 					$albumList[$albumCount]{ $fileList[$fileCount] } = $currentFile;
-
-					#print Dumper($albumList[$albumCount]);
-					print $currentFile . "\n";
 					$currentFile->spew( $req->parm('qqfile') );
 					$fileCount++;
 					$content->{'success'} = \1;

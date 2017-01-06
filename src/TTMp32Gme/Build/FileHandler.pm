@@ -57,7 +57,7 @@ sub loadStatic {
 sub makeTempAlbumDir {
 	my $albumPath = dir( getLibraryPath(), 'temp', $_[0] );
 	$albumPath->mkpath();
-	return $albumPath->stringify();
+	return $albumPath;
 }
 
 sub makeNewAlbumDir {

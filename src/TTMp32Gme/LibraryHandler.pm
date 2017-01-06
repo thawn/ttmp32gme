@@ -253,14 +253,8 @@ sub createLibraryEntry {
 			}
 			$album_data{'path'} = makeNewAlbumDir( $album_data{'path'} );
 			if ( $album_data{'picture_filename'} and $pictureData ) {
-				open(
-					my $fh,
-					'>',
-					( file( $album_data{'path'}, $album_data{'picture_filename'} ) )
-						->stringify
-				);
-				print $fh $pictureData;
-				close($fh);
+				my $picture_file = file( $album_data{'path'}, $album_data{'picture_filename'} );
+ 				$picture_file->spew($pictureData);
 			}
 			foreach my $track (@track_data) {
 				$track->{'filename'} =
