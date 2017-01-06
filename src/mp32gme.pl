@@ -71,6 +71,8 @@ my ( $dbh, %config, $watchers, %templates, $static, %assets );
 	}
 
 	use TTMp32Gme::Build::FileHandler;
+	
+	print(get_executable_path('')."\n");
 
 	my $configFile = checkConfigFile();
 	unless ($configFile) {

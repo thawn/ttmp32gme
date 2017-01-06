@@ -97,7 +97,7 @@ if ( $^O =~ /MSWin/ ){
 		}
 	}
 	
-	my $result = `pp $libxml $filesToAdd $modulesToAdd -o ttmp32gme ttmp32gme.pl`;
+	my $result = `pp $filesToAdd $modulesToAdd -o ttmp32gme ttmp32gme.pl`;
 	
 	print $result;
 	if ( $? != 0 ){ die "Build failed.\n"; }
