@@ -32,7 +32,7 @@ find( { wanted => sub {
 			$toName =~ s/^src$path_sep//;
 			print "$toName\n";
 			rcopy( (file($copyFrom , $File::Find::name))->stringify , (file($copyTo , $toName))->stringify );
-			$filesToAdd .= " -a $toName";
+			$filesToAdd .= " -a ". qq($toName);
 			if ($toName =~ /^assets/) {
 				$assetsList .= "$toName\n";
 			} elsif ($toName =~ /^templates/) {
