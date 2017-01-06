@@ -71,8 +71,7 @@ my ( $dbh, %config, $watchers, %templates, $static, %assets );
 	}
 
 	use TTMp32Gme::Build::FileHandler;
-	
-	print(get_executable_path('')."\n");
+
 
 	my $configFile = checkConfigFile();
 	unless ($configFile) {
@@ -173,6 +172,7 @@ msg(
 		. "Open http://127.0.0.1:$config{'port'}/ in your favorite web browser to continue.\n",
 	1
 );
+msg( "using tttool: " . get_executable_path('tttool'), 1 );
 
 if ( $config{'open_browser'} eq 'TRUE' ) { openBrowser(%config); }
 
@@ -182,7 +182,6 @@ my $albumCount = 0;
 #normally the temp directory 0 stays empty, but we need to create it
 #in case the browser was still open with files dropped when we started
 my $currentAlbum = makeTempAlbumDir($albumCount);
-my $currentFile;
 my @fileList;
 my @albumList;
 
@@ -233,18 +232,17 @@ $httpd->reg_cb(
 					}
 				} elsif ( $req->parm('qqfile') ) {
 					$fileList[$fileCount] = $req->parm('qquuid');
+					my $currentFile;
 					if ( $req->parm('qqfilename') ) {
-						$currentFile =
-							( file( $currentAlbum, $req->parm('qqfilename') ) )->stringify;
+						$currentFile = file( $currentAlbum, $req->parm('qqfilename') );
 					} else {
-						$currentFile = ( file( $currentAlbum, $fileCount ) )->stringify;
+						$currentFile = file( $currentAlbum, $fileCount );
 					}
 					$albumList[$albumCount]{ $fileList[$fileCount] } = $currentFile;
 
 					#print Dumper($albumList[$albumCount]);
-					open( my $fh, '>', $currentFile );
-					print $fh $req->parm('qqfile');
-					close($fh);
+					print $currentFile . "\n";
+					$currentFile->spew( $req->parm('qqfile') );
 					$fileCount++;
 					$content->{'success'} = \1;
 					$statusCode           = 200;
@@ -256,7 +254,6 @@ $httpd->reg_cb(
 				$fileCount            = 0;
 				$albumCount           = 0;
 				$currentAlbum         = makeTempAlbumDir($albumCount);
-				$currentFile          = "";
 				@fileList             = ();
 				@albumList            = ();
 				$content->{'success'} = \1;

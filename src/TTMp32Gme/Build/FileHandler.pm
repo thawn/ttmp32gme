@@ -39,7 +39,7 @@ sub checkConfigFile {
 	if ( !-f $configfile ) {
 		my $cfgToCopy = file( get_par_tmp(), 'config.sqlite' );
 		$cfgToCopy->copy_to($configfile)
-			or die "Could not create local copy of config file '$configfile': $!";
+			or die "Could not create local copy of config file '$cfgToCopy': $!";
 	}
 	return $configfile;
 }
@@ -157,8 +157,9 @@ sub get_oid_cache {
 		my $cache = dir( get_par_tmp(), 'oid_cache' );
 		$cache->recurse(
 			callback => sub {
-				if ( -f $_ && $_ =~ /\.png$/ ) {
-					$_->copy_to( file( $oid_cache, $_->basename() ) );
+				my ($file) = @_;
+				if ( -f $file && $file =~ /\.png$/ ) {
+					$file->copy_to( file( $oid_cache, $file->basename() ) );
 				}
 			}
 		);

@@ -13,6 +13,12 @@ use File::Find;
 use Cwd;
 
 my $modulesToAdd = "-M Moose::Meta::Object::Trait -M Package::Stash::XS -M URI::Find";
+$modulesToAdd .= " -M DateTime::Format::Natural::Compat -M DateTime::Format::Natural::Calc";
+$modulesToAdd .= " -M DateTime::Format::Natural::Utils -M DateTime::Format::Natural::Wrappers -M DateTime::Format::Natural::Duration";
+$modulesToAdd .= " -M DateTime::Format::Natural::Extract -M DateTime::Format::Natural::Formatted";
+$modulesToAdd .= " -M DateTime::Format::Natural::Helpers -M DateTime::Format::Natural::Rewrite";
+$modulesToAdd .= " -M DateTime::Format::Natural::Expand -M " . (file('DateTime','Format','Natural','Lang','EN.pm'))->stringify();
+
 my $filesToAdd = "";
 
 my $copyTo = (dir( cwd , 'build', 'current' ))->stringify;
@@ -97,7 +103,7 @@ if ( $^O =~ /MSWin/ ){
 		}
 	}
 	
-	my $result = `pp $filesToAdd $modulesToAdd -o ttmp32gme ttmp32gme.pl`;
+	my $result = `pp $filesToAdd $modulesToAdd -o mp32gme ttmp32gme.pl`;
 	
 	print $result;
 	if ( $? != 0 ){ die "Build failed.\n"; }
@@ -109,7 +115,7 @@ if ( $^O =~ /MSWin/ ){
 	}
 	
 	dircopy((dir('build', 'mac', 'ttmp32gme.app'))->stringify,(dir('dist', 'ttmp32gme.app'))->stringify );
-	fcopy((file('build', 'current', 'ttmp32gme'))->stringify, (file('dist', 'ttmp32gme.app', 'Contents', 'Resources', 'ttmp32gme'))->stringify);
+	fcopy((file('build', 'current', 'mp32gme'))->stringify, (file('dist', 'ttmp32gme.app', 'Contents', 'Resources', 'ttmp32gme'))->stringify);
 	`open dist`;
 	print "Build successful.\n";
 } else {

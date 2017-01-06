@@ -11,6 +11,7 @@ use Cwd;
 
 use Image::Info qw(image_type);
 use Music::Tag ( traditional => 1 );
+use Music::Tag::Auto;
 use Music::Tag::MusicBrainz;
 use Music::Tag::MP3;
 use Music::Tag::OGG;
