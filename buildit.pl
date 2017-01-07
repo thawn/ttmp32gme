@@ -70,6 +70,11 @@ if ( $^O =~ /MSWin/ ) {
 		->copy_to( file( $copyTo, 'ttmp32gme.ico' ) );
 
 	chdir($copyTo);
+	
+	#delete unnecessary executable files
+	(file('lib','tttool'))->remove();
+	$filesToAdd =~ s/ -a lib\/tttool//;
+	
 	my $result =
 `pp -M attributes -M UNIVERSAL $filesToAdd $modulesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 
@@ -94,6 +99,11 @@ if ( $^O =~ /MSWin/ ) {
 	print "\nMac OS X build.\n\n";
 
 	chdir($copyTo);
+
+	#delete unnecessary executable files
+	(file('lib','tttool.exe'))->remove();
+	$filesToAdd =~ s/ -a lib\/tttool.exe//;
+	
 
 	my $result = `pp $filesToAdd $modulesToAdd -o mp32gme ttmp32gme.pl`;
 
