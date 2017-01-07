@@ -85,7 +85,7 @@ sub format_main_oid {
 	my $oid_path = '/assets/images/' . $files->[0]->basename();
 	put_file_online( $files->[0], $oid_path, $httpd );
 	return
-"<img class='img-circle img-18mm play-img' src='$oid_path' alt='oid: $oid'>";
+"<img class='img-18mm play-img' src='$oid_path' alt='oid: $oid'>";
 }
 
 ## external functions:

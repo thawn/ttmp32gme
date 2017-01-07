@@ -10,6 +10,26 @@ cssPagedMedia.size = function(size) {
 	cssPagedMedia('@page {size: ' + size + '}');
 };
 
+var notify = function($caller, title, message, popover_class, timeout) {
+	$caller.attr({
+		'title' : title,
+		'data-content' : message
+	});
+	$caller.popover('show');
+	$caller.next('.popover').find('.popover-content').addClass(popover_class);
+	setTimeout(function() {
+		$caller.popover('destroy');
+	}, timeout);
+}
+
+var testCheckBox = function(s) {
+	if ($(s).is(':checked')) {
+		return 'TRUE';
+	} else {
+		return 'FALSE';
+	}
+}
+
 var getElementValues = function($id) {
 	var filterVars = {};
 	$id.find('input').not(':button').each(function() {
@@ -156,8 +176,8 @@ var adaptLayout = function($id) {
 			attachAlbumControlsTo('.tracks');
 		}
 	}
-	
-	//make sure we always see the power-on button
+
+	// make sure we always see the power-on button
 	if ($('input[name=print_show_cover]').prop('checked')) {
 		attachPowerOnTo('.cover');
 		$('.power-on').css('position', 'absolute');
