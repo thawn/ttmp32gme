@@ -98,6 +98,7 @@ sub removeTempDir {
 sub clearAlbum {
 	my ( $path, $file_list ) = @_;
 	my $libraryPath = getLibraryPath();
+	$libraryPath =~ s/\\/\\\\/g; #fix windows paths
 	if ( $path =~ /^$libraryPath/ ) {
 		foreach my $file ( @{$file_list} ) {
 			if ($file) {
@@ -116,6 +117,7 @@ sub clearAlbum {
 sub removeAlbum {
 	my ($path) = @_;
 	my $libraryPath = getLibraryPath();
+	$libraryPath =~ s/\\/\\\\/g; #fix windows paths
 	if ( $path =~ /^$libraryPath/ ) {
 		( dir($path) )->rmtree();
 		return 1;
@@ -137,6 +139,7 @@ sub remove_library_dir {
 	my ($media_path) = @_;
 	my $media_dir    = dir($media_path);
 	my $libraryPath  = getLibraryPath();
+	$libraryPath =~ s/\\/\\\\/g; #fix windows paths
 	if ( $media_dir =~ /^$libraryPath/ ) {
 		$media_dir->rmtree();
 		return 1;
