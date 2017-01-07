@@ -1,6 +1,14 @@
 # ttmp32gme
 a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
 
+## required perl modules (for running ttmp32gme from source)
+Path::Class
+PAR
+Music::Tag::MP3
+Music::Tag::OGG
+Music::Tag::MusicBrainz
+Image::Info
+
 ## ToDo
 * write better documentation.
 * copy selected gme files to tiptoi from the library page
