@@ -29,12 +29,12 @@ sub format_tracks {
 
 		#6 mm equals 34.015748031 pixels at 144 dpi
 		#(apparently chromium uses 144 dpi on my macbook pro)
-		my $oid_file = @{ create_oids( \@oid, 6, $dbh ) }[0];
+		my $oid_file = @{ create_oids( \@oid, 24, $dbh ) }[0];
 		my $oid_path = '/assets/images/' . $oid_file->basename();
 		put_file_online( $oid_file, $oid_path, $httpd );
 		$content .= "<li class='list-group-item'>";
 		$content .=
-			"<img class='img-6mm track-img' src='$oid_path' alt='oid $oid[0]'>";
+			"<div class='img-6mm track-img-container'><img class='img-24mm' src='$oid_path' alt='oid $oid[0]'></div>";
 		$content .= sprintf(
 			"%d. %s<span class='badge'>%02d:%02d</span></li>\n",
 			$i + 1,
@@ -70,9 +70,9 @@ sub format_controls {
 sub format_track_control {
 	my ( $track_no, $oid_map, $httpd, $dbh ) = @_;
 	my @oids = ( $oid_map->{ 't' . ( $track_no - 1 ) }{'code'} );
-	my $files = create_oids( \@oids, 18, $dbh );
+	my $files = create_oids( \@oids, 24, $dbh );
 	my $template = '<a class="btn btn-default play-control">'
-		. '<img class="img-18mm play-img" src="%s" alt="oid: %d">%d</a>';
+		. '<img class="img-24mm play-img" src="%s" alt="oid: %d">%d</a>';
 	my $oid_path = '/assets/images/' . $files->[0]->basename();
 	put_file_online( $files->[0], $oid_path, $httpd );
 	return sprintf( $template, $oid_path, $oids[0], $track_no );
@@ -81,11 +81,11 @@ sub format_track_control {
 sub format_main_oid {
 	my ( $oid, $oid_map, $httpd, $dbh ) = @_;
 	my @oids     = ($oid);
-	my $files    = create_oids( \@oids, 18, $dbh );
+	my $files    = create_oids( \@oids, 24, $dbh );
 	my $oid_path = '/assets/images/' . $files->[0]->basename();
 	put_file_online( $files->[0], $oid_path, $httpd );
 	return
-"<img class='img-18mm play-img' src='$oid_path' alt='oid: $oid'>";
+"<img class='img-24mm play-img' src='$oid_path' alt='oid: $oid'>";
 }
 
 ## external functions:

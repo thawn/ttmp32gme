@@ -10,23 +10,24 @@
 }
 
 .img-18mm {
-	max-width: 102px !important;
-	min-width: 102px !important;
-	max-height: 102px !important;
-	min-height: 102px !important;
+	max-width: 103px !important;
+	min-width: 103px !important;
+	max-height: 103px !important;
+	min-height: 103px !important;
 }
 
 .img-24mm {
-	max-width: 136px !important;
-	min-width: 136px !important;
-	max-height: 136px !important;
-	min-height: 136px !important;
+	max-width: 138px !important;
+	min-width: 138px !important;
+	max-height: 138px !important;
+	min-height: 138px !important;
 }
 
-.track-img {
+.track-img-container {
 	border-radius: 5px;
 	border: 1px solid #cccccc;
 	margin-right: 10px;
+	overflow:hidden;
 }
 
 .play-img {
@@ -37,13 +38,13 @@
 
 .power-on {
 	position: absolute;
-	width: 81px;
-	height: 81px;
+	width: 103px;
+	height: 103px;
 	left: 15px;
 	top: 0px;
 	background-color: #ffffff;
 	box-shadow: inset 0 0 0 1000px #ffffff;
-	font-size: 68px;
+	font-size: 86px;
 	z-index: 1000;
 	border-radius: 100px;
 	overflow: hidden;
