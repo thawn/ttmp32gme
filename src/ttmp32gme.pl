@@ -72,7 +72,6 @@ my ( $dbh, %config, $watchers, %templates, $static, %assets );
 
 	use TTMp32Gme::Build::FileHandler;
 
-
 	my $configFile = checkConfigFile();
 	unless ($configFile) {
 		die "Could not find config file.\n";
@@ -219,7 +218,7 @@ $httpd->reg_cb(
 
 					#delete temporary uploaded files
 					my $fileToDelete = $albumList[$albumCount]{ $req->parm('qquuid') };
-					my $deleted = unlink $fileToDelete;
+					my $deleted      = unlink $fileToDelete;
 					print $fileToDelete. "\n";
 					if ($deleted) {
 						$content->{'success'} = \1;
@@ -292,7 +291,12 @@ $httpd->reg_cb(
 					$statusMessage =
 						'Could not get list of albums. Possible database error.';
 					$content->{'list'} = get_album_list( $dbh, $httpd );
-				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme)/ ) {
+					if (get_tiptoi_dir) {
+						$content->{'tiptoi_connected'} = \1;
+					}
+				} elsif (
+					$req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme)/ )
+				{
 					my $postData =
 						decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 					if ( $req->parm('action') eq 'update' ) {
@@ -313,6 +317,11 @@ $httpd->reg_cb(
 						$statusMessage = 'Could not create gme file.';
 						$content->{'element'} =
 							get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ),
+							$httpd, $dbh );
+					} elsif ( $req->parm('action') eq 'copy_gme' ) {
+						$statusMessage = 'Could not copy gme file.';
+						$content->{'element'} =
+							get_album_online( copy_gme( $postData->{'uid'}, \%config, $dbh ),
 							$httpd, $dbh );
 					}
 				} elsif ( $req->parm('action') eq 'add_cover' ) {

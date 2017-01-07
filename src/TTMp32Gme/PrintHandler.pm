@@ -23,7 +23,7 @@ our @EXPORT = qw(create_print_layout);
 sub format_tracks {
 	my ( $album, $oid_map, $httpd, $dbh ) = @_;
 	my $content;
-	my @tracks = sort grep { $_ =~ /^track_/ } keys %{$album};
+	my @tracks = get_sorted_tracks($album);
 	foreach my $i ( 0 .. $#tracks ) {
 		my @oid = ( $oid_map->{ $album->{ $tracks[$i] }{'tt_script'} }{'code'} );
 

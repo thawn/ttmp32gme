@@ -24,6 +24,8 @@
 }
 
 .track-img-container {
+	display: inline-block;
+	vertical-align: middle;
 	border-radius: 5px;
 	border: 1px solid #cccccc;
 	margin-right: 10px;

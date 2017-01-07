@@ -9,7 +9,7 @@ use Path::Class;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache);
+	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir);
 
 my @build_imports =
 	qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
@@ -165,6 +165,16 @@ sub get_oid_cache {
 		);
 	}
 	return $oid_cache->stringify();
+}
+
+sub get_tiptoi_dir {
+	if ( $^O eq 'darwin' ) {
+		my $tiptoi_path = dir( '', 'Volumes', 'tiptoi' );
+		if ( -w $tiptoi_path ) {
+			return $tiptoi_path;
+		}
+	}
+	return 0;
 }
 
 1;

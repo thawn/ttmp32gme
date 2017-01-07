@@ -119,38 +119,6 @@ var deleteElement = function($id,uid) \{
 		\});
 \}
 
-var listElements = function(clear,callback) \{
-	$.post(
-		document.baseURI,
-		'action=list',
-		function(data,textStatus,jqXHR) \{
-			if (data.success) \{
-				if (clear) \{
-					for (var i = 0; i < elementCount; i++) \{
-						$('#el' + i).remove();
-					\}
-					elementCount = 0;
-				\}
-				for (var i = elementCount; i < data.list.length; i++) \{
-					insertElement(data.list[i]);
-				\}
-
-				if (callback) \{
-					callback();
-				\}
-
-			\} else \{
-				var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
-						+ data.status + "</div></td></tr>";
-				$('#element-list tbody').append(alert);
-			\}
-		\}, 'json').fail(function()\{
-			var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
-				+ "Connection error!</div></td></tr>";
-		$('#element-list tbody').append(alert);
-	\});
-\}
-
 </script>
 <style type="text/css">
 .ui-draggable-handle \{

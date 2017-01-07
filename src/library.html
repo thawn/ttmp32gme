@@ -84,6 +84,29 @@
 </style>
 
 <script type="text/javascript">
+	var listElements = function() {
+		$.post(
+			document.baseURI,
+			'action=list',
+			function(data,textStatus,jqXHR) {
+				if (data.success) {
+					for (var i = elementCount; i < data.list.length; i++) {
+						insertElement(data.list[i]);
+					}
+					if (data.tiptoi_connected) {
+						$('.copy-gme').show();
+					}
+				} else {
+					var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
+							+ data.status + "</div></td></tr>";
+					$('#element-list tbody').append(alert);
+				}
+			}, 'json').fail(function(){
+				var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
+					+ "Connection error!</div></td></tr>";
+			$('#element-list tbody').append(alert);
+		});
+	}
 
 	var getElementValues = function($id) {
 		var filterVars = {};
@@ -207,6 +230,12 @@
     }
 	}
 	
+	var hasGME = function($id) {
+		if ($id.find('input[name=gme_file]').val()){
+			return true;
+		} else {return}
+	}
+	
 	var triggerElementAction = function(action,$id,uid) {
 		var filterVars = {
 			'uid' : uid
@@ -245,7 +274,11 @@
 			toggleShow($(this).data('item-id'));
 		});
 		$('#albums').on('click', 'button.make-gme', function() {
-			triggerElementAction('make_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());		});
+			triggerElementAction('make_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+		});
+		$('#albums').on('click', 'button.copy-gme', function() {
+			triggerElementAction('copy_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+		});
 		$('#albums').on('click','button.delete',function() {
 			var ok = confirm('Are you sure? This will delete the entire album including the gme file from your library. This cannot be undone.');
 			if (ok) {
@@ -276,10 +309,12 @@
 		}
 		$('#toggle-all').click(function(){
 			$('input[name=enabled]').each(function(){
-				if ($(this).prop('checked')) {
-					$(this).prop('checked', false);
-				} else {
-					$(this).prop('checked', true);
+				if ($(this).data('item-id')) {
+					if ($(this).prop('checked')) {
+						$(this).prop('checked', false);
+					} else {
+						$(this).prop('checked', true);
+					}
 				}
 			});
 		});
@@ -290,14 +325,40 @@
 			});
 			printAlbums(oids);
 		});
-		$('.box').matchHeight({
-			target: $(this).parents('.edit').find('img.cover')
+		$('#copy-selected').click(function(){
+			$('input[name=enabled]:checked').each(function(){
+				triggerElementAction('copy_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+			});
+		});
+		$('#cleanup-selected').click(function(){
+			var ok = confirm('Are you sure? This will delete all music files from selected albums. The gme files and the pictures (if any) will remain in your library. This cannot be undone.');
+			if (ok) {
+				$('input[name=enabled]:checked').each(function(){
+					if ($(this).data('item-id').find('input[name=gme_file]').val()) {
+						triggerElementAction('cleanup', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+					}
+				});
+			}
+		});
+		$('#delete-selected').click(function(){
+			var ok = confirm('Are you sure? This will delete all selected albums including the gme files from your library. This cannot be undone.');
+			if (ok) {
+				$('input[name=enabled]:checked').each(function(){
+					deleteElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+				});
+			}
 		});
 	});
 </script>
 <p>
 	<button id="toggle-all" class="btn btn-default">Select/deselect all</button>
+	<button id="copy-selected" class="btn btn-success copy-gme" data-toggle="popover"
+		style="display: none;">Copy selected to TipToi</button>
 	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print
+		selected</button>
+	<button id="cleanup-selected" class="btn btn-warning" data-toggle="popover">Cleanup
+		selected</button>
+	<button id="delete-selected" class="btn btn-danger" data-toggle="popover">Delete
 		selected</button>
 </p>
 
@@ -333,6 +394,7 @@
 								aria-label="save cancel delete button group">
 								<button type="button" class="btn btn-primary update">Update</button>
 								<button type="button" class="btn btn-success make-gme">Create GME</button>
+								<button type="button" class="btn btn-success copy-gme" style="display: none;">Copy GME to TipToi</button>
 								<button type="button" class="btn btn-success print" style="display: none;">Print</button>
 								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
 								<button type="button" class="btn btn-danger delete">Delete</button>

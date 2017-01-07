@@ -15,7 +15,7 @@ use TTMp32Gme::LibraryHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(make_gme generate_oid_images create_oids);
+our @EXPORT = qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme);
 
 ## internal functions:
 
@@ -94,11 +94,7 @@ scriptcodes:
 sub convert_tracks {
 	my ( $album, $yaml_file, $config, $dbh ) = @_;
 	my $media_path = dir( $album->{'path'}, "audio" );
-	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
-
-	#nned to jump through some hoops here to get proper numeric sorting:
-	@tracks = sort { $a <=> $b } map { $_ =~ s/^track_//r } @tracks;
-	@tracks = map { 'track_' . $_ } @tracks;
+	my @tracks = get_sorted_tracks($album);
 
 	$media_path->mkpath();
 	if ( $config->{'audio_format'} eq 'ogg' ) {
@@ -225,6 +221,15 @@ sub run_tttool {
 
 ##exported functions
 
+sub get_sorted_tracks {
+	my ($album) = @_;
+	#need to jump through some hoops here to get proper numeric sorting:
+	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
+	@tracks = sort { $a <=> $b } map { $_ =~ s/^track_//r } @tracks;
+	@tracks = map { 'track_' . $_ } @tracks;
+	return @tracks;	
+}
+
 sub make_gme {
 	my ( $oid, $config, $dbh ) = @_;
 	my $album = get_album( $oid, $dbh );
@@ -267,6 +272,24 @@ sub create_oids {
 		push( @files, $oid_file );
 	}
 	return \@files;
+}
+
+sub copy_gme {
+	my ( $oid, $config, $dbh ) = @_;
+	my $album_data = $dbh->selectrow_hashref(
+		q(SELECT path,gme_file FROM gme_library WHERE oid=?),
+		{}, $oid );
+	if ( ! $album_data->{'gme_file'} ) {
+		make_gme( $oid, $config, $dbh );
+		$album_data = $dbh->selectrow_hashref(
+			q(SELECT path,gme_file FROM gme_library WHERE oid=?),
+			{}, $oid );
+	}
+	my $gme_file = file( $album_data->{'path'},$album_data->{'gme_file'} );
+	my $tiptoi_dir = get_tiptoi_dir();
+	msg("Copying $album_data->{'gme_file'} to $tiptoi_dir",1);
+	$gme_file->copy_to( file( $tiptoi_dir, $gme_file->basename() ) );
+	return $oid;
 }
 
 1;
