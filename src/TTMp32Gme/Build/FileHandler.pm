@@ -150,6 +150,9 @@ sub remove_library_dir {
 
 sub get_executable_path {
 	my $exe_name = $_[0];
+	if ( $^O =~ /MSWin/ ) {
+		$exe_name .= '.exe';
+	}
 	return ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
 }
 
