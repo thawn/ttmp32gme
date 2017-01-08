@@ -6,8 +6,6 @@ use warnings;
 use Path::Class;
 use Cwd;
 
-use Data::Dumper;
-
 use Log::Message::Simple qw(msg error);
 
 use TTMp32Gme::Build::FileHandler;

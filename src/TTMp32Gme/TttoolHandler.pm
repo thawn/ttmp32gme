@@ -6,8 +6,6 @@ use warnings;
 use Path::Class;
 use Cwd;
 
-use Data::Dumper;
-
 use Log::Message::Simple qw(msg error);
 
 use TTMp32Gme::Build::FileHandler;
@@ -110,7 +108,6 @@ sub convert_tracks {
 	my $prev = "  prev:\n";
 	my $track_scripts;
 
-	#print Dumper($album);
 	foreach my $i ( 0 .. $#tracks ) {
 		if ( $i < $#tracks ) {
 			if ( $i < $#tracks - 1 ) {

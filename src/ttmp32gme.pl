@@ -5,8 +5,6 @@ package main;
 use strict;
 use warnings;
 
-use Data::Dumper;
-
 use EV;
 use AnyEvent::Impl::EV;
 use AnyEvent::HTTPD;
@@ -14,12 +12,9 @@ use AnyEvent::HTTP;
 
 use PAR;
 
-use Error qw(:try);
 use Encode qw(decode_utf8 encode_utf8);
 
 use Path::Class;
-use File::Path qw(make_path remove_tree);
-use File::Copy qw(move);
 
 use Text::Template;
 use JSON::XS;

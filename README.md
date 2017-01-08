@@ -2,11 +2,28 @@
 a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
 
 ## required perl modules (for running ttmp32gme from source)
+EV
+AnyEvent::HTTPD
 Path::Class
+Cwd
+File::Basename
+File::Find
+List::MoreUtils
 PAR
+Encode
+Text::Template;
+JSON::XS;
+URI::Escape;
+Getopt::Long;
+Perl::Version;
+DBI;
+DBIx::MultiStatementDo;
+Log::Message::Simple
 Music::Tag::MP3
 Music::Tag::OGG
 Music::Tag::MusicBrainz
+Music::Tag::Auto
+MP3::Tag
 Image::Info
 
 ## ToDo
