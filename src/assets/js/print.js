@@ -170,10 +170,13 @@ var adaptLayout = function($id) {
 	if ($('input[name=print_show_album_controls]').prop('checked')) {
 		if ($('input[name=print_show_album_info]').prop('checked')) {
 			attachAlbumControlsTo('.album-info');
+			$('.album-controls').addClass('btn-group-justified');
 		} else if ($('input[name=print_show_cover]').prop('checked')) {
 			attachAlbumControlsTo('.cover');
+			$('.album-controls').addClass('btn-group-justified');
 		} else {
 			attachAlbumControlsTo('.tracks');
+			$('.album-controls').removeClass('btn-group-justified');
 		}
 	}
 
@@ -181,12 +184,15 @@ var adaptLayout = function($id) {
 	if ($('input[name=print_show_cover]').prop('checked')) {
 		attachPowerOnTo('.cover');
 		$('.power-on').css('position', 'absolute');
+		$('.power-on').removeClass('power-on-inline');
 	} else if ($('input[name=print_show_album_info]').prop('checked')) {
 		attachPowerOnTo('.album-info');
 		$('.power-on').css('position', 'relative');
+		$('.power-on').removeClass('power-on-inline');
 	} else {
 		attachPowerOnTo('.tracks');
 		$('.power-on').css('position', 'relative');
+		$('.power-on').addClass('power-on-inline');
 	}
 }
 
@@ -215,25 +221,37 @@ var toggleField = function($checkbox) {
 	}
 }
 
+var tileStyle = (function() {
+	// Create the <style> tag
+	var style = document.createElement("style");
+
+	// WebKit hack :(
+	style.appendChild(document.createTextNode(""));
+
+	// Add the <style> element to the page
+	document.head.appendChild(style);
+
+	return style.sheet;
+})();
+
 var changeTileSize = function($id) {
+	var numRules = tileStyle.cssRules.length;
 	if ($id.val()) {
 		var DPcm = 34 / 0.6;
 		var size = $id.val() * DPcm;
-		$('.album').css({
-			'min-width' : size + 'px',
-			'min-height' : size + 'px',
-			'max-width' : size + 'px',
-			'max-height' : size + 'px',
-			'overflow' : 'hidden'
-		});
+		var DPIfactor = 0.777907429
+		for (i=0;i<numRules;i++) {
+			tileStyle.removeRule(0);
+		}
+		tileStyle.insertRule(
+				'.album { min-width: ' + size + 'px; min-height: ' + size + 'px; max-width: ' + size + 'px; max-height: ' + size + 'px; overflow: hidden;}',0);
+		size = size*DPIfactor;
+		tileStyle.insertRule(
+				'@media print and (resolution: 72dpi) {.album { min-width: ' + size + 'px; min-height: ' + size + 'px; max-width: ' + size + 'px; max-height: ' + size + 'px; overflow: hidden;}}',1);
 	} else {
-		$('.album').css({
-			'min-width' : 0,
-			'min-height' : 0,
-			'max-width' : 'none',
-			'max-height' : 'none',
-			'overflow' : 'visible'
-		});
+		for (i=0;i<numRules;i++) {
+			tileStyle.removeRule(0);
+		}
 	}
 }
 

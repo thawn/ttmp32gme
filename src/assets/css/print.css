@@ -29,7 +29,7 @@
 	border-radius: 5px;
 	border: 1px solid #cccccc;
 	margin-right: 10px;
-	overflow:hidden;
+	overflow: hidden;
 }
 
 .play-img {
@@ -53,8 +53,14 @@
 	text-align: center;
 }
 
+.power-on-inline {
+	display:inline-block;
+	vertical-align: middle;
+	margin-right: 20px;
+}
+
 .play-control {
-	padding: 17px !important;
+	padding: 17px 25px !important;
 	overflow: hidden;
 }
 
@@ -63,5 +69,32 @@
 }
 
 .track-list>.list-group-item {
-	padding:5px 10px;
-} 
+	padding: 5px 10px;
+}
+
+@media print and (resolution: 72dpi) {
+	/*  for firefox, we need to scale pixel values by a factor of 0.775939419 */
+	.img-6mm {
+		max-width: 29px !important;
+		min-width: 29px !important;
+		max-height: 29px !important;
+		min-height: 29px !important;
+	}
+	.img-18mm {
+		max-width: 79px !important;
+		min-width: 79px !important;
+		max-height: 79px !important;
+		min-height: 79px !important;
+	}
+	.img-24mm {
+		max-width: 107px !important;
+		min-width: 107px !important;
+		max-height: 107px !important;
+		min-height: 107px !important;
+	}
+	.power-on {
+		width: 80px;
+		height: 80px;
+		font-size: 67px;
+	}
+}
