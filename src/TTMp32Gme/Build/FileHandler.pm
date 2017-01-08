@@ -180,6 +180,7 @@ sub get_tiptoi_dir {
 			return $tiptoi_path;
 		}
 	} elsif ( $^O =~ /MSWin/ ) {
+		require Win32API::File;
 		my @drives = Win32API::File::getLogicalDrives();
 		foreach my $d (  @drives  ) {
 			my $label;
