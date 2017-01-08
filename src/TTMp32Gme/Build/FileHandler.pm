@@ -179,6 +179,15 @@ sub get_tiptoi_dir {
 		if ( -w $tiptoi_path ) {
 			return $tiptoi_path;
 		}
+	} elsif ( $^O =~ /MSWin/ ) {
+		my @drives = Win32API::File::getLogicalDrives();
+		foreach my $d (  @drives  ) {
+			my $label;
+			Win32API::File::GetVolumeInformation( $d, $label);
+			if ( $label eq 'tiptoi' ) {
+				return $d;
+			}
+		}
 	}
 	return 0;
 }
