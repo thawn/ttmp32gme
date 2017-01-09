@@ -24,12 +24,12 @@ sub loadFile {
 }
 
 sub get_local_storage {
-	my $storage = dir($maindir);
-	return $storage;
+	return dir($maindir);
+	#return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' ); #uncomment for testing on a mac
 }
 
 sub get_par_tmp {
-	return get_local_storage();
+	return dir($maindir);
 }
 
 sub loadTemplates {
