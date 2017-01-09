@@ -183,9 +183,9 @@ sub get_tiptoi_dir {
 		require Win32API::File;
 		my @drives = Win32API::File::getLogicalDrives();
 		foreach my $d (  @drives  ) {
-			my $label;
-			Win32API::File::GetVolumeInformation( $d, $label);
-			if ( $label eq 'tiptoi' ) {
+			my @info = (undef)x7;
+			Win32API::File::GetVolumeInformation( $d, @info);
+			if ( $info[0] eq 'tiptoi' ) {
 				return $d;
 			}
 		}
