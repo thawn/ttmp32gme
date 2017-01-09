@@ -47,7 +47,7 @@ sub format_tracks {
 sub format_controls {
 	my ( $oid_map, $httpd, $dbh ) = @_;
 	my @oids = (
-		$oid_map->{'prev'}{'code'}, $oid_map->{'t0'}{'code'},
+		$oid_map->{'prev'}{'code'}, $oid_map->{'play'}{'code'},
 		$oid_map->{'stop'}{'code'}, $oid_map->{'next'}{'code'}
 	);
 	my @icons = ( 'backward', 'play', 'stop', 'forward' );

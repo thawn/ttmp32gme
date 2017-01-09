@@ -106,16 +106,20 @@ sub convert_tracks {
 	}
 	my $next = "  next:\n";
 	my $prev = "  prev:\n";
+	my $play = "  play:\n";
 	my $track_scripts;
 
 	foreach my $i ( 0 .. $#tracks ) {
 		if ( $i < $#tracks ) {
+			$play .= "  - \$current==$i? P(@{[$i]}) J(t@{[$i+1]})\n";
 			if ( $i < $#tracks - 1 ) {
 				$next .=
 "  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]}) J(t@{[$i+2]})\n";
 			} else {
 				$next .= "  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]}) C\n";
 			}
+		} else {
+			$play .= "  - \$current==$i? P(@{[$i]}) C\n";
 		}
 		if ( $i > 0 ) {
 			$prev .=
@@ -151,6 +155,7 @@ sub convert_tracks {
 		#if there is only one track, the next and prev buttons just play that track.
 		$next .= "  - \$current:=$lastTrack P($lastTrack) C\n";
 		$prev .= "  - \$current:=$lastTrack P($lastTrack) C\n";
+		$play .= "  - \$current:=$lastTrack P($lastTrack) C\n";
 		$welcome = "welcome: " . "'$lastTrack'" . "\n";
 	} else {
 		$welcome = "welcome: " . join( ', ', ( 0 .. $#tracks ) ) . "\n";
@@ -164,6 +169,7 @@ sub convert_tracks {
 	print $fh "init: \$current:=0\n";
 	print $fh $welcome;
 	print $fh "scripts:\n";
+	print $fh $play;
 	print $fh $next;
 	print $fh $prev;
 	print $fh "  stop:\n  - C C\n";
