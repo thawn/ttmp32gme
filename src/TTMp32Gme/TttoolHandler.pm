@@ -12,8 +12,9 @@ use TTMp32Gme::Build::FileHandler;
 use TTMp32Gme::LibraryHandler;
 
 require Exporter;
-our @ISA    = qw(Exporter);
-our @EXPORT = qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme);
+our @ISA = qw(Exporter);
+our @EXPORT =
+	qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme);
 
 ## internal functions:
 
@@ -70,18 +71,18 @@ scriptcodes:
 			$last_code++;
 			if ( $last_code > 14999 ) {
 				my %code_test = map { $_ => 1 } @sorted_codes;
-				$last_code = 1000;
+				$last_code = 1001;
 				while ( $code_test{$last_code} ) {
 					$last_code++;
 				}
 				if ( $last_code > 14999 ) {
 					die("Cannot create script. All script codes are used up.");
 				}
-				my $qh = $dbh->prepare(q(INSERT INTO script_codes VALUES (?,?) ));
-				$qh->execute( ( $script, $last_code ) );
-				unshift( @sorted_codes, $last_code );
-				$codes->{$script}{'code'} = $last_code;
 			}
+			my $qh = $dbh->prepare(q(INSERT INTO script_codes VALUES (?,?) ));
+			$qh->execute( ( $script, $last_code ) );
+			unshift( @sorted_codes, $last_code );
+			$codes->{$script}{'code'} = $last_code;
 			print $fh "  $script: $last_code\n";
 		}
 	}
@@ -226,11 +227,12 @@ sub run_tttool {
 
 sub get_sorted_tracks {
 	my ($album) = @_;
+
 	#need to jump through some hoops here to get proper numeric sorting:
 	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
 	@tracks = sort { $a <=> $b } map { $_ =~ s/^track_//r } @tracks;
 	@tracks = map { 'track_' . $_ } @tracks;
-	return @tracks;	
+	return @tracks;
 }
 
 sub make_gme {
@@ -282,15 +284,15 @@ sub copy_gme {
 	my $album_data = $dbh->selectrow_hashref(
 		q(SELECT path,gme_file FROM gme_library WHERE oid=?),
 		{}, $oid );
-	if ( ! $album_data->{'gme_file'} ) {
+	if ( !$album_data->{'gme_file'} ) {
 		make_gme( $oid, $config, $dbh );
 		$album_data = $dbh->selectrow_hashref(
 			q(SELECT path,gme_file FROM gme_library WHERE oid=?),
 			{}, $oid );
 	}
-	my $gme_file = file( $album_data->{'path'},$album_data->{'gme_file'} );
+	my $gme_file = file( $album_data->{'path'}, $album_data->{'gme_file'} );
 	my $tiptoi_dir = get_tiptoi_dir();
-	msg("Copying $album_data->{'gme_file'} to $tiptoi_dir",1);
+	msg( "Copying $album_data->{'gme_file'} to $tiptoi_dir", 1 );
 	$gme_file->copy_to( file( $tiptoi_dir, $gme_file->basename() ) );
 	return $oid;
 }

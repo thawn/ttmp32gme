@@ -100,6 +100,9 @@ sub create_print_layout {
 			if ( !$album->{'gme_file'} ) {
 				$album =
 					get_album_online( make_gme( $oid, $config, $dbh ), $httpd, $dbh );
+				$oid_map =
+					$dbh->selectall_hashref( "SELECT * FROM script_codes", 'script' );
+				
 			}
 			$album->{'track_list'} = format_tracks( $album, $oid_map, $httpd, $dbh );
 			$album->{'play_controls'} = $controls;
