@@ -72,6 +72,14 @@
 	padding: 5px 10px;
 }
 
+.cover-img {
+	width: 100%;
+}
+
+#general-controls, .album {
+	page-break-inside: avoid;
+}
+
 @media print and (resolution: 72dpi) {
 	/*  for firefox, we need to scale pixel values by a factor of 0.775939419 */
 	.img-6mm {

@@ -34,7 +34,7 @@ sub format_tracks {
 		$content .=
 			"<div class='img-6mm track-img-container'><img class='img-24mm' src='$oid_path' alt='oid $oid[0]'></div>";
 		$content .= sprintf(
-			"%d. %s<span class='badge'>%02d:%02d</span></li>\n",
+			"%d. %s (<strong>%02d:%02d</strong>)</li>\n",
 			$i + 1,
 			$album->{ $tracks[$i] }{'title'},
 			$album->{ $tracks[$i] }{'duration'} / 60000,
@@ -113,7 +113,7 @@ sub create_print_layout {
 	}
 
 	#add general controls:
-	$content .= '<div class="row general-controls">';
+	$content .= '<div id="general-controls" class="row general-controls">';
 	$content .=
 '  <div class="col-xs-6 col-xs-offset-3 general-controls" style="margin-bottom:10px;">';
 	$content .=

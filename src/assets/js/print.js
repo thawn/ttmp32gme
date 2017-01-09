@@ -257,13 +257,26 @@ var changeTileSize = function($id) {
 
 var changeNumberOfColumns = function($id) {
 	if ($id.val() > 1) {
-		var numCols = 12 / $id.val() << 0;
-		var columnClass = 'col-xs-' + numCols;
+		var colWidth = 12 / $id.val() << 0;
+		var columnClass = 'col-xs-' + colWidth;
 		$('.album').parent().removeClass().addClass(columnClass);
-		$('#wrap-all-print').removeClass().addClass('row');
+		$('.album').parent().appendTo('#wrap-all-print');
+		$('.album-row').remove();
+		var rowHTML = '<div class="row album-row"></div>';
+		var rowCount = 0;
+		$('.album').parent().each( function(albumCount){
+			if ( (albumCount % $id.val()) === 0 ) {
+				rowCount++;
+				$('#wrap-all-print').append('<div id="row-' + rowCount + '" class="row album-row"></div>');
+			}
+			$(this).appendTo('#row-' + rowCount);
+		});
+		$('#general-controls').appendTo('#wrap-all-print');
 	} else {
 		$('.album').parent().removeClass().addClass('row');
-		$('#wrap-all-print').removeClass();
+		$('.album').parent().appendTo('#wrap-all-print');
+		$('.album-row').remove();
+		$('#general-controls').appendTo('#wrap-all-print');
 	}
 }
 
