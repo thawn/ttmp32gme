@@ -294,6 +294,7 @@ sub copy_gme {
 	my $tiptoi_dir = get_tiptoi_dir();
 	msg( "Copying $album_data->{'gme_file'} to $tiptoi_dir", 1 );
 	$gme_file->copy_to( file( $tiptoi_dir, $gme_file->basename() ) );
+	msg( "done.", 1 );
 	return $oid;
 }
 
