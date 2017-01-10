@@ -81,15 +81,34 @@
 	padding: 10px;
 	margin: 10px 0px;
 }
+
 </style>
 
 <script type="text/javascript">
+	var sortBy = 'album_artist';
+  var sortBy2 = 'album_title';
+	var elementCount = 0;
+	
+	var sortList = function(listA,listB) {
+		var a = '' + listA[sortBy] + listA[sortBy2];
+		var b = '' + listB[sortBy] + listB[sortBy2];
+		a = a.toLowerCase();
+		b = b.toLowerCase();
+		return ((a < b) ? -1 : ((a > b) ? 1 : 0));
+	}
+
 	var listElements = function() {
 		$.post(
 			document.baseURI,
 			'action=list',
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
+					data.list.sort(sortList);
+					for (var i = 0; i < elementCount; i++) {
+						$('#el' + i).remove();
+					}
+					elementCount = 0;
+
 					for (var i = elementCount; i < data.list.length; i++) {
 						insertElement(data.list[i]);
 					}
@@ -218,8 +237,6 @@
 	  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
 	}
 
-	var elementCount = 0;
-	
 	$.urlParam = function(name){
     var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
     if (results==null){
@@ -355,7 +372,7 @@
 			$('#progress').hide();
 			totalFilesCopying = 0;
 		});
-		// Grab the list of feeds, then grab the list of filters.
+		// Grab the list of albums.
 		listElements();
 		
 		if ($.urlParam('oid')) {
@@ -408,6 +425,18 @@
 				});
 			}
 		});
+		$('#sort1').find('a').click(function(){
+			sortBy = this.className;
+			$('#sort1').find('li').removeClass('active');
+			$(this).parent().addClass('active');
+			listElements();
+		});
+		$('#sort2').find('a').click(function(){
+			sortBy2 = this.className;
+			$('#sort2').find('li').removeClass('active');
+			$(this).parent().addClass('active');
+			listElements();
+		});
 	});
 </script>
 <p>
@@ -423,6 +452,33 @@
 	<button id="delete-selected" class="btn btn-danger" data-toggle="popover">Delete
 		selected</button>
 </p>
+<div class="btn-group pull-right" role="group" aria-label="sorting buttons">
+	<div id="sort1" class="btn-group">
+		<button type="button" class="btn btn-info dropdown-toggle"
+			data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+			Sort by <span class="caret"></span>
+		</button>
+		<ul class="dropdown-menu">
+			<li class="active"><a class="album_artist">Artist</a></li>
+			<li><a class="album_title">Title</a></li>
+			<li><a class="album_year">Year</a></li>
+			<li><a class="oid">OID</a></li>
+		</ul>
+	</div>
+	<div id="sort2" class="btn-group">
+		<button type="button" class="btn btn-info dropdown-toggle"
+			data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+			Secondary sort <span class="caret"></span>
+		</button>
+		<ul class="dropdown-menu">
+			<li><a class="album_artist">Artist</a></li>
+			<li class="active"><a class="album_title">Title</a></li>
+			<li><a class="album_year">Year</a></li>
+			<li><a class="oid">OID</a></li>
+		</ul>
+	</div>
+</div>
+
 <div id="progress" style="display: none;">
 	<div class="alert alert-info" role="alert">
 		Copying files to tiptoi, please <strong>do not disconnect</strong> the pen until
@@ -434,13 +490,12 @@
 			<span class="sr-only">0% Complete</span>
 		</div>
 	</div>
-	<div class="alert alert-success" role="alert"
-		style="display: none;">
+	<div class="alert alert-success" role="alert" style="display: none;">
 		<button type="button" class="close" aria-label="Close">
 			<span aria-hidden="true">&times;</span>
 		</button>
-		<strong>All files copied successfully!</strong> It is now safe to disconnect the tiptoi from
-		the computer.
+		<strong>All files copied successfully!</strong> It is now safe to disconnect the
+		tiptoi from the computer.
 	</div>
 </div>
 <div class="row" id="albums">
