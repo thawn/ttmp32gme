@@ -25,13 +25,13 @@ class="glyphicon glyphicon-cog"></span> Configure print layout".
 You can choose one of the three presets:
 
 list
-: A list layout that includes all album details</dt>
+: A list layout that includes all album details.
 
 tiles
 : A tiled layout that includes only minimal album details and general controls that work with all albums.
 
 CD booklet
-: A layout that is optimized for printing CD booklets.</dt>
+: A layout that is optimized for printing CD booklets.
 
 Alternatively, you can manually choose which parts (cover image, album
 information, album control buttons, track list) to display, how many columns
@@ -45,12 +45,26 @@ this if you want to know why</a>). If you have problems with not recognized oid
 codes, first try to increase the number of pixels to 3 or 4 and then try to
 change the printing resolution.
 
-###4. Copy the gme files onto the tiptoi pen</h4>
+### 4. Copy the gme files onto the tiptoi pen</h4>
 Connect the tiptoi pen to your computer. If you do not see the button "Copy
 selected to TipToi", reload the <a href="/library">library page</a>. Now select
 the desired albums and click on "Copy selected to TipToi". Wait till the
 operation completes and a message appears that tells you that it is safe to
 disconnect the pen from the computer.
+
+### Screenshots
+#### Print as detailed list
+[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_list.jpg|alt="list view"]]
+
+#### Print as tiles (fits many albums on one page)
+[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_tiles.jpg|alt="tiles view"]]
+
+#### Print as CD booklet (fits into standard CD cases)
+[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_cd-booklet.jpg|alt="list view"]]
+
+#### Print configuration
+[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/print-config.jpg|alt="list view"]]
+
 
 ## required perl modules (for running ttmp32gme from source)
 EV
@@ -79,10 +93,9 @@ Image::Info
 
 ## ToDo
 * enable sorting of albums by artist/title/genre in library and on printing page
-* write better documentation.
 * convert mp3->ogg if desired (mainly for older pens with limited memory)
 * enable separate printing of oid codes/text and cover images
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
-* interface to use external ripping tools such as fre:ac
+* interface to use external CD ripping tools such as fre:ac
