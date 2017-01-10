@@ -7,15 +7,15 @@ a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet
 
 ## Usage
 ### 1. Add mp3 files
-Add one or more mp3 files on the <a href="/">"Upload" page</a>. Only add one
+Add one or more mp3 files on the "Upload" page. Only add one
 album at a time.
 ### 2. Configure and create gme files</h4>
-On the <a href="/library">"Library" page,</a> you can configure and create gme
+On the "Library" page, you can configure and create gme
 files. Mp3 tag data of recently uploaded files will automatically be used to
 pre-populate the artist, album title and track info.
 
 ### 3. Print the control page(s)
-Once you choose to print one or more album from the <a href="/library">library,</a>
+Once you choose to print one or more album from the library,
 a new page will open that displays the albums and their tracks from the gme
 files that you selected for printing.
 
@@ -43,11 +43,11 @@ many pixels (in x and y direction) each dot of the OID code should use. Start
 with a value of 2 (<a href="https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem">read
 this if you want to know why</a>). If you have problems with not recognized oid
 codes, first try to increase the number of pixels to 3 or 4 and then try to
-change the printing resolution.
+change the resolution setting.
 
 ### 4. Copy the gme files onto the tiptoi pen</h4>
 Connect the tiptoi pen to your computer. If you do not see the button "Copy
-selected to TipToi", reload the <a href="/library">library page</a>. Now select
+selected to TipToi", reload the library page. Now select
 the desired albums and click on "Copy selected to TipToi". Wait till the
 operation completes and a message appears that tells you that it is safe to
 disconnect the pen from the computer.
