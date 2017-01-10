@@ -1,6 +1,13 @@
 # ttmp32gme
 a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
 
+## Features
+* convert music/audiobook albums from mp3 to gme format playable with the tiptoi pen.
+* automatic generation of control sheets that allow to control playback of music/audiobook.
+* flexible print layouts for various applications (see below).
+* automatic readout of id3 tags to get album and track info (including embedded cover images).
+* add cover images for nicer print layout.
+
 ## Installation
 * Mac/Win: download the executables from the (https://github.com/thawn/ttmp32gme/releases)[releases page]. Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
 * linux: run the perl sources (see below)
@@ -9,6 +16,7 @@ a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet
 ### 1. Add mp3 files
 Add one or more mp3 files on the "Upload" page. Only add one
 album at a time.
+
 ### 2. Configure and create gme files</h4>
 On the "Library" page, you can configure and create gme
 files. Mp3 tag data of recently uploaded files will automatically be used to
@@ -92,6 +100,7 @@ MP3::Tag
 Image::Info
 
 ## ToDo
+* automatic download of cover images
 * enable separate printing of oid codes/text and cover images
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
