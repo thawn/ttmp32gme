@@ -54,16 +54,16 @@ disconnect the pen from the computer.
 
 ### Screenshots
 #### Print as detailed list
-[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_list.jpg|alt=list]]
+![list](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_list.jpg)
 
 #### Print as tiles (fits many albums on one page)
-[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_tiles.jpg|alt=tiles]]
+![tiles](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_tiles.jpg)
 
 #### Print as CD booklet (fits into standard CD cases)
-[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_cd-booklet.jpg|alt=booklet]]
+![booklet](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_cd-booklet.jpg)
 
 #### Print configuration
-[[https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/print-config.jpg|alt=config]]
+![config](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/print-config.jpg)
 
 
 ## required perl modules (for running ttmp32gme from source)
