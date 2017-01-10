@@ -54,7 +54,7 @@ disconnect the pen from the computer.
 
 ### Screenshots
 #### Print as detailed list
-<img src="blob/master/src/assets/images/Screen_Shot_list.jpg" style="width:400px">
+![list](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_list.jpg)
 
 #### Print as tiles (fits many albums on one page)
 ![tiles](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_tiles.jpg)
