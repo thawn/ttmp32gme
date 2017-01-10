@@ -63,7 +63,7 @@ disconnect the pen from the computer.
 ![booklet](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_cd-booklet.jpg)
 
 #### Print configuration
-![config](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_print-config.jpg)
+![config](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_print-config.png)
 
 
 ## required perl modules (for running ttmp32gme from source)
