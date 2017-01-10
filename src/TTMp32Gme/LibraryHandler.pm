@@ -183,7 +183,7 @@ sub createLibraryEntry {
 					#fill in album info
 					if ( !$album_data{'album_title'} && $info->album() ) {
 						$album_data{'album_title'} = $info->album();
-						$album_data{'path'}        = $album_data{'album_title'};
+						$album_data{'path'}        = cleanup_filename($album_data{'album_title'});
 					}
 					if ( !$album_data{'album_artist'} && $info->albumartist() ) {
 						$album_data{'album_artist'} = $info->albumartist();
@@ -195,11 +195,11 @@ sub createLibraryEntry {
 					}
 					if ( !$album_data{'picture_filename'} && $info->picture_exists() ) {
 						if ( $info->picture_filename() ) {
-							$album_data{'picture_filename'} = $info->picture_filename();
+							$album_data{'picture_filename'} = cleanup_filename($info->picture_filename());
 						} elsif ( $info->picture() ) {
 							my %pic = $info->picture();
 							$pictureData = $pic{'_Data'};
-							$album_data{'picture_filename'} = basename( $pic{'filename'} );
+							$album_data{'picture_filename'} = cleanup_filename(basename( $pic{'filename'} ));
 						}
 					} elsif ( !$album_data{'picture_filename'}
 						&& !$info->picture_exists()
@@ -242,7 +242,7 @@ sub createLibraryEntry {
 					open( my $file, '<', $album->{$fileId} );
 					$pictureData = join( "", <$file> );
 					close($file);
-					$album_data{'picture_filename'} = basename( $album->{$fileId} );
+					$album_data{'picture_filename'} = cleanup_filename(basename( $album->{$fileId} ));
 				}
 			}
 			$album_data{'oid'}        = $oid;

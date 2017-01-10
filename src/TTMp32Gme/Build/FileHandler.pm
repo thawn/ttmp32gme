@@ -82,7 +82,7 @@ sub makeNewAlbumDir {
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
 	my $file = file($filePath);
-	my $album_file = $file->move_to( file( $albumPath, $file->basename() ) );
+	my $album_file = $file->move_to( file( $albumPath, cleanup_filename($file->basename()) ) );
 	return $album_file->basename();
 }
 
