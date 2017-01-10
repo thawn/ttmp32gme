@@ -60,17 +60,17 @@ the desired albums and click on "Copy selected to TipToi". Wait till the
 operation completes and a message appears that tells you that it is safe to
 disconnect the pen from the computer.
 
-### Screenshots
-#### Print as detailed list
+## Screenshots
+### Print as detailed list
 ![list](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_list.jpg)
 
-#### Print as tiles (fits many albums on one page)
+### Print as tiles (fits many albums on one page)
 ![tiles](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_tiles.jpg)
 
-#### Print as CD booklet (fits into standard CD cases)
+### Print as CD booklet (fits into standard CD cases)
 ![booklet](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_cd-booklet.jpg)
 
-#### Print configuration
+### Print configuration
 ![config](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_print-config.png)
 
 
