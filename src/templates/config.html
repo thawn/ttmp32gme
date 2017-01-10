@@ -4,10 +4,8 @@ var updateConfig = function(caller)\{
 	var configVars = \{
 						'host' : $('#host').val(),
 					  'port' : $('#port').val(),
-					  'check_update' : testCheckBox('#check_update'),
 					  'open_browser' : testCheckBox('#open_browser'),
-					  'jd_address' : $('#jd_address').val(),
-					  'jd_port' : $('#jd_port').val()
+					  'audio_format' : $('#audio_format').val()
 					  \};
 	$.post('/config',
 		   'action=update&data=' + escape(JSON.stringify(configVars)))
@@ -50,6 +48,11 @@ $(function()\{
 			<label> <input type="checkbox" id="open_browser"{ $open_browser } >
 				Open ttmp32gme web interface in default browser on startup.
 			</label>
+		</div>
+		<div class="form-group">
+			<label for="port">audio format:</label> <input type="text" id="audio_format"
+				class="form-control" value="{ $audio_format }" data-toggle="tooltip"
+				title="Set this either to mp3 (high quality for headphones, large files) or ogg (low quality for speaker, small files).">
 		</div>
 		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover">Save
 			Configuration</button>

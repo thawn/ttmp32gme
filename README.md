@@ -92,8 +92,6 @@ MP3::Tag
 Image::Info
 
 ## ToDo
-* enable sorting of albums by artist/title/genre in library and on printing page
-* convert mp3->ogg if desired (mainly for older pens with limited memory)
 * enable separate printing of oid codes/text and cover images
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page

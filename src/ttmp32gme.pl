@@ -417,7 +417,8 @@ $httpd->reg_cb(
 					'port'         => $config{'port'},
 					'open_browser' => $config{'open_browser'} eq 'TRUE'
 					? 'checked="checked"'
-					: ''
+					: '',
+					'audio_format' => $config{'audio_format'}
 				}
 			);
 			$req->respond(

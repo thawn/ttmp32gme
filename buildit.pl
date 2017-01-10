@@ -68,6 +68,20 @@ if ( $^O =~ /MSWin/ ) {
 
 	( file( 'build', 'win', 'ttmp32gme.ico' ) )
 		->copy_to( file( $copyTo, 'ttmp32gme.ico' ) );
+		
+	$lib_dir = dir($copyTo, 'lib');
+	$lib_dir->mkpath();
+	
+	(dir('lib','win'))->recurse(
+		callback => sub {
+			my ($source) = @_;
+			my $name = $source->basename();
+			if (-f $source && $name !~ /^\./ ) {
+				$source->copy_to( file( $lib_dir, $name ) );
+				$filesToAdd .= " -a " . 'lib/' . $name;
+			}
+		}
+	);
 
 	chdir($copyTo);
 	
@@ -97,6 +111,17 @@ if ( $^O =~ /MSWin/ ) {
 
 } elsif ( $^O eq 'darwin' ) {
 	print "\nMac OS X build.\n\n";
+
+	(dir('lib','mac'))->recurse(
+		callback => sub {
+			my ($source) = @_;
+			my $name = $source->basename();
+			if (-f $source && $name !~ /^\./ ) {
+				$source->copy_to( file( $lib_dir, $name ) );
+				$filesToAdd .= " -a " . 'lib/' . $name;
+			}
+		}
+	);
 
 	chdir($copyTo);
 

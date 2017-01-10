@@ -97,8 +97,13 @@ sub convert_tracks {
 
 	$media_path->mkpath();
 	if ( $config->{'audio_format'} eq 'ogg' ) {
-
-		#todo: convert mp3s to ogg if desired and necessary
+		my $ff_command = get_executable_path('ffmpeg');
+		foreach my $i ( 0 .. $#tracks ) {
+			my $source_file =
+				file( $album->{'path'}, $album->{ $tracks[$i] }->{'filename'} );
+			my $target_file = file( $media_path, "track_$i.ogg" );
+			`$ff_command -i '$source_file' -ar 22050 -ac 1 '$target_file'`;
+		}
 	} else {
 		foreach my $i ( 0 .. $#tracks ) {
 			file( $album->{'path'}, $album->{ $tracks[$i] }->{'filename'} )

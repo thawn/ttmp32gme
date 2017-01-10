@@ -153,7 +153,18 @@ sub get_executable_path {
 	if ( $^O =~ /MSWin/ ) {
 		$exe_name .= '.exe';
 	}
-	return ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
+	if ( PAR::read_file('build.txt') ) {
+		return ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
+	} else {
+		if ( $^O =~ /MSWin/ ) {
+			return ( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )->stringify();
+		} elsif ( $^O eq 'darwin' ) {
+			return ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )->stringify();
+		} else {
+			$ENV{'PATH'}=$ENV{'PATH'}.':/usr/local/bin';
+			return `which $exe_name`;
+		}
+	}
 }
 
 sub get_oid_cache {
