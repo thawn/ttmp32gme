@@ -163,7 +163,7 @@
 				}
 			} else if (i.startsWith('track_')) {
 				var $track=$id.find('li.track_'+ data[i].track);
-				var ms=parseInt(data[i].duration), min = (ms/1000/60) | 0, sec = Math.round((ms/1000) % 60);
+				var ms=parseInt(data[i].duration), min = (ms/1000/60) << 0, sec = ((ms/1000) % 60) <<0;
 				$track.find('span.duration').text(pad(min,2)+':'+pad(sec,2));
 				$track.find('input[name=title]').val(data[i].title)
 				$track.find('input[name=filename]').val(data[i].filename)
@@ -257,10 +257,57 @@
 			});
 	}
 
+	var copyGME = function($id,uid) {
+		var filterVars = {
+			'uid' : uid
+		};
+		totalFilesCopying++;
+		copyProgress+=0.1;
+		setProgress();
+		$.post(
+			document.baseURI,
+			'action=copy_gme&data=' + escape(JSON.stringify(filterVars)),
+			function(data,textStatus,jqXHR) {
+				if (data.success) {
+					copyProgress+=0.9;
+					setProgress();
+					fillInElement($id, data.element);
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
+							2000);
+				} else {
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
+							4000);
+				}
+			}, 'json').fail(function(data) {
+				notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
+			});
+	}
+
 	var printAlbums = function(oids) {
 		//expects an array of oids
 		var url = "print?data=" + encodeURIComponent(JSON.stringify({'oids': oids}));
 		window.open(url, '_self');
+	}
+	
+	var copyProgress = 0;
+	var totalFilesCopying = 0;
+	
+	var setProgress = function() {
+		$('#progress').show();
+		var $progressBar = $('#progress').find('.progress-bar');
+		var percentage = (copyProgress/totalFilesCopying*100) << 0;
+		if (percentage >= 100) {
+			percentage = 100;
+			$('#progress>.alert-info').hide();
+			$('#progress>.alert-success').show();
+			$progressBar.hide();
+		} else {
+			$('#progress>.alert-info').show();
+			$('#progress>.alert-success').hide();
+		}
+		$progressBar.attr('aria-valuenow',percentage);
+		$progressBar.css({width: percentage + '%'});
+		$progressBar.find('.sr-only').text(percentage+'% Complete');		
 	}
 
 
@@ -277,7 +324,7 @@
 			triggerElementAction('make_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 		});
 		$('#albums').on('click', 'button.copy-gme', function() {
-			triggerElementAction('copy_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+			copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 		});
 		$('#albums').on('click','button.delete',function() {
 			var ok = confirm('Are you sure? This will delete the entire album including the gme file from your library. This cannot be undone.');
@@ -301,12 +348,25 @@
 			toggleShow($(this).data('item-id'));
 		});
 
+		$('#progress>.alert-success>button').click( function () {
+			copyProgress = 0;
+			setProgress();
+			$('#progress').find('.progress-bar').show();
+			$('#progress').hide();
+			totalFilesCopying = 0;
+		});
 		// Grab the list of feeds, then grab the list of filters.
 		listElements();
 		
 		if ($.urlParam('oid')) {
 			toggleShow($('#albums').find('input[value="'+$.urlParam('oid')+'"]').parents('div.edit'));
 		}
+		$('#select-all').click(function(){
+			$('input[name=enabled]').prop('checked', true);
+		});
+		$('#deselect-all').click(function(){
+			$('input[name=enabled]').prop('checked', false);
+		});
 		$('#toggle-all').click(function(){
 			$('input[name=enabled]').each(function(){
 				if ($(this).data('item-id')) {
@@ -326,8 +386,8 @@
 			printAlbums(oids);
 		});
 		$('#copy-selected').click(function(){
-			$('input[name=enabled]:checked').each(function(){
-				triggerElementAction('copy_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+			$('input[name=enabled]:checked').each(function(index){
+				copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 			});
 		});
 		$('#cleanup-selected').click(function(){
@@ -351,7 +411,9 @@
 	});
 </script>
 <p>
-	<button id="toggle-all" class="btn btn-default">Select/deselect all</button>
+	<button id="select-all" class="btn btn-default">Select all</button>
+	<button id="deselect-all" class="btn btn-default">Deselect all</button>
+	<button id="toggle-all" class="btn btn-default">Invert selection</button>
 	<button id="copy-selected" class="btn btn-success copy-gme" data-toggle="popover"
 		style="display: none;">Copy selected to TipToi</button>
 	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print
@@ -361,7 +423,26 @@
 	<button id="delete-selected" class="btn btn-danger" data-toggle="popover">Delete
 		selected</button>
 </p>
-
+<div id="progress" style="display: none;">
+	<div class="alert alert-info" role="alert">
+		Copying files to tiptoi, please <strong>do not disconnect</strong> the pen until
+		the operation is complete.
+	</div>
+	<div class="progress">
+		<div class="progress-bar progress-bar-striped active" role="progressbar"
+			aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 10%">
+			<span class="sr-only">10% Complete</span>
+		</div>
+	</div>
+	<div class="alert alert-success" role="alert"
+		style="display: none;">
+		<button type="button" class="close" aria-label="Close">
+			<span aria-hidden="true">&times;</span>
+		</button>
+		<strong>All files copied successfully!</strong> It is now safe to disconnect the tiptoi from
+		the computer.
+	</div>
+</div>
 <div class="row" id="albums">
 	<div class="panel panel-default">
 		<div class="panel-body">
@@ -394,7 +475,8 @@
 								aria-label="save cancel delete button group">
 								<button type="button" class="btn btn-primary update">Update</button>
 								<button type="button" class="btn btn-success make-gme">Create GME</button>
-								<button type="button" class="btn btn-success copy-gme" style="display: none;">Copy GME to TipToi</button>
+								<button type="button" class="btn btn-success copy-gme" style="display: none;">Copy
+									GME to TipToi</button>
 								<button type="button" class="btn btn-success print" style="display: none;">Print</button>
 								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
 								<button type="button" class="btn btn-danger delete">Delete</button>
