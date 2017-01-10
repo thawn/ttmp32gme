@@ -2,7 +2,55 @@
 a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
 
 ## Installation
-Mac/Win: download the executables from the (https://github.com/thawn/ttmp32gme/releases)[releases page]. Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
+* Mac/Win: download the executables from the (https://github.com/thawn/ttmp32gme/releases)[releases page]. Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
+* linux: run the perl sources (see below)
+
+## Usage
+### 1. Add mp3 files
+Add one or more mp3 files on the <a href="/">"Upload" page</a>. Only add one
+album at a time.
+### 2. Configure and create gme files</h4>
+On the <a href="/library">"Library" page,</a> you can configure and create gme
+files. Mp3 tag data of recently uploaded files will automatically be used to
+pre-populate the artist, album title and track info.
+
+### 3. Print the control page(s)
+Once you choose to print one or more album from the <a href="/library">library,</a>
+a new page will open that displays the albums and their tracks from the gme
+files that you selected for printing.
+
+You can customize the the print layout by clicking on "<span
+class="glyphicon glyphicon-cog"></span> Configure print layout".
+
+You can choose one of the three presets:
+
+list
+: A list layout that includes all album details</dt>
+
+tiles
+: A tiled layout that includes only minimal album details and general controls that work with all albums.
+
+CD booklet
+: A layout that is optimized for printing CD booklets.</dt>
+
+Alternatively, you can manually choose which parts (cover image, album
+information, album control buttons, track list) to display, how many columns
+should be used and how large each album should be when printed.</p>
+
+You can also configure here which resolution should be used (in DPI) for
+printing (start with the maximum resolution your printer can handle). And how
+many pixels (in x and y direction) each dot of the OID code should use. Start
+with a value of 2 (<a href="https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem">read
+this if you want to know why</a>). If you have problems with not recognized oid
+codes, first try to increase the number of pixels to 3 or 4 and then try to
+change the printing resolution.
+
+###4. Copy the gme files onto the tiptoi pen</h4>
+Connect the tiptoi pen to your computer. If you do not see the button "Copy
+selected to TipToi", reload the <a href="/library">library page</a>. Now select
+the desired albums and click on "Copy selected to TipToi". Wait till the
+operation completes and a message appears that tells you that it is safe to
+disconnect the pen from the computer.
 
 ## required perl modules (for running ttmp32gme from source)
 EV
@@ -33,7 +81,8 @@ Image::Info
 * enable sorting of albums by artist/title/genre in library and on printing page
 * write better documentation.
 * convert mp3->ogg if desired (mainly for older pens with limited memory)
+* enable separate printing of oid codes/text and cover images
 * handle more than 10 tracks for CD booklet (two column track layout)
-* upload multiple albums at once
+* upload multiple albums at once from the upload page
 * add and remove music files from library page
 * interface to use external ripping tools such as fre:ac
