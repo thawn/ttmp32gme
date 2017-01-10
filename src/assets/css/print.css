@@ -1,5 +1,6 @@
 @page {
 	size: A4;
+	margin: 0.5in;
 }
 
 .img-6mm {
@@ -54,7 +55,7 @@
 }
 
 .power-on-inline {
-	display:inline-block;
+	display: inline-block;
 	vertical-align: middle;
 	margin-right: 20px;
 }
@@ -80,29 +81,11 @@
 	page-break-inside: avoid;
 }
 
-@media print and (resolution: 72dpi) {
-	/*  for firefox, we need to scale pixel values by a factor of 0.775939419 */
-	.img-6mm {
-		max-width: 29px !important;
-		min-width: 29px !important;
-		max-height: 29px !important;
-		min-height: 29px !important;
-	}
-	.img-18mm {
-		max-width: 79px !important;
-		min-width: 79px !important;
-		max-height: 79px !important;
-		min-height: 79px !important;
-	}
-	.img-24mm {
-		max-width: 107px !important;
-		min-width: 107px !important;
-		max-height: 107px !important;
-		min-height: 107px !important;
-	}
-	.power-on {
-		width: 80px;
-		height: 80px;
-		font-size: 67px;
+@media print {
+	/* make sure the responsiveness of bootstrap does not mess up our print layout.
+	a4 usable page width with 0.5 in margins (default for firefox where it is not changable) is
+	184.503mm/25.4*72*2 =1046 -2 (for borders) = 1044 thus our overall scale is 56.692845103 pixel per cm */
+	.container {
+		width: 1044px;
 	}
 }

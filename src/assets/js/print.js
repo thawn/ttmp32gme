@@ -237,17 +237,13 @@ var tileStyle = (function() {
 var changeTileSize = function($id) {
 	var numRules = tileStyle.cssRules.length;
 	if ($id.val()) {
-		var DPcm = 34 / 0.6;
-		var size = $id.val() * DPcm;
-		var DPIfactor = 0.777907429
+		var PPcm = 56.692845103;
+		var size = $id.val() * PPcm;
 		for (i=0;i<numRules;i++) {
 			tileStyle.removeRule(0);
 		}
 		tileStyle.insertRule(
 				'.album { min-width: ' + size + 'px; min-height: ' + size + 'px; max-width: ' + size + 'px; max-height: ' + size + 'px; overflow: hidden;}',0);
-		size = size*DPIfactor;
-		tileStyle.insertRule(
-				'@media print and (resolution: 72dpi) {.album { min-width: ' + size + 'px; min-height: ' + size + 'px; max-width: ' + size + 'px; max-height: ' + size + 'px; overflow: hidden;}}',1);
 	} else {
 		for (i=0;i<numRules;i++) {
 			tileStyle.removeRule(0);
