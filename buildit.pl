@@ -62,6 +62,9 @@ $src_dir->recurse(
 
 ( file( $copyTo, 'templates.list' ) )->spew($templatesList);
 
+my $lib_dir = dir($copyTo, 'lib');
+$lib_dir->mkpath();
+	
 if ( $^O =~ /MSWin/ ) {
 	use Win32::Exe;
 	print "\nWindows build.\n\n";
@@ -69,9 +72,6 @@ if ( $^O =~ /MSWin/ ) {
 	( file( 'build', 'win', 'ttmp32gme.ico' ) )
 		->copy_to( file( $copyTo, 'ttmp32gme.ico' ) );
 		
-	$lib_dir = dir($copyTo, 'lib');
-	$lib_dir->mkpath();
-	
 	(dir('lib','win'))->recurse(
 		callback => sub {
 			my ($source) = @_;
@@ -118,7 +118,8 @@ if ( $^O =~ /MSWin/ ) {
 			my $name = $source->basename();
 			if (-f $source && $name !~ /^\./ ) {
 				$source->copy_to( file( $lib_dir, $name ) );
-				$filesToAdd .= " -a " . 'lib/' . $name;
+				print 'lib/' . $name . "\n";
+				$filesToAdd .= ' -a ' . 'lib/' . $name;
 			}
 		}
 	);
