@@ -166,7 +166,12 @@ msg(
 		. "Open http://127.0.0.1:$config{'port'}/ in your favorite web browser to continue.\n",
 	1
 );
-msg( "using tttool: " . get_executable_path('tttool'), 1 );
+
+if (-X get_executable_path('tttool')) {
+	msg( "using tttool: " . get_executable_path('tttool'), 1 );
+} else{
+	error( "no useable tttool found: " . get_executable_path('tttool'), 1 );
+}
 
 if ( $config{'open_browser'} eq 'TRUE' ) { openBrowser(%config); }
 
