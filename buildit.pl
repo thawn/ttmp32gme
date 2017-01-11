@@ -79,16 +79,12 @@ if ( $^O =~ /MSWin/ ) {
 			if (-f $source && $name !~ /^\./ ) {
 				$source->copy_to( file( $lib_dir, $name ) );
 				print 'lib/' . $name . "\n";
-				$filesToAdd .= " -a " . 'lib/' . $name;
+				$filesToAdd .= " -a " . qq(lib/$name);
 			}
 		}
 	);
 
 	chdir($copyTo);
-	
-	#delete unnecessary executable files
-	(file('lib','tttool'))->remove();
-	$filesToAdd =~ s/ -a lib\/tttool//;
 	
 	my $result =
 `pp -M attributes -M UNIVERSAL -M Win32API::File $filesToAdd $modulesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
@@ -126,11 +122,6 @@ if ( $^O =~ /MSWin/ ) {
 	);
 
 	chdir($copyTo);
-
-	#delete unnecessary executable files
-	(file('lib','tttool.exe'))->remove();
-	$filesToAdd =~ s/ -a lib\/tttool.exe//;
-	
 
 	my $result = `pp $filesToAdd $modulesToAdd -o mp32gme ttmp32gme.pl`;
 
