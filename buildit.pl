@@ -78,6 +78,7 @@ if ( $^O =~ /MSWin/ ) {
 			my $name = $source->basename();
 			if (-f $source && $name !~ /^\./ ) {
 				$source->copy_to( file( $lib_dir, $name ) );
+				print 'lib/' . $name . "\n";
 				$filesToAdd .= " -a " . 'lib/' . $name;
 			}
 		}
