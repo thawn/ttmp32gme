@@ -11,6 +11,7 @@ a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet
 
 ## Installation
 * Mac/Win: download the executables from the (https://github.com/thawn/ttmp32gme/releases)[releases page]. Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
+* the windows executable requires [Strawberry Perl](http://strawberryperl.com/) to be installed otherwise it will complain about missing dlls.
 * linux: run the perl sources (see below)
 
 ## Usage
@@ -101,6 +102,7 @@ MP3::Tag
 Image::Info
 
 ## ToDo
+* figure out which dlls are missing on a clean windows machine
 * automatic download of cover images
 * enable separate printing of oid codes/text and cover images
 * handle more than 10 tracks for CD booklet (two column track layout)
