@@ -86,8 +86,10 @@ if ( $^O =~ /MSWin/ ) {
 
 	chdir($copyTo);
 	
+	my $addDlls = '-l libxml2-2__.dll -l libiconv-2__.dll';
+	
 	my $result =
-`pp -M attributes -M UNIVERSAL -M Win32API::File $filesToAdd $modulesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
+`pp -c -M attributes -M UNIVERSAL -M Win32API::File $addDlls $filesToAdd $modulesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 
 # newer versions of pp don't support the --icon option any more, use Win32::Exe to manually replace the icon:
 #	$exe = Win32::Exe->new('ttmp32gme.exe');
