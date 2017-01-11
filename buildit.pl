@@ -73,7 +73,7 @@ if ( $^O =~ /MSWin/ ) {
 
 	chdir($copyTo);
 	
-	my $addDlls = '-l libxml2-2__.dll -l libiconv-2__.dll -l zlib1__.dll';
+	my $addDlls = '-l libxml2-2__.dll -l libiconv-2__.dll -l zlib1__.dll -l liblzma-5__.dll';
 	
 	my $result = `pp -c $addDlls $filesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 
