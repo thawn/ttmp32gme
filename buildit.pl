@@ -10,19 +10,6 @@ use Cwd;
 
 use Data::Dumper;
 
-my $modulesToAdd =
-	"-M Moose::Meta::Object::Trait -M Package::Stash::XS -M URI::Find";
-$modulesToAdd .=
-	" -M DateTime::Format::Natural::Compat -M DateTime::Format::Natural::Calc";
-$modulesToAdd .=
-" -M DateTime::Format::Natural::Utils -M DateTime::Format::Natural::Wrappers -M DateTime::Format::Natural::Duration";
-$modulesToAdd .=
-" -M DateTime::Format::Natural::Extract -M DateTime::Format::Natural::Formatted";
-$modulesToAdd .=
-" -M DateTime::Format::Natural::Helpers -M DateTime::Format::Natural::Rewrite";
-$modulesToAdd .= " -M DateTime::Format::Natural::Expand -M "
-	. ( file( 'DateTime', 'Format', 'Natural', 'Lang', 'EN.pm' ) )->stringify();
-
 my $filesToAdd = "";
 
 my $copyTo = dir( cwd, 'build', 'current' );
@@ -88,8 +75,7 @@ if ( $^O =~ /MSWin/ ) {
 	
 	my $addDlls = '-l libxml2-2__.dll -l libiconv-2__.dll -l zlib1__.dll';
 	
-	my $result =
-`pp -M attributes -M UNIVERSAL -M Win32API::File $addDlls $filesToAdd $modulesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
+	my $result = `pp -c $addDlls $filesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 
 # newer versions of pp don't support the --icon option any more, use Win32::Exe to manually replace the icon:
 #	$exe = Win32::Exe->new('ttmp32gme.exe');
@@ -125,7 +111,7 @@ if ( $^O =~ /MSWin/ ) {
 
 	chdir($copyTo);
 
-	my $result = `pp $filesToAdd $modulesToAdd -o mp32gme ttmp32gme.pl`;
+	my $result = `pp -c $filesToAdd -o mp32gme ttmp32gme.pl`;
 
 	print $result;
 	if ( $? != 0 ) { die "Build failed.\n"; }
