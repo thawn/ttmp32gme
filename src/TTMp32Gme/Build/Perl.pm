@@ -23,7 +23,7 @@ sub loadFile {
 
 sub get_local_storage {
 	#return dir($maindir);
-	return dir( $ENV{'APPDATA'}, 'ttmp32gme' );
+	return dir( $ENV{'APPDATA'}, 'ttmp32gme' ); #uncomment for testing on win
 	#return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' ); #uncomment for testing on a mac
 }
 
