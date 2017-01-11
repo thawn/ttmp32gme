@@ -234,7 +234,7 @@ $httpd->reg_cb(
 						$currentFile = file( $currentAlbum, $fileCount );
 					}
 					$albumList[$albumCount]{ $fileList[$fileCount] } = $currentFile;
-					$currentFile->spew( $req->parm('qqfile') );
+					$currentFile->spew( iomode => '>:raw', $req->parm('qqfile') );
 					$fileCount++;
 					$content->{'success'} = \1;
 					$statusCode           = 200;

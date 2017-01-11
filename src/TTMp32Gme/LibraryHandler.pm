@@ -3,7 +3,6 @@ package TTMp32Gme::LibraryHandler;
 use strict;
 use warnings;
 
-use File::Basename qw(basename dirname);
 use Data::Dumper;
 use Path::Class;
 use List::MoreUtils qw(uniq);
@@ -157,7 +156,7 @@ sub put_file_online {
 	my ( $file, $online_path, $httpd ) = @_;
 	$httpd->reg_cb(
 		$online_path => sub {
-			my $file_data = $file->slurp();
+			my $file_data = $file->slurp(iomode => '<:raw');
 			my ( $httpd, $req ) = @_;
 			$req->respond( { content => [ '', $file_data ] } );
 		}
@@ -199,7 +198,7 @@ sub createLibraryEntry {
 						} elsif ( $info->picture() ) {
 							my %pic = $info->picture();
 							$pictureData = $pic{'_Data'};
-							$album_data{'picture_filename'} = cleanup_filename(basename( $pic{'filename'} ));
+							$album_data{'picture_filename'} = cleanup_filename( ( file( $pic{'filename'} ) )->basename() );
 						}
 					} elsif ( !$album_data{'picture_filename'}
 						&& !$info->picture_exists()
@@ -239,10 +238,9 @@ sub createLibraryEntry {
 				} elsif ( $album->{$fileId} =~ /\.(jpg|jpeg|tif|tiff|png|gif)$/i ) {
 
 					#handle pictures
-					open( my $file, '<', $album->{$fileId} );
-					$pictureData = join( "", <$file> );
-					close($file);
-					$album_data{'picture_filename'} = cleanup_filename(basename( $album->{$fileId} ));
+					my $picture_file = file( $album->{$fileId} );
+					$pictureData = $picture_file->slurp(iomode => '<:raw');
+					$album_data{'picture_filename'} = cleanup_filename( $picture_file->basename() );
 				}
 			}
 			$album_data{'oid'}        = $oid;
@@ -255,7 +253,7 @@ sub createLibraryEntry {
 			if ( $album_data{'picture_filename'} and $pictureData ) {
 				my $picture_file =
 					file( $album_data{'path'}, $album_data{'picture_filename'} );
-				$picture_file->spew($pictureData);
+				$picture_file->spew(iomode => '>:raw', $pictureData);
 			}
 			foreach my $track (@track_data) {
 				$track->{'filename'} =
@@ -385,7 +383,7 @@ sub replace_cover {
 		updateTableEntry( 'gme_library', 'oid=?', \@selector, $album_data, $dbh );
 		my $picture_file =
 			file( $album_data->{'path'}, $album_data->{'picture_filename'} );
-		$picture_file->spew($file_data);
+		$picture_file->spew(iomode => '>:raw', $file_data);
 		return $oid;
 	} else {
 		return 0;

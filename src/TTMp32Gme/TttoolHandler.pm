@@ -170,7 +170,6 @@ sub convert_tracks {
 	# add track code to the yaml file:
 	my $fh = $yaml_file->opena();
 
-	#todo: test, if windows systems need a different path separator in yaml file
 	print $fh "media-path: audio/track_%s\n";
 	print $fh "init: \$current:=0\n";
 	print $fh $welcome;

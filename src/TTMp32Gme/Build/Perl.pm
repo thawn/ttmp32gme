@@ -16,16 +16,15 @@ my $maindir = cwd();
 
 sub loadFile {
 	my $path = $_[0];
-	my $file;
-	open( $file, '<', $path ) or die "Can't open '$path': $!";
-	my $content = join( "", <$file> );
-	close($file);
+	my $file = file( $path );
+	my $content = $file->slurp(iomode => '<:raw' );
 	return $content;
 }
 
 sub get_local_storage {
 	#return dir($maindir);
-	return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' ); #uncomment for testing on a mac
+	return dir( $ENV{'APPDATA'}, 'ttmp32gme' );
+	#return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' ); #uncomment for testing on a mac
 }
 
 sub get_par_tmp {
