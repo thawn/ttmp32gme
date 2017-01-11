@@ -107,3 +107,4 @@ Image::Info
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
 * interface to use external CD ripping tools such as fre:ac
+* Run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
