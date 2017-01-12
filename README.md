@@ -10,7 +10,7 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 * copy gme files to tiptoi if tiptoi is connected.
 
 ## Installation
-* Mac/Win: download the executables from the (https://github.com/thawn/ttmp32gme/releases)[releases page]. Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
+* Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
 * linux: run the perl sources (see [instructions](#required-perl-modules-for-running-ttmp32gme-from-source) below)
 
 ## Usage
