@@ -1,17 +1,17 @@
 # ttmp32gme
-a platform independent tool (similar to the [windows tool ttaudio](https://github.com/sidiandi/ttaudio) ) to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
+a platform independent tool (inspired by the [windows tool ttaudio](https://github.com/sidiandi/ttaudio) ) to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
 
 ## Features
 * convert music/audiobook albums from mp3 to gme format playable with the tiptoi pen using [tttool](http://tttool.entropia.de/).
 * automatic generation of control sheets that allow to control playback of music/audiobook.
-* flexible print layouts for various applications (see below).
+* flexible print layouts for various applications (see [screenshots](#Screenshots) below).
 * automatic readout of id3 tags to get album and track info (including embedded cover images).
 * add cover images for nicer print layout.
 * copy gme files to tiptoi if tiptoi is connected.
 
 ## Installation
 * Mac/Win: download the executables from the (https://github.com/thawn/ttmp32gme/releases)[releases page]. Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
-* linux: run the perl sources (see below)
+* linux: run the perl sources (see [instructions](#required-perl-modules-for-running-ttmp32gme-from-source) below)
 
 ## Usage
 ### 1. Add mp3 files
@@ -76,6 +76,9 @@ disconnect the pen from the computer.
 
 
 ## required perl modules (for running ttmp32gme from source)
+run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
+Modules (some Modules required the `-f` flag to install on my Mac OS system):
+ 
 EV
 AnyEvent::HTTPD
 Path::Class
