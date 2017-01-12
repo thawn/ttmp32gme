@@ -22,8 +22,15 @@ sub loadFile {
 }
 
 sub get_local_storage {
-	#return dir($maindir);
-	return dir( $ENV{'APPDATA'}, 'ttmp32gme' ); #uncomment for testing on win
+        my $retdir="";
+        if (defined $ENV{'APPDATA'} ) {
+            $retdir=$ENV{'APPDATA'}
+        } elsif (defined $ENV{'HOME'}) {
+            $retdir=$ENV{'HOME'};
+        } else {
+            $retdir=$maindir;
+        }
+	return dir( $retdir, 'ttmp32gme' ); #uncomment for testing on win
 	#return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' ); #uncomment for testing on a mac
 }
 

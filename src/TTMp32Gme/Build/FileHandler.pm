@@ -161,8 +161,10 @@ sub get_executable_path {
 		} elsif ( $^O eq 'darwin' ) {
 			return ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )->stringify();
 		} else {
-			$ENV{'PATH'}=$ENV{'PATH'}.':/usr/local/bin';
-			return `which $exe_name`;
+                       $ENV{'PATH'}=$ENV{'PATH'}.':/usr/local/bin';
+                       my $foo=`which $exe_name`;
+                       chomp($foo);
+                       return $foo;
 		}
 	}
 }
