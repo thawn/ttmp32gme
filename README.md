@@ -1,5 +1,5 @@
 # ttmp32gme
-a tool to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
+a platform independent tool (similar to the [windows tool ttaudio](https://github.com/sidiandi/ttaudio) ) to create tiptoi gme files from mp3 files. Also creates a printable sheet to play the music.
 
 ## Features
 * convert music/audiobook albums from mp3 to gme format playable with the tiptoi pen using [tttool](http://tttool.entropia.de/).
