@@ -25,6 +25,8 @@ use DBI;
 use DBIx::MultiStatementDo;
 use Log::Message::Simple qw(msg error);
 
+use lib ".";
+
 use TTMp32Gme::LibraryHandler;
 use TTMp32Gme::TttoolHandler;
 use TTMp32Gme::PrintHandler;
