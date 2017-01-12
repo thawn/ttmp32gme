@@ -15,23 +15,25 @@ our @EXPORT =
 my $maindir = cwd();
 
 sub loadFile {
-	my $path = $_[0];
-	my $file = file( $path );
-	my $content = $file->slurp(iomode => '<:raw' );
+	my $path    = $_[0];
+	my $file    = file($path);
+	my $content = $file->slurp( iomode => '<:raw' );
 	return $content;
 }
 
 sub get_local_storage {
-        my $retdir="";
-        if (defined $ENV{'APPDATA'} ) {
-            $retdir=$ENV{'APPDATA'}
-        } elsif (defined $ENV{'HOME'}) {
-            $retdir=$ENV{'HOME'};
-        } else {
-            $retdir=$maindir;
-        }
-	return dir( $retdir, 'ttmp32gme' ); #uncomment for testing on win
-	#return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' ); #uncomment for testing on a mac
+	my $retdir;
+	if ( defined $ENV{'APPDATA'} ) {
+		return dir( $ENV{'APPDATA'}, 'ttmp32gme' );
+	} elsif ( defined $ENV{'HOME'} ) {
+		if ( $^O eq 'darwin' ) {
+			return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' );
+		} else {
+			return dir( $ENV{'HOME'}, '.ttmp32gme' );
+		}
+	} else {
+		return dir ( $maindir );
+	}
 }
 
 sub get_par_tmp {

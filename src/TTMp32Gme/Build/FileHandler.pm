@@ -82,7 +82,8 @@ sub makeNewAlbumDir {
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
 	my $file = file($filePath);
-	my $album_file = $file->move_to( file( $albumPath, cleanup_filename($file->basename()) ) );
+	my $album_file =
+		$file->move_to( file( $albumPath, cleanup_filename( $file->basename() ) ) );
 	return $album_file->basename();
 }
 
@@ -98,7 +99,7 @@ sub removeTempDir {
 sub clearAlbum {
 	my ( $path, $file_list ) = @_;
 	my $libraryPath = getLibraryPath();
-	$libraryPath =~ s/\\/\\\\/g; #fix windows paths
+	$libraryPath =~ s/\\/\\\\/g;    #fix windows paths
 	if ( $path =~ /^$libraryPath/ ) {
 		foreach my $file ( @{$file_list} ) {
 			if ($file) {
@@ -117,7 +118,7 @@ sub clearAlbum {
 sub removeAlbum {
 	my ($path) = @_;
 	my $libraryPath = getLibraryPath();
-	$libraryPath =~ s/\\/\\\\/g; #fix windows paths
+	$libraryPath =~ s/\\/\\\\/g;    #fix windows paths
 	if ( $path =~ /^$libraryPath/ ) {
 		( dir($path) )->rmtree();
 		return 1;
@@ -139,7 +140,7 @@ sub remove_library_dir {
 	my ($media_path) = @_;
 	my $media_dir    = dir($media_path);
 	my $libraryPath  = getLibraryPath();
-	$libraryPath =~ s/\\/\\\\/g; #fix windows paths
+	$libraryPath =~ s/\\/\\\\/g;    #fix windows paths
 	if ( $media_dir =~ /^$libraryPath/ ) {
 		$media_dir->rmtree();
 		return 1;
@@ -157,14 +158,16 @@ sub get_executable_path {
 		return ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
 	} else {
 		if ( $^O =~ /MSWin/ ) {
-			return ( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )->stringify();
+			return ( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )
+				->stringify();
 		} elsif ( $^O eq 'darwin' ) {
-			return ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )->stringify();
+			return ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )
+				->stringify();
 		} else {
-                       $ENV{'PATH'}=$ENV{'PATH'}.':/usr/local/bin';
-                       my $foo=`which $exe_name`;
-                       chomp($foo);
-                       return $foo;
+			$ENV{'PATH'} = $ENV{'PATH'} . ':/usr/local/bin';
+			my $foo = `which $exe_name`;
+			chomp($foo);
+			return $foo;
 		}
 	}
 }
@@ -195,9 +198,9 @@ sub get_tiptoi_dir {
 	} elsif ( $^O =~ /MSWin/ ) {
 		require Win32API::File;
 		my @drives = Win32API::File::getLogicalDrives();
-		foreach my $d (  @drives  ) {
-			my @info = (undef)x7;
-			Win32API::File::GetVolumeInformation( $d, @info);
+		foreach my $d (@drives) {
+			my @info = (undef) x 7;
+			Win32API::File::GetVolumeInformation( $d, @info );
 			if ( $info[0] eq 'tiptoi' ) {
 				return $d;
 			}
