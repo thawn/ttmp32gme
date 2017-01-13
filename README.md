@@ -77,7 +77,7 @@ disconnect the pen from the computer.
 
 ## required perl modules (for running ttmp32gme from source)
 run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
-Modules (some Modules required the `-f` flag to install on my Mac OS system):
+modules (some modules required the `-f` flag to install on my Mac OS system):
  
 EV
 AnyEvent::HTTPD
