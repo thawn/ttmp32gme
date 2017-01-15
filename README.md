@@ -5,12 +5,13 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 * convert music/audiobook albums from mp3 to gme format playable with the tiptoi pen using [tttool](http://tttool.entropia.de/).
 * automatic generation of control sheets that allow to control playback of music/audiobook.
 * flexible print layouts for various applications (see [screenshots](#screenshots) below).
+* Printing was tested to work with Chrome and Firefox on Mac Os and Microsoft Edge on Windows 10 (Chrome and Firefox do not print with high enough resolution on Win 10).
 * automatic readout of id3 tags to get album and track info (including embedded cover images).
 * add cover images for nicer print layout.
 * copy gme files to tiptoi if tiptoi is connected.
 
 ## Installation
-* Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer). Printing was tested to work with Chrome and Firefox.
+* Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer).
 * linux: run the perl sources (see [instructions](#required-perl-modules-for-running-ttmp32gme-from-source) below)
 
 ## Usage
