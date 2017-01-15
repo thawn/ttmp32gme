@@ -5,7 +5,7 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 * convert music/audiobook albums from mp3 to gme format playable with the tiptoi pen using [tttool](http://tttool.entropia.de/).
 * automatic generation of control sheets that allow to control playback of music/audiobook.
 * flexible print layouts for various applications (see [screenshots](#screenshots) below).
-* Printing was tested to work with Chrome and Firefox on Mac Os and Microsoft Edge on Windows 10 (Chrome and Firefox do not print with high enough resolution on Win 10).
+* Printing was tested to work with Chrome and Firefox on Mac Os and Microsoft Edge on Windows 10 (Chrome and Firefox do not print with high enough resolution on Win 10, Opera seems to work occasionally).
 * automatic readout of id3 tags to get album and track info (including embedded cover images).
 * add cover images for nicer print layout.
 * copy gme files to tiptoi if tiptoi is connected.
