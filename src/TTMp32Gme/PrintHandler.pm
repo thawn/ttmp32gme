@@ -14,7 +14,7 @@ use TTMp32Gme::TttoolHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(create_print_layout);
+our @EXPORT = qw(create_print_layout create_pdf);
 
 ## internal functions:
 
@@ -138,6 +138,26 @@ sub create_print_layout {
 	$content .= '</div></div></div>';
 	return $content;
 
+}
+
+sub create_pdf {
+	my ($port) = @_;
+	my $wkhtmltopdfCommand = get_executable_path('wkhtmltopdf');
+	my $pdf_file = file(getLibraryPath(), 'print.pdf');
+	my $args = "-B 0.5in -T 0.5in -L 0.5in -R 0.5in http://localhost:$port/pdf $pdf_file";
+	my $fullCmd = "$wkhtmltopdfCommand $args";
+	print "$fullCmd\n";
+	if ( $^O =~ /MSWin/ ) {
+		my $child_pid;
+		my $child_proc;
+		require Win32::Process;
+    Win32::Process::Create($child_proc, $wkhtmltopdfCommand, $fullCmd, 0, 0, ".") || error "Could not spawn child: $!";
+    $child_pid = $child_proc->GetProcessID();
+	} else {
+		$fullCmd .= ' &';
+		system($fullCmd);
+	}
+	return $pdf_file;
 }
 
 1;

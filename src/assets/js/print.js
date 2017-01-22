@@ -131,13 +131,13 @@ var saveConfig = function($id) {
 	$.post(
 			document.baseURI,
 			'action=save_config&data=' + escape(JSON.stringify(elementVars)),
-			function(data) {
+			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					fillInElement($id, data.element);
-					notify($id.find('button.edit-button'), '', data.statusText, 'bg-success',
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
 							2000);
 				} else {
-					notify($id.find('button.edit-button'), '', data.statusText, 'bg-danger',
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 							4000);
 				}
 			}, 'json').fail(
@@ -276,9 +276,35 @@ var changeNumberOfColumns = function($id) {
 	}
 }
 
+var savePDF = function() {
+	$.post(
+			document.baseURI,
+			'action=save_pdf&data=' + escape(JSON.stringify({content: $('#wrap-all-print').html()})),
+			function(data,textStatus,jqXHR) {
+				if (data.success) {
+					setTimeout(function() { window.open('/print.pdf'); }, 10000);
+					notify($('#pdf-save'), '', 'Creating pdf, please wait...', 'bg-info',
+							10000);
+				} else {
+					notify($('#pdf-save'), '', jqXHR.statusText, 'bg-danger',
+							4000);
+				}
+			}, 'json').fail(
+			function() {
+				notify($('#pdf-save'), '', 'Connection error', 'bg-danger',
+						4000);
+			});
+	
+}
+
 $(function() {
 	// fetch the configuration from the database
 	getConfig();
+	
+	// save visible layout as pdf
+	$('#pdf-save').click(function(){
+		savePDF();
+	});
 
 	// make the config boxes the same height
 	$('.box').matchHeight();

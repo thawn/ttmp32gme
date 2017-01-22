@@ -185,6 +185,7 @@ my $albumCount = 0;
 my $currentAlbum = makeTempAlbumDir($albumCount);
 my @fileList;
 my @albumList;
+my $printContent = 'Please go to the /print page, configure your layout, and click "save as pdf"';
 
 $httpd->reg_cb(
 	'/' => sub {
@@ -390,12 +391,20 @@ $httpd->reg_cb(
 				$statusMessage =
 					'Could not get configuration. Possible database error.';
 				$content->{'element'} = \%config;
-			} elsif ( $req->parm('action') eq 'save_config' ) {
+			} elsif ($req->parm('action') =~ /(save_config|save_pdf)/) {
+				$statusMessage        = 'Could not parse POST data.';
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				$statusMessage        = 'Could not save configuration.';
-				%config               = save_config($postData);
-				$content->{'element'} = \%config;
+				if ( $req->parm('action') eq 'save_config' ) {
+					$statusMessage        = 'Could not save configuration.';
+					%config               = save_config($postData);
+					$content->{'element'} = \%config;
+				} elsif ( $req->parm('action') eq 'save_pdf' ) {
+					$statusMessage = 'Could not save pdf.';
+					$printContent = $postData->{'content'};
+					my $pdf_file = create_pdf($config{'port'});
+					put_file_online( $pdf_file, '/print.pdf', $httpd );
+				}
 			}
 			if ( !$dbh->errstr ) {
 				$content->{'success'} = \1;
@@ -411,6 +420,24 @@ $httpd->reg_cb(
 					$statusCode, $statusMessage,
 					{ 'Content-Type' => 'application/json' }, $content
 				]
+			);
+		}
+	},
+	'/pdf' => sub {
+		my ( $httpd, $req ) = @_;
+		if ( $req->method() eq 'GET' ) {
+			$req->respond(
+				{
+					content => [
+						'text/html',
+						$templates{'pdf'}->fill_in(
+							HASH => {
+								'strippedTitle' => 'PDF',
+								'content' => $printContent
+							}
+						)
+					]
+				}
 			);
 		}
 	},
