@@ -75,7 +75,7 @@ if ( $^O =~ /MSWin/ ) {
 	
 	my $addDlls = '-l libxml2-2__.dll -l libiconv-2__.dll -l zlib1__.dll -l liblzma-5__.dll';
 	
-	my $result = `pp -c $addDlls $filesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
+	my $result = `pp -M Win32API::File -c $addDlls $filesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 
 # newer versions of pp don't support the --icon option any more, use Win32::Exe to manually replace the icon:
 #	$exe = Win32::Exe->new('ttmp32gme.exe');
