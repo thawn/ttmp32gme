@@ -13,6 +13,7 @@ use AnyEvent::HTTP;
 use PAR;
 
 use Encode qw(decode_utf8 encode_utf8);
+use utf8;
 
 use Path::Class;
 
@@ -427,17 +428,15 @@ $httpd->reg_cb(
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
 			$req->respond(
-				{
-					content => [
-						'text/html',
-						$templates{'pdf'}->fill_in(
-							HASH => {
-								'strippedTitle' => 'PDF',
-								'content' => $printContent
-							}
-						)
-					]
-				}
+				[
+					200, 'OK',{'Content-Type' => 'text/html'},
+					$templates{'pdf'}->fill_in(
+						HASH => {
+							'strippedTitle' => 'PDF',
+							'content' => encode_utf8( $printContent )
+						}
+					)
+				]
 			);
 		}
 	},
