@@ -221,33 +221,13 @@ var toggleField = function($checkbox) {
 	}
 }
 
-var tileStyle = (function() {
-	// Create the <style> tag
-	var style = document.createElement("style");
-
-	// WebKit hack :(
-	style.appendChild(document.createTextNode(""));
-
-	// Add the <style> element to the page
-	document.head.appendChild(style);
-
-	return style.sheet;
-})();
-
 var changeTileSize = function($id) {
-	var numRules = tileStyle.cssRules.length;
 	if ($id.val()) {
 		var PPcm = 56.692845103;
 		var size = $id.val() * PPcm;
-		for (i=0;i<numRules;i++) {
-			tileStyle.removeRule(0);
-		}
-		tileStyle.insertRule(
-				'.album { min-width: ' + size + 'px; min-height: ' + size + 'px; max-width: ' + size + 'px; max-height: ' + size + 'px; overflow: hidden;}',0);
+		$('.album').css({ 'min-width': size + 'px', 'min-height': size + 'px', 'max-width': size + 'px', 'max-height': size + 'px', 'overflow': 'hidden'});
 	} else {
-		for (i=0;i<numRules;i++) {
-			tileStyle.removeRule(0);
-		}
+		$('.album').removeAttr('style');
 	}
 }
 
@@ -283,7 +263,7 @@ var savePDF = function() {
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					setTimeout(function() { window.open('/print.pdf'); }, 10000);
-					notify($('#pdf-save'), '', 'Creating pdf, please wait...', 'bg-info',
+					notify($('#pdf-save'), '', 'Creating pdf, please wait about 10 s... (you need to allow popups to see the pdf. otherwise open "http://'+window.location.host+'/print.pdf" manually', 'bg-info',
 							10000);
 				} else {
 					notify($('#pdf-save'), '', jqXHR.statusText, 'bg-danger',
@@ -301,6 +281,15 @@ $(function() {
 	// fetch the configuration from the database
 	getConfig();
 	
+	tileStyle = (function() {
+		// Create the <style> tag
+		var style = document.createElement("style");
+		// WebKit hack :(
+		style.appendChild(document.createTextNode(""));
+		// Add the <style> element to the page
+		document.getElementById('wrap-all-print').appendChild(style);
+		return style.sheet;
+	})();
 	// save visible layout as pdf
 	$('#pdf-save').click(function(){
 		savePDF();
