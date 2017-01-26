@@ -209,15 +209,17 @@ sub createLibraryEntry {
 						my $mp3 = MP3::Tag->new( $album->{$fileId} );
 						$mp3->get_tags();
 						my $id3v2_tagdata = $mp3->{ID3v2};
-						my $apic          = $id3v2_tagdata->get_frame("APIC");
-						$pictureData = $$apic{'_Data'};
-						my $mimetype = $$apic{'MIME type'};
-						if ($mimetype) {
-							$mimetype =~ s/.*\///;
-							$album_data{'picture_filename'} = 'cover.' . $mimetype;
-						} elsif ($pictureData) {
-							my $imgType = image_type( \$pictureData );
-							$album_data{'picture_filename'} = 'cover.' . $imgType;
+						if ( $id3v2_tagdata ) {
+							my $apic          = $id3v2_tagdata->get_frame("APIC");
+							$pictureData = $$apic{'_Data'};
+							my $mimetype = $$apic{'MIME type'};
+							if ($mimetype) {
+								$mimetype =~ s/.*\///;
+								$album_data{'picture_filename'} = 'cover.' . $mimetype;
+							} elsif ($pictureData) {
+								my $imgType = image_type( \$pictureData );
+								$album_data{'picture_filename'} = 'cover.' . $imgType;
+							}
 						}
 					}
 
