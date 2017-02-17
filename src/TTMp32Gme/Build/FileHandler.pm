@@ -5,6 +5,7 @@ use warnings;
 
 use PAR;
 use Path::Class;
+use Data::Dumper;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -26,6 +27,21 @@ if ( PAR::read_file('build.txt') ) {
 	require TTMp32Gme::Build::Perl;
 	import TTMp32Gme::Build::Perl @build_imports;
 }
+
+## private functions:
+
+sub get_unique_path {
+	my ( $path ) = @_;
+	my $count = 0;
+	while ( -e $path ) {
+		$path =~ s/_\d*$//;
+		$path .= '_' . $count;
+		$count++;
+	}
+	return $path
+}
+
+##public functions:
 
 sub getLibraryPath {
 	my $library = dir( get_local_storage(), 'library' );
@@ -67,23 +83,20 @@ sub makeNewAlbumDir {
 	if ( $albumTitle eq 'temp' ) {
 		$albumTitle .= '_0';
 	}
-	my $albumPath = ( dir( getLibraryPath(), $albumTitle ) )->stringify;
-	my $count = 0;
-	while ( -d $albumPath ) {
-		$albumPath =~ s/_\d*$//;
-		$albumPath .= '_' . $count;
-		$count++;
-	}
-	$albumPath = dir($albumPath);
-	$albumPath->mkpath();
-	return $albumPath->stringify;
+	my $album_path = get_unique_path( ( dir( getLibraryPath(), $albumTitle ) )->stringify );
+	$album_path = dir( $album_path );
+	$album_path->mkpath();
+	return $album_path->stringify;
 }
 
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
 	my $file = file($filePath);
+	my $target = get_unique_path( file( $albumPath, cleanup_filename( $file->basename() ) )->stringify );
+	print Dumper($target);
+	my $target_file = file( $target );
 	my $album_file =
-		$file->move_to( file( $albumPath, cleanup_filename( $file->basename() ) ) );
+		$file->move_to( $target_file );
 	return $album_file->basename();
 }
 

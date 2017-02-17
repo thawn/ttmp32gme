@@ -135,6 +135,21 @@ sub switchTracks {
 	}
 }
 
+sub sortByDiscTrackFilename {
+	no warnings 'uninitialized';
+	$a->{'disc'} <=> $b->{'disc'} or $a->{'track'} <=> $b->{'track'} or $a->{'filename'} cmp $b->{'filename'};
+}
+
+sub sortTracks {
+	my ($track_data) = @_;
+	my @tracks = map( $_->{'track'}, @{$track_data} );
+	my @sorted_track_data = sort sortByDiscTrackFilename @{$track_data};
+	foreach my $track_no ( 0..$#sorted_track_data ) {
+		$sorted_track_data[$track_no]->{'track'} = $track_no + 1;
+	}
+	return @sorted_track_data;
+}
+
 ## public methods:
 
 sub updateTableEntry {
@@ -172,6 +187,7 @@ sub createLibraryEntry {
 			my %album_data;
 			my @track_data;
 			my $pictureData;
+			my $trackNo = 1;
 			foreach my $fileId ( sort keys %{$album} ) {
 				if ( $album->{$fileId} =~ /\.(mp3|ogg)$/i ) {
 
@@ -236,6 +252,10 @@ sub createLibraryEntry {
 						'track'      => $info->track(),
 						'filename'   => $album->{$fileId},
 					);
+					if ( !$trackInfo{'track'} ) {
+						$trackInfo{'track'} = $trackNo;
+						$trackNo++;
+					}
 					push( @track_data, \%trackInfo );
 				} elsif ( $album->{$fileId} =~ /\.(jpg|jpeg|tif|tiff|png|gif)$/i ) {
 
@@ -257,6 +277,7 @@ sub createLibraryEntry {
 					file( $album_data{'path'}, $album_data{'picture_filename'} );
 				$picture_file->spew(iomode => '>:raw', $pictureData);
 			}
+			@track_data = sortTracks( \@track_data );
 			foreach my $track (@track_data) {
 				$track->{'filename'} =
 					moveToAlbum( $album_data{'path'}, $track->{'filename'} );
