@@ -6,6 +6,7 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 * automatic generation of control sheets that allow to control playback of music/audiobook.
 * flexible print layouts for various applications (see [screenshots](#screenshots) below).
 * Printing was tested to work with Chrome and Firefox on Mac Os and Microsoft Edge on Windows 10 (Chrome and Firefox do not print with high enough resolution on Win 10, Opera seems to work occasionally).
+* Creation of printable PDFs on Windows systems.
 * automatic readout of id3 tags to get album and track info (including embedded cover images).
 * add cover images for nicer print layout.
 * copy gme files to tiptoi if tiptoi is connected.
@@ -77,6 +78,8 @@ disconnect the pen from the computer.
 
 
 ## required perl modules (for running ttmp32gme from source)
+on linux systems, pdfs can be created using wkhtmltopdf if version 0.13.x is found on the path (i.e. in /usr/local/bin or /usr/bin).
+
 run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
 modules (some modules required the `-f` flag to install on my Mac OS system):
  
