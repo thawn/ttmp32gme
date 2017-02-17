@@ -5,7 +5,6 @@ use warnings;
 
 use PAR;
 use Path::Class;
-#use Data::Dumper;
 
 require Exporter;
 our @ISA = qw(Exporter);

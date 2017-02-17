@@ -3,7 +3,6 @@ package TTMp32Gme::LibraryHandler;
 use strict;
 use warnings;
 
-use Data::Dumper;
 use Path::Class;
 use List::MoreUtils qw(uniq);
 use Cwd;

@@ -9,7 +9,7 @@
 	<key>CFBundleExecutable</key>
 	<string>ttmp32gme</string>
 	<key>CFBundleGetInfoString</key>
-	<string>ttmp32gme 0.1.0 Copyright 2017 thawn</string>
+	<string>ttmp32gme 0.2.0 Copyright 2017 thawn</string>
 	<key>CFBundleIconFile</key>
 	<string>appIcon.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.2.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>LSEnvironment</key>
@@ -35,7 +35,7 @@
 	<key>NSAppleScriptEnabled</key>
 	<false/>
 	<key>NSHumanReadableCopyright</key>
-	<string>ttmp32gme 0.1.0 Copyright 2017 ttmp32gme</string>
+	<string>ttmp32gme 0.2.0 Copyright 2017 ttmp32gme</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

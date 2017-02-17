@@ -7,6 +7,9 @@ my $updates = {
 	'0.1.0' => <<'END',
 UPDATE "config" SET value='0.1.0' WHERE param='version';
 END
+	'0.2.0' => <<'END',
+UPDATE "config" SET value='0.2.0' WHERE param='version';
+END
 };
 
 sub update {
