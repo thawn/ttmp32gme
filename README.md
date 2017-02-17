@@ -107,6 +107,10 @@ Music::Tag::Auto
 MP3::Tag
 Image::Info
 
+for building from source, you also need:
+
+pp
+
 ## ToDo
 * automatic download of cover images
 * enable separate printing of oid codes/text and cover images
