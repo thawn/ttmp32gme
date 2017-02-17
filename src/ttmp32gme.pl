@@ -373,6 +373,7 @@ $httpd->reg_cb(
 								'strippedTitle' => 'Print',
 								'navigation' =>
 									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
+								'print_button' => format_print_button(),
 								'content' => create_print_layout(
 									$getData->{'oids'}, $templates{'printing_contents'},
 									\%config, $httpd, $dbh

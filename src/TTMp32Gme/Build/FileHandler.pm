@@ -5,7 +5,7 @@ use warnings;
 
 use PAR;
 use Path::Class;
-use Data::Dumper;
+#use Data::Dumper;
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -93,7 +93,6 @@ sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
 	my $file = file($filePath);
 	my $target = get_unique_path( file( $albumPath, cleanup_filename( $file->basename() ) )->stringify );
-	print Dumper($target);
 	my $target_file = file( $target );
 	my $album_file =
 		$file->move_to( $target_file );
