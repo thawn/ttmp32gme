@@ -107,7 +107,9 @@ Music::Tag::Auto
 MP3::Tag
 Image::Info
 
-for building from source, you also need:
+### Build requirements
+
+For building from source, you also need:
 
 pp
 
