@@ -56,6 +56,21 @@ this if you want to know why</a>). If you have problems with not recognized oid
 codes, first try to increase the number of pixels to 3 or 4 and then try to
 change the resolution setting.
 
+#### If the pen does not recognize the printed pages
+
+It is a known (and sad) fact that the oid codes do not work with all printers. This is because the oid codes are very fine detailed patterns and need to be reproduced exactly by the printer. Many printers simply do not have a good enough resolution or their drivers mess around with the patterns during image processing. In the latter case, this can sometimes be circumvented by playing around with the print settings but sometimes, it simply does not work.
+
+Before [reporting any problem with the pen not recognizing printed pages](https://github.com/thawn/ttmp32gme/issues/11), please read wiki page on printer support for tttool:
+https://github.com/entropia/tip-toi-reveng/wiki/Printing
+
+If possible, please try to print the oid table you can download below:
+
+[oid-table](https://cloud.githubusercontent.com/assets/1308449/26282853/beefeec2-3e19-11e7-8413-86a26bb1b1b5.png) (borrowed from tttool).
+
+Make sure to print at 100% scale. Do not use autoscaling or fit to paper settings. When you point the pen at any of the patterns, it should say something like "Bitte installieren Sie erst die Audiodatei für dieses Produkt" or "Bitte berühre erst das Anschaltzeichen für dieses Produkt". Then at least the pen recognized that these are oid codes. If the pen does nothing, this likely means that your issue is unrelated to the software but is a problem with the printer.
+
+If you still think it is a software issue, please report exactly (step by step) what you were doing and what (if any) messages the pen is saying, otherwise I cannot help you.
+
 ### 4. Copy the gme files onto the tiptoi pen</h4>
 Connect the tiptoi pen to your computer. If you do not see the button "Copy
 selected to TipToi", reload the library page. Now select
