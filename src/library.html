@@ -400,29 +400,48 @@
 			$('input[name=enabled]:checked').each(function(){
 				oids.push($(this).parents('tr.library-entry').find('input[name=old_oid]').val());
 			});
-			printAlbums(oids);
+			if (oids.length >0){
+				printAlbums(oids);
+			} else {
+				alert("Please select an album first");
+			}
 		});
 		$('#copy-selected').click(function(){
-			$('input[name=enabled]:checked').each(function(index){
-				copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
-			});
+			$selected=$('input[name=enabled]:checked');
+			if ($selected.length > 0) {
+				$selected.each(function(index){
+					copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+				});
+			} else {
+				alert("Please select an album first");
+			}
 		});
 		$('#cleanup-selected').click(function(){
-			var ok = confirm('Are you sure? This will delete all music files from selected albums. The gme files and the pictures (if any) will remain in your library. This cannot be undone.');
-			if (ok) {
-				$('input[name=enabled]:checked').each(function(){
-					if ($(this).data('item-id').find('input[name=gme_file]').val()) {
-						triggerElementAction('cleanup', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
-					}
-				});
+			$selected=$('input[name=enabled]:checked');
+			if ($selected.length > 0) {
+				var ok = confirm('Are you sure? This will delete all music files from selected albums. The gme files and the pictures (if any) will remain in your library. This cannot be undone.');
+				if (ok) {
+					$selected.each(function(){
+						if ($(this).data('item-id').find('input[name=gme_file]').val()) {
+							triggerElementAction('cleanup', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+						}
+					});
+				}
+			} else {
+				alert("Please select an album first");
 			}
 		});
 		$('#delete-selected').click(function(){
-			var ok = confirm('Are you sure? This will delete all selected albums including the gme files from your library. This cannot be undone.');
-			if (ok) {
-				$('input[name=enabled]:checked').each(function(){
-					deleteElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
-				});
+			$selected=$('input[name=enabled]:checked');
+			if ($selected.length > 0) {
+				var ok = confirm('Are you sure? This will delete all selected albums including the gme files from your library. This cannot be undone.');
+				if (ok) {
+					$selected.each(function(){
+						deleteElement($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+					});
+				}
+			} else {
+				alert("Please select an album first");
 			}
 		});
 		$('#sort1').find('a').click(function(){
