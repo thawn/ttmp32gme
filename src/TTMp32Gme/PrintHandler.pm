@@ -86,6 +86,15 @@ sub format_main_oid {
 "<img class='img-24mm play-img' src='$oid_path' alt='oid: $oid'>";
 }
 
+sub format_cover {
+	my ( $album ) = @_;
+	if ( $album->{'picture_filename'} ) {
+		return '<img class="img-responsive cover-img"src="/assets/images/' . $album->{'oid'} . '/' . $album->{'picture_filename'} . '" alt="cover">';
+	} else {
+		return '';
+	}
+}
+
 ## external functions:
 
 sub create_print_layout {
@@ -108,6 +117,7 @@ sub create_print_layout {
 			$album->{'play_controls'} = $controls;
 			$album->{'main_oid_image'} =
 				format_main_oid( $oid, $oid_map, $httpd, $dbh );
+			$album->{'formatted_cover'} = format_cover($album);
 			$content .= $template->fill_in( HASH => $album );
 		}
 	}
