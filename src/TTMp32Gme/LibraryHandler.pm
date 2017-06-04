@@ -6,6 +6,7 @@ use warnings;
 use Path::Class;
 use List::MoreUtils qw(uniq);
 use Cwd;
+use Data::Dumper;
 
 use Image::Info qw(image_type);
 use Music::Tag ( traditional => 1 );
@@ -17,6 +18,8 @@ use MP3::Tag;
 
 #use Music::Tag:Amazon; #needs developer key
 #use Music::Tag:LyricsFetcher; #maybe use this in a future release?
+
+use Log::Message::Simple qw(msg debug error);
 
 use TTMp32Gme::Build::FileHandler;
 
@@ -179,7 +182,7 @@ sub put_file_online {
 }
 
 sub createLibraryEntry {
-	my ( $albumList, $dbh ) = @_;
+	my ( $albumList, $dbh, $debug ) = @_;
 	foreach my $album ( @{$albumList} ) {
 		if ($album) {
 			my $oid = newOID($dbh);
@@ -189,6 +192,7 @@ sub createLibraryEntry {
 			my $trackNo = 1;
 			foreach my $fileId ( sort keys %{$album} ) {
 				if ( $album->{$fileId} =~ /\.(mp3|ogg)$/i ) {
+					if ($debug) { debug("Parsing audio file: $album->{$fileId}",$debug);	}
 
 					#handle mp3 and ogg audio files
 					my $info = Music::Tag->new( $album->{$fileId} );
@@ -223,6 +227,7 @@ sub createLibraryEntry {
 						#try to use MP3::Tag directly.
 						my $mp3 = MP3::Tag->new( $album->{$fileId} );
 						$mp3->get_tags();
+						#if ($debug) {print Dumper($mp3);}
 						my $id3v2_tagdata = $mp3->{ID3v2};
 						if ( $id3v2_tagdata ) {
 							my $apic          = $id3v2_tagdata->get_frame("APIC");
@@ -254,9 +259,12 @@ sub createLibraryEntry {
 					if ( !$trackInfo{'track'} ) {
 						$trackInfo{'track'} = $trackNo;
 						$trackNo++;
+						$trackInfo{'title'} = cleanup_filename( ( file( $album->{$fileId} ) )->basename() );
+						error("No useable id3 info found in $album->{$fileId}.\nPlease add an id3v2 tag to your mp3 file in order to get proper album and track info.");
 					}
 					push( @track_data, \%trackInfo );
 				} elsif ( $album->{$fileId} =~ /\.(jpg|jpeg|tif|tiff|png|gif)$/i ) {
+					if ($debug) { debug("Parsing cover image: $album->{$fileId}",$debug);	}
 
 					#handle pictures
 					my $picture_file = file( $album->{$fileId} );
@@ -283,6 +291,12 @@ sub createLibraryEntry {
 				writeToDatabase( 'tracks', $track, $dbh );
 			}
 			writeToDatabase( 'gme_library', \%album_data, $dbh );
+			if ($debug) {
+				debug("Found the following album info:\n",$debug);
+				debug(Dumper(\%album_data),$debug);
+				debug("\nFound the following track info:\n",$debug);
+				debug(Dumper(\@track_data),$debug);
+			}
 		}
 	}
 	removeTempDir();

@@ -37,7 +37,8 @@ $AnyEvent::HTTP::USERAGENT =
 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10 ( .NET CLR 3.5.30729)';
 
 # Declare globals... I know tisk tisk
-my ( $dbh, %config, $watchers, %templates, $static, %assets );
+my ( $dbh, %config, $watchers, %templates, $static, %assets, $debug );
+$debug=0;
 
 # Encapsulate configuration code
 {
@@ -56,7 +57,8 @@ my ( $dbh, %config, $watchers, %templates, $static, %assets );
 		"directory=s" =>
 			\$directory,    # Directory to change to after starting (for dev mostly)
 		"configdir=s" => \$configdir,    # Where your config files are located
-		"version"     => \$versionFlag
+		"version"     => \$versionFlag,
+		"debug"     => \$debug
 	);                                 # Get the version number
 
 	if ($versionFlag) {
@@ -246,7 +248,7 @@ $httpd->reg_cb(
 				}
 			} elsif ( $req->parm('action') ) {
 				print "copying albums to library\n";
-				createLibraryEntry( \@albumList, $dbh, $httpd );
+				createLibraryEntry( \@albumList, $dbh, $debug );
 				$fileCount            = 0;
 				$albumCount           = 0;
 				$currentAlbum         = makeTempAlbumDir($albumCount);
