@@ -6,7 +6,7 @@ use warnings;
 use Path::Class;
 use Cwd;
 
-use Log::Message::Simple qw(msg error);
+use Log::Message::Simple qw(msg debug error);
 
 use TTMp32Gme::Build::FileHandler;
 use TTMp32Gme::LibraryHandler;
@@ -143,21 +143,26 @@ sub create_print_layout {
 sub create_pdf {
 	my ($port) = @_;
 	my $wkhtmltopdf_command = get_executable_path('wkhtmltopdf');
-	my $pdf_file = file(getLibraryPath(), 'print.pdf');
-	my $args = "-B 0.5in -T 0.5in -L 0.5in -R 0.5in http://localhost:$port/pdf $pdf_file";
-	my $fullCmd = "$wkhtmltopdf_command $args";
-	print "$fullCmd\n";
-	if ( $^O =~ /MSWin/ ) {
-		my $child_pid;
-		my $child_proc;
-		require Win32::Process;
-    Win32::Process::Create($child_proc, $wkhtmltopdf_command, $fullCmd, 0, 0, ".") || error "Could not spawn child: $!";
-    $child_pid = $child_proc->GetProcessID();
+	if ($wkhtmltopdf_command) {
+		my $pdf_file = file(getLibraryPath(), 'print.pdf');
+		my $args = "-B 0.5in -T 0.5in -L 0.5in -R 0.5in http://localhost:$port/pdf $pdf_file";
+		my $fullCmd = "$wkhtmltopdf_command $args";
+		print "$fullCmd\n";
+		if ( $^O =~ /MSWin/ ) {
+			my $child_pid;
+			my $child_proc;
+			require Win32::Process;
+  	  Win32::Process::Create($child_proc, $wkhtmltopdf_command, $fullCmd, 0, 0, ".") || error "Could not spawn child: $!";
+    	$child_pid = $child_proc->GetProcessID();
+		} else {
+			$fullCmd .= ' &';
+			system($fullCmd);
+		}
+		return $pdf_file;
 	} else {
-		$fullCmd .= ' &';
-		system($fullCmd);
+		error("Could not create pdf, wkhtml2pdf not found.");
+		return 0; 
 	}
-	return $pdf_file;
 }
 
 sub format_print_button {
@@ -166,10 +171,14 @@ sub format_print_button {
 		$button = '<button type="button" id="pdf-save" class="btn btn-primary" data-toggle="popover" title="Save as pdf. The PDF usually prints better than the webpage.">Save as PDF</button>';
 	} else {
 		my $wkhtmltopdf_command = get_executable_path('wkhtmltopdf');
-		my $wkhtmltopdf_version = `$wkhtmltopdf_command -V`;
-		if ( $wkhtmltopdf_version =~ /0\.13\./ ) {
-			$button = '<button type="button" class="btn btn-info" onclick="javascript:window.print()">Print This Page</button> <button type="button" id="pdf-save" class="btn btn-primary" data-toggle="popover" title="Save as pdf. The PDF usually prints better than the webpage.">Save as PDF</button>';
-		}	else {
+		if ($wkhtmltopdf_command) {
+			my $wkhtmltopdf_version = `$wkhtmltopdf_command -V`;
+			if ( $wkhtmltopdf_version =~ /0\.13\./ ) {
+				$button = '<button type="button" class="btn btn-info" onclick="javascript:window.print()">Print This Page</button> <button type="button" id="pdf-save" class="btn btn-primary" data-toggle="popover" title="Save as pdf. The PDF usually prints better than the webpage.">Save as PDF</button>';
+			}	else {
+				$button = '<button type="button" class="btn btn-info" onclick="javascript:window.print()">Print This Page</button>';
+			}
+		} else {
 			$button = '<button type="button" class="btn btn-info" onclick="javascript:window.print()">Print This Page</button>';
 		}
 	}

@@ -165,21 +165,27 @@ sub get_executable_path {
 	if ( $^O =~ /MSWin/ ) {
 		$exe_name .= '.exe';
 	}
+	my $exe_path;
 	if ( PAR::read_file('build.txt') ) {
-		return ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
+		$exe_path = ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
 	} else {
 		if ( $^O =~ /MSWin/ ) {
-			return ( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )
+			$exe_path = ( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )
 				->stringify();
 		} elsif ( $^O eq 'darwin' ) {
-			return ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )
+			$exe_path = ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )
 				->stringify();
 		} else {
 			$ENV{'PATH'} = $ENV{'PATH'} . ':/usr/local/bin';
 			my $foo = `which $exe_name`;
 			chomp($foo);
-			return $foo;
+			$exe_path = $foo;
 		}
+	}
+	if ( -x $exe_path ){
+		return $exe_path;
+	} else {
+		return "";
 	}
 }
 
