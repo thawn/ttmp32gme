@@ -98,9 +98,17 @@ disconnect the pen from the computer.
 ![config](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/Screen_Shot_print-config.png)
 
 
-## required perl modules (for running ttmp32gme from source)
+## Required libraries and perl modules (for running ttmp32gme from source)
+
+### Required libraries
+ttmp32gme requires the following libraries to run"
+`libc6`, `libxml2`, `zlib`
+on a debian (-based) system (including Ubuntu), you can install these by running:
+`sudo apt-get install libc6-dev libxml2-dev zlib1g-dev`
+
 on linux systems, pdfs can be created using wkhtmltopdf if version 0.13.x is found on the path (i.e. in /usr/local/bin or /usr/bin).
 
+### Required perl modules
 run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
 modules (some modules required the `-f` flag to install on my Mac OS system):
  
@@ -141,4 +149,5 @@ pp
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
 * interface to use external CD ripping tools such as fre:ac
-* Run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
+* run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
+* create a docker image for linux
