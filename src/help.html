@@ -77,6 +77,16 @@
 					codes, first try to increase the number of pixels to 3 or 4 and then try to
 					change the resolution setting.
 				</p>
+				<p>
+					Many print drivers have different optimization settings for Graphics/Images and
+					Text. Try to set your print driver to Graphic/Image mode (some drivers mess up
+					the oid patterns in text mode). If your driver does not have such a setting, try
+					to convert the PDF to a 1200 dpi png and print that. If you still have problems,
+					check out <a href="https://github.com/entropia/tip-toi-reveng/wiki/Printing">the
+						printing tips on the tttool wiki</a> and <a
+						href="https://github.com/thawn/ttmp32gme/issues/11">the printing issues in
+						the ttmp32gme github repository</a>
+				</p>
 			</div>
 		</div>
 	</div>
@@ -102,8 +112,7 @@
 						printed pages</h4>
 				</div>
 				<div class="panel-body">
-					<p>
-						It is a known (and sad) fact that the oid codes do not work with all
+					<p>It is a known (and sad) fact that the oid codes do not work with all
 						printers. This is because the oid codes are very fine detailed patterns and
 						need to be reproduced exactly by the printer. Many printers simply do not have
 						a good enough resolution or their drivers mess around with the patterns during
@@ -112,8 +121,8 @@
 					</p>
 
 					<ul>
-						<li>Make sure to print at 100% scale. Do not use autoscaling or fit to paper
-						settings in the print dialog of your printer.</li>
+						<li>Make sure to print at 100% scale. Do not use autoscaling or fit to
+							paper settings in the print dialog of your printer.</li>
 						<li>print in 1200dpi if possible, sometimes 600dpi seem to work.</li>
 						<li>play around with the quality settings, resolution, contrast</li>
 						<li>use different paper</li>
@@ -121,17 +130,16 @@
 					</ul>
 
 					</p>
-						Before <a href="https://github.com/thawn/ttmp32gme/issues/11">reporting any
+					Before <a href="https://github.com/thawn/ttmp32gme/issues/11">reporting any
 						problem with the pen not recognizing printed pages</a>, please <a
-						href="https://github.com/entropia/tip-toi-reveng/wiki/Printing">read the wiki
-						page on printer support for tttool.</a>
+						href="https://github.com/entropia/tip-toi-reveng/wiki/Printing">read the
+						wiki page on printer support for tttool.</a>
 					</p>
 
 					<p>
-						Please try to print <a href="/assets/images/oid-table.png">this
-						oid table</a>.
-						When you point the pen at any of the patterns, it should say something
-						like "Bitte installieren Sie erst die Audiodatei für dieses Produkt" or "Bitte
+						Please try to print <a href="/assets/images/oid-table.png">this oid table</a>.
+						When you point the pen at any of the patterns, it should say something like
+						"Bitte installieren Sie erst die Audiodatei für dieses Produkt" or "Bitte
 						berühre erst das Anschaltzeichen für dieses Produkt". Then at least the pen
 						recognized that these are oid codes. If the pen does nothing, this likely means
 						that your issue is unrelated to the software but is a problem with the printer.

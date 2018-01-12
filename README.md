@@ -65,6 +65,8 @@ It is a known (and sad) fact that the oid codes do not work with all printers. T
 * play around with the quality settings, resolution, contrast
 * use different paper
 * try black-and-white versus color prints
+* Try to set your print driver to Graphic/Image mode (some drivers mess up the oid patterns in text mode).
+* If your driver does not have such a setting, try to convert the PDF to a 1200 dpi png and print that. 
 
 Before [reporting any problem with the pen not recognizing printed pages](https://github.com/thawn/ttmp32gme/issues/11), please read the wiki page on printer support for tttool:
 https://github.com/entropia/tip-toi-reveng/wiki/Printing
