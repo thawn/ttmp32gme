@@ -145,11 +145,14 @@ For building from source, you also need:
 pp
 
 ## ToDo
-* automatic download of cover images
-* enable separate printing of oid codes/text and cover images
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
+
+### Maybe later
+* automatic splitting of audio files as described [here.](https://stackoverflow.com/questions/36074224/how-to-split-video-or-audio-by-silent-parts)
+* automatic download of cover images
+* enable separate printing of oid codes/text and cover images
 * interface to use external CD ripping tools such as fre:ac
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
 * create a docker image for linux
