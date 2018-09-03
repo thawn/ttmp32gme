@@ -108,7 +108,13 @@ ttmp32gme requires the following libraries to run"
 on a debian (-based) system (including Ubuntu), you can install these by running:
 `sudo apt-get install libc6-dev libxml2-dev zlib1g-dev`
 
+if you want to convert mp3s into the ogg format, you need `ffmpeg`
+`sudo apt-get install ffmpeg`
+
+
 on linux systems, pdfs can be created using wkhtmltopdf if version 0.13.x is found on the path (i.e. in /usr/local/bin or /usr/bin).
+
+you also need to [install tttool](https://github.com/entropia/tip-toi-reveng#installation) and copy/link the resulting binary into your path.
 
 ### Required perl modules
 run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
@@ -138,7 +144,20 @@ Music::Tag::Auto
 MP3::Tag
 Image::Info
 
-### Build requirements
+### Running ttmp32gme from source
+
+once you have all the required perl modules installed, check out the git repository into a directory of your choice:
+
+`git clone https://github.com/thawn/ttmp32gme.git`
+
+then run the main ttmp32gme perl script:
+
+`cd ttmp32gme/src`
+`perl ttmp32gme.pl`
+
+now you should be able to access the ttmp32gme user interface using your web browser to access http://localhost:10020.
+
+### Build requirements (for building mac and windows binaries)
 
 For building from source, you also need:
 
@@ -148,6 +167,7 @@ pp
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
+* make library path configurable
 
 ### Maybe later
 * automatic splitting of audio files as described [here.](https://stackoverflow.com/questions/36074224/how-to-split-video-or-audio-by-silent-parts)
