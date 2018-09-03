@@ -106,18 +106,18 @@ disconnect the pen from the computer.
 ttmp32gme requires the following libraries to run"
 `libc6`, `libxml2`, `zlib`
 on a debian (-based) system (including Ubuntu), you can install these by running:
-`sudo apt-get install libc6-dev libxml2-dev zlib1g-dev`
+`sudo apt-get install libc6-dev libxml2-dev zlib1g-dev`.
 
-if you want to convert mp3s into the ogg format, you need `ffmpeg`
-`sudo apt-get install ffmpeg`
+If you want to use the ogg format, you need `ffmpeg`:
+`sudo apt-get install ffmpeg`.
 
 
-on linux systems, pdfs can be created using wkhtmltopdf if version 0.13.x is found on the path (i.e. in /usr/local/bin or /usr/bin).
+On linux systems, pdfs can be created using wkhtmltopdf if version 0.13.x is found on the path (i.e. in /usr/local/bin or /usr/bin).
 
-you also need to [install tttool](https://github.com/entropia/tip-toi-reveng#installation) and copy/link the resulting binary into your path.
+You also need to [install tttool](https://github.com/entropia/tip-toi-reveng#installation) and copy/link the resulting binary into your path.
 
 ### Required perl modules
-run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
+Run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
 modules (some modules required the `-f` flag to install on my Mac OS system):
  
 EV
@@ -146,12 +146,10 @@ Image::Info
 
 ### Running ttmp32gme from source
 
-once you have all the required perl modules installed, check out the git repository into a directory of your choice:
-
-`git clone https://github.com/thawn/ttmp32gme.git`
+Once you have all the required perl modules installed, check out the git repository into a directory of your choice:
+`git clone https://github.com/thawn/ttmp32gme.git`.
 
 then run the main ttmp32gme perl script:
-
 `cd ttmp32gme/src`
 `perl ttmp32gme.pl`
 
@@ -176,3 +174,4 @@ pp
 * interface to use external CD ripping tools such as fre:ac
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
 * create a docker image for linux
+* add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs
