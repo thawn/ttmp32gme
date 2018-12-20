@@ -37,9 +37,9 @@ RUN cpan -T -i \
     
 WORKDIR /ttmp32gme
 COPY . .
-RUN mkdir config
 ENV APPDATA=/var/lib/
-RUN mkdir ${APPDATA}/ttmp32gme
+RUN mkdir config ${APPDATA}/ttmp32gme /mnt/tiptoi
+RUN echo "/dev/disk/by-label/tiptoi /mnt/tiptoi vfat umask=0777,auto,flush 0 1" >> /etc/fstab
 WORKDIR /ttmp32gme/src
 
 EXPOSE 8080
