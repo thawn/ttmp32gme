@@ -1,5 +1,5 @@
 #/bin/bash
-ttmp32gmeStorage=~/.ttmp32gme
+ttmp32gmeStorage=/var/lib/ttmp32gme
 mkdir -p ${ttmp32gmeStorage}
 
 docker run -d \
