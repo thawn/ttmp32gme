@@ -63,10 +63,14 @@
 .play-control {
 	padding: 17px 25px !important;
 	overflow: hidden;
+	background-color: #ffffff !important;
 }
 
 .album-controls {
-	margin: 5px 0px;
+	margin: 5px 0px;    
+	position: sticky;
+    left: 0;
+    bottom: 0;
 }
 
 .track-list>.list-group-item {
