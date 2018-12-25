@@ -8,4 +8,4 @@ docker run -d \
     --device /dev/disk/by-label/tiptoi:/dev/disk/by-label/tiptoi \
     --security-opt apparmor:unconfined --cap-add SYS_ADMIN \
     --name ttmp32gme \
-    fabian/ttmp32gme:latest
+    fabmay/ttmp32gme:latest
