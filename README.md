@@ -175,3 +175,4 @@ pp
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
 * create a docker image for linux
 * add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs
+* detect which albums are already uploaded to a connected tiptoi and mark them in the library
