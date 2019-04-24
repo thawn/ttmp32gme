@@ -222,6 +222,12 @@ sub get_tiptoi_dir {
 				return $d;
 			}
 		}
+	} else {
+		my $mountPoint = "/mnt/tiptoi";
+		system("mountpoint", "-q", "$mountPoint") == 0 || system("mount", "$mountPoint") == 0;
+		if ( -f "$mountPoint/tiptoi.ico" ) {
+		    return $mountPoint;
+		}
 	}
 	return 0;
 }

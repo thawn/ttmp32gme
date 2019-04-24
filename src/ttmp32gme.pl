@@ -43,6 +43,7 @@ $debug=0;
 # Encapsulate configuration code
 {
 	my $port;
+	my $host;
 	my $directory  = "";
 	my $configdir  = "";
 	my $configfile = "";
@@ -51,9 +52,10 @@ $debug=0;
 	my $version = Perl::Version->new("0.2.2");
 
 # Command line startup options
-# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
+# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
 	GetOptions(
 		"port=i" => \$port,    # Port for the local web server to run on
+		"host=s" => \$host,    # Host for the local web server to run on
 		"directory=s" =>
 			\$directory,    # Directory to change to after starting (for dev mostly)
 		"configdir=s" => \$configdir,    # Where your config files are located
@@ -95,6 +97,11 @@ $debug=0;
 	# Port setting from the command line is temporary
 	if ($port) {
 		$config{'port'} = $port;
+	}
+
+	# Host setting from the command line is temporary
+	if ($host) {
+		$config{'host'} = $host;
 	}
 }
 
@@ -168,7 +175,7 @@ my $httpd =
 	AnyEvent::HTTPD->new( host => $config{'host'}, port => $config{'port'} );
 msg(
 	"Server running on port: $config{'port'}\n"
-		. "Open http://127.0.0.1:$config{'port'}/ in your favorite web browser to continue.\n",
+		. "Open http://$config{'host'}:$config{'port'}/ in your favorite web browser to continue.\n",
 	1
 );
 
