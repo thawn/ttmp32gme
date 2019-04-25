@@ -37,7 +37,7 @@ RUN cpan -T -i \
     Locale::Codes
     
 WORKDIR /ttmp32gme
-COPY ../../src .
+COPY src .
 ENV APPDATA=/var/lib/ HOST=127.0.0.1 PORT=8080
 RUN mkdir config ${APPDATA}/ttmp32gme /mnt/tiptoi
 
