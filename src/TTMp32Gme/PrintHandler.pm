@@ -155,7 +155,7 @@ sub create_pdf {
 	my $wkhtmltopdf_command = get_executable_path('wkhtmltopdf');
 	if ($wkhtmltopdf_command) {
 		my $pdf_file = file(getLibraryPath(), 'print.pdf');
-		my $args = "-B 0.5in -T 0.5in -L 0.5in -R 0.5in http://localhost:$port/pdf $pdf_file";
+		my $args = "-B 0.5in -T 0.5in -L 0.5in -R 0.5in http://localhost:$port/pdf \"$pdf_file\"";
 		my $fullCmd = "$wkhtmltopdf_command $args";
 		print "$fullCmd\n";
 		if ( $^O =~ /MSWin/ ) {

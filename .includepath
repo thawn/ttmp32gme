@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <includepath>
   <includepathentry path="${resource_loc:/ttmp32gme/src}" />
+  <includepathentry path="/Users/korten/Documents/workspace/ttmp32gme/src" />
 </includepath>
 
