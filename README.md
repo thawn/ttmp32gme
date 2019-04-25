@@ -164,6 +164,7 @@ For building from source, you also need:
 pp
 
 ## ToDo
+* detect which albums are already uploaded to a connected tiptoi and mark them in the library
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
@@ -175,6 +176,5 @@ pp
 * enable separate printing of oid codes/text and cover images
 * interface to use external CD ripping tools such as fre:ac
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
-* create a docker image for linux
+* integrate wkhtml2pdf into docker image for linux
 * add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs
-* detect which albums are already uploaded to a connected tiptoi and mark them in the library
