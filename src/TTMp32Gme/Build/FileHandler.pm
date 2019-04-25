@@ -210,9 +210,12 @@ sub get_oid_cache {
 
 sub get_tiptoi_dir {
 	if ( $^O eq 'darwin' ) {
-		my $tiptoi_path = dir( '', 'Volumes', 'tiptoi' );
-		if ( -w $tiptoi_path ) {
-			return $tiptoi_path;
+		my @tiptoi_paths =
+			( dir( '', 'Volumes', 'tiptoi' ), dir( '', 'Volumes', 'TIPTOI' ) );
+		foreach my $tiptoi_path (@tiptoi_paths) {
+			if ( -w $tiptoi_path ) {
+				return $tiptoi_path;
+			}
 		}
 	} elsif ( $^O =~ /MSWin/ ) {
 		require Win32API::File;
@@ -220,12 +223,16 @@ sub get_tiptoi_dir {
 		foreach my $d (@drives) {
 			my @info = (undef) x 7;
 			Win32API::File::GetVolumeInformation( $d, @info );
-			if ( $info[0] eq 'tiptoi' ) {
+			if ( lc $info[0] eq 'tiptoi' ) {
 				return $d;
 			}
 		}
 	} else {
-		my @mount_points = ( '/mnt/tiptoi', "/media/$ENV{'USER'}/tiptoi", '/media/removable/tiptoi' );
+		my @mount_points = (
+			'/mnt/tiptoi',             "/media/$ENV{'USER'}/tiptoi",
+			'/media/removable/tiptoi', "/media/$ENV{'USER'}/TIPTOI",
+			'/media/removable/TIPTOI'
+		);
 		foreach my $mount_point (@mount_points) {
 			if ( -f "$mount_point/tiptoi.ico" ) {
 				return $mount_point;
