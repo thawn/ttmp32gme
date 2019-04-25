@@ -11,7 +11,7 @@ elif [ -z ${1+x} ] && [ -w "${1}/tiptoi.ico" ]; then
 elif [ -w "/mnt/tiptoi/tiptoi.ico" ]; then
 	volumes="${volumes} --volume /mnt/tiptoi:/mnt/tiptoi"
 elif [ -w "/media/${'USER'}/tiptoi/tiptoi.ico" ]; then
-	volumes="${volumes} --volume /media/${'USER'}/tiptoi:/mnt/tiptoi"
+	volumes="${volumes} --volume /media/${USER}/tiptoi:/mnt/tiptoi"
 elif [ -w "/media/removable/tiptoi/tiptoi.ico" ]; then
 	volumes="${volumes} --volume /media/removable/tiptoi:/mnt/tiptoi"
 fi
