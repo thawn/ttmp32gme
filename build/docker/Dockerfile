@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
     gcc apt-utils \
     libc6-dev \
     libxml2-dev \
-    zlib1g-dev 
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN cpan -T -i \
     EV \
