@@ -13,7 +13,9 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 
 ## Installation
 * Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer).
-* linux: run the perl sources (see [instructions](#required-libraries-and-perl-modules-for-running-ttmp32gme-from-source) below)
+* linux: 
+* * docker (recommended): download (right click and save as...) [install.sh](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/install.sh) and [ttmp32gme](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/ttmp32gme) into the same directory on our computer. Run `sudo bash install.sh` in a terminal in the same directory where you saved the files. Afterwards, you can start ttmp32gme with `ttmp32gme start` and stop it with `ttmp32gme stop`. If your tiptoi is mounted but not recognized, you can add the tiptoi path to the start command: `ttmp32gme start /path/to/tiptoi`
+* * native: run the perl sources (see [instructions](#required-libraries-and-perl-modules-for-running-ttmp32gme-from-source) below)
 
 ## Usage
 ### 1. Add mp3 files

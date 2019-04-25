@@ -1,4 +1,4 @@
-FROM perl
+FROM perl:slim
 
 COPY --from=johannesfritsch/tttool /usr/local/bin/tttool /usr/local/bin
 
@@ -36,14 +36,12 @@ RUN cpan -T -i \
     Locale::Codes
     
 WORKDIR /ttmp32gme
-COPY . .
-ENV APPDATA=/var/lib/
+COPY ../../src .
+ENV APPDATA=/var/lib/ HOST=127.0.0.1 PORT=8080
 RUN mkdir config ${APPDATA}/ttmp32gme /mnt/tiptoi
-RUN echo "/dev/disk/by-label/tiptoi /mnt/tiptoi vfat umask=0777,auto,flush 0 1" >> /etc/fstab
-WORKDIR /ttmp32gme/src
 
 EXPOSE 8080
 
-CMD [ "perl", "ttmp32gme.pl", "--debug", "--host=0.0.0.0", "--port=8080", "--configdir=/ttmp32gme/config" ]
+CMD [ "perl", "ttmp32gme.pl", "--debug", "--host=${HOST}", "--port=${PORT}", "--configdir=/ttmp32gme/config" ]
 # HEALTHCHECK --interval=5m --timeout=3s \
   # CMD curl -f http://localhost:8080/ || exit 1

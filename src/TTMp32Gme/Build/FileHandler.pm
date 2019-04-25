@@ -30,14 +30,14 @@ if ( PAR::read_file('build.txt') ) {
 ## private functions:
 
 sub get_unique_path {
-	my ( $path ) = @_;
+	my ($path) = @_;
 	my $count = 0;
 	while ( -e $path ) {
 		$path =~ s/_\d*$//;
 		$path .= '_' . $count;
 		$count++;
 	}
-	return $path
+	return $path;
 }
 
 ##public functions:
@@ -82,8 +82,9 @@ sub makeNewAlbumDir {
 	if ( $albumTitle eq 'temp' ) {
 		$albumTitle .= '_0';
 	}
-	my $album_path = get_unique_path( ( dir( getLibraryPath(), $albumTitle ) )->stringify );
-	$album_path = dir( $album_path );
+	my $album_path =
+		get_unique_path( ( dir( getLibraryPath(), $albumTitle ) )->stringify );
+	$album_path = dir($album_path);
 	$album_path->mkpath();
 	return $album_path->stringify;
 }
@@ -91,10 +92,11 @@ sub makeNewAlbumDir {
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
 	my $file = file($filePath);
-	my $target = get_unique_path( file( $albumPath, cleanup_filename( $file->basename() ) )->stringify );
-	my $target_file = file( $target );
-	my $album_file =
-		$file->move_to( $target_file );
+	my $target =
+		get_unique_path(
+		file( $albumPath, cleanup_filename( $file->basename() ) )->stringify );
+	my $target_file = file($target);
+	my $album_file  = $file->move_to($target_file);
 	return $album_file->basename();
 }
 
@@ -170,11 +172,11 @@ sub get_executable_path {
 		$exe_path = ( file( get_par_tmp(), 'lib', $exe_name ) )->stringify();
 	} else {
 		if ( $^O =~ /MSWin/ ) {
-			$exe_path = ( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )
-				->stringify();
+			$exe_path =
+				( file( get_par_tmp(), '..', 'lib', 'win', $exe_name ) )->stringify();
 		} elsif ( $^O eq 'darwin' ) {
-			$exe_path = ( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )
-				->stringify();
+			$exe_path =
+				( file( get_par_tmp(), '..', 'lib', 'mac', $exe_name ) )->stringify();
 		} else {
 			$ENV{'PATH'} = $ENV{'PATH'} . ':/usr/local/bin';
 			my $foo = `which $exe_name`;
@@ -182,7 +184,7 @@ sub get_executable_path {
 			$exe_path = $foo;
 		}
 	}
-	if ( -x $exe_path ){
+	if ( -x $exe_path ) {
 		return $exe_path;
 	} else {
 		return "";
@@ -223,10 +225,11 @@ sub get_tiptoi_dir {
 			}
 		}
 	} else {
-		my $mountPoint = "/mnt/tiptoi";
-		system("mountpoint", "-q", "$mountPoint") == 0 || system("mount", "$mountPoint") == 0;
-		if ( -f "$mountPoint/tiptoi.ico" ) {
-		    return $mountPoint;
+		my @mount_points = ( '/mnt/tiptoi', "/media/$ENV{'USER'}/tiptoi", '/media/removable/tiptoi' );
+		foreach my $mount_point (@mount_points) {
+			if ( -f "$mount_point/tiptoi.ico" ) {
+				return $mount_point;
+			}
 		}
 	}
 	return 0;

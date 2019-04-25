@@ -1,0 +1,29 @@
+#/bin/bash
+ttmp32gmeStorage=~/.ttmp32gme
+mkdir -p ${ttmp32gmeStorage}
+volumes="--volume ${ttmp32gmeStorage}:/var/lib/ttmp32gme"
+usage="Usage: $0 <start|stop> [path-to-mounted-tiptoi]"
+if [ ! "$1" = "start" ] && [ ! "$1" = "stop" ]; then
+	echo "$usage"
+	exit 0
+elif [ -z ${1+x} ] && [ -w "${1}/tiptoi.ico" ]; then
+	volumes="${volumes} --volume ${1}:/mnt/tiptoi"
+elif [ -w "/mnt/tiptoi/tiptoi.ico" ]; then
+	volumes="${volumes} --volume /mnt/tiptoi:/mnt/tiptoi"
+elif [ -w "/media/${'USER'}/tiptoi/tiptoi.ico" ]; then
+	volumes="${volumes} --volume /media/${'USER'}/tiptoi:/mnt/tiptoi"
+elif [ -w "/media/removable/tiptoi/tiptoi.ico" ]; then
+	volumes="${volumes} --volume /media/removable/tiptoi:/mnt/tiptoi"
+fi
+if [ "$1" = "start" ]; then
+	docker run -d \
+		--rm \
+    	--publish 8080:8080 \
+	    ${volumes} \
+    	--name ttmp32gme \
+    	thawn/ttmp32gme:latest && \
+    echo "Successfully started ttmp32gme open http://localhost:8080 in your browser to continue."
+else 
+	docker stop ttmp32gme && \
+	echo "Successfully stopped ttmp32gme."
+fi
