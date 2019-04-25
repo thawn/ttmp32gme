@@ -3,11 +3,13 @@ FROM perl:slim
 COPY --from=johannesfritsch/tttool /usr/local/bin/tttool /usr/local/bin
 
 RUN apt-get update && apt-get install -y \
+    gcc \
     libc6-dev \
     libxml2-dev \
     zlib1g-dev 
 
 RUN cpan -T -i \
+	common:sense \
     EV \
     AnyEvent::HTTPD \
     Path::Class \
