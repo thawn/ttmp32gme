@@ -289,7 +289,7 @@ $httpd->reg_cb(
 			if ( $req->parm('action') ) {
 				if ( $req->parm('action') eq 'list' ) {
 					$statusMessage = 'Could not get list of albums. Possible database error.';
-					$content->{'list'} = get_album_list( $dbh, $httpd );
+					$content->{'list'} = get_album_list( $dbh, $httpd, $debug );
 					if (get_tiptoi_dir) {
 						$content->{'tiptoi_connected'} = \1;
 					}

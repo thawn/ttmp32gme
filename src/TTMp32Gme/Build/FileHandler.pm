@@ -5,11 +5,13 @@ use warnings;
 
 use PAR;
 use Path::Class;
+use Log::Message::Simple qw(msg debug error);
+use Data::Dumper;
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir);
+	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi);
 
 my @build_imports = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
@@ -221,7 +223,7 @@ sub get_tiptoi_dir {
 			my @info = (undef) x 7;
 			Win32API::File::GetVolumeInformation( $d, @info );
 			if ( lc $info[0] eq 'tiptoi' ) {
-				return $d;
+				return dir($d);
 			}
 		}
 	} else {
@@ -232,11 +234,22 @@ sub get_tiptoi_dir {
 		);
 		foreach my $mount_point (@mount_points) {
 			if ( -f "$mount_point/tiptoi.ico" ) {
-				return $mount_point;
+				return dir($mount_point);
 			}
 		}
 	}
 	return 0;
+}
+
+sub get_gmes_already_on_tiptoi {
+	my $tiptoi_path = get_tiptoi_dir();
+	if ($tiptoi_path) {
+		my @gme_list = grep( !$_->is_dir && $_->basename =~ /^(?!._).*\.gme\z/, $tiptoi_path->children() );
+		my %gme_names = map {$_->basename => 1 } @gme_list;
+		return %gme_names;
+	} else {
+		return ();
+	}
 }
 
 1;

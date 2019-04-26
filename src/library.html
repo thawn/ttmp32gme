@@ -113,7 +113,7 @@
 						insertElement(data.list[i]);
 					}
 					if (data.tiptoi_connected) {
-						$('.copy-gme').show();
+						$('.needs-tiptoi').show();
 					}
 				} else {
 					var alert = "<tr><td colspan=\"3\"><div class=\"alert alert-danger alert-dismissible\" role=\"alert\"><button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times;</span></button>"
@@ -173,7 +173,11 @@
 			//$id.find('ol.track-list').disableSelection();
 		}
 		for ( var i in data) {
-			if (data[i] === 'TRUE' || data[i] === 'FALSE') {
+		    if (i == 'gme_on_tiptoi') {
+			    if (data[i]) {
+			        $id.find('.is_on_tiptoi').html('<span class="glyphicon glyphicon-ok text-success"></span>');
+			    }
+			} else if (data[i] === 'TRUE' || data[i] === 'FALSE') {
 				if (data[i] === 'TRUE') {
 					$id.find('input[name=' + i + ']').prop('checked', true);
 					if (i !== 'enabled') {
@@ -340,7 +344,7 @@
 		$('#albums').on('click', 'button.make-gme', function() {
 			triggerElementAction('make_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 		});
-		$('#albums').on('click', 'button.copy-gme', function() {
+		$('#albums').on('click', 'button.needs-tiptoi', function() {
 			copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 		});
 		$('#albums').on('click','button.delete',function() {
@@ -462,7 +466,7 @@
 	<button id="select-all" class="btn btn-default">Select all</button>
 	<button id="deselect-all" class="btn btn-default">Deselect all</button>
 	<button id="toggle-all" class="btn btn-default">Invert selection</button>
-	<button id="copy-selected" class="btn btn-success copy-gme" data-toggle="popover"
+	<button id="copy-selected" class="btn btn-success needs-tiptoi" data-toggle="popover"
 		style="display: none;">Copy selected to TipToi</button>
 	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print
 		selected</button>
@@ -524,6 +528,7 @@
 				<thead>
 					<tr>
 						<th style="white-space: nowrap;">Select</th>
+						<th class="needs-tiptoi" style="white-space: nowrap; display: none;">On Tiptoi?</th>
 						<th style="width: 99%;">Album</th>
 						<th style="white-space: nowrap;">Edit</th>
 					</tr>
@@ -537,6 +542,7 @@
 <table style="display: none;">
 	<tr id="element-template" class="library-entry" style="display: none;">
 		<td><input type="checkbox" name="enabled"></td>
+		<td class="is_on_tiptoi needs-tiptoi" style="display: none;"></td>
 		<td class="filter-item"><span class="item-title"></span>
 			<div class="panel panel-default edit" style="display: none;">
 				<div class="panel-heading">
@@ -549,7 +555,7 @@
 								aria-label="save cancel delete button group">
 								<button type="button" class="btn btn-primary update">Update</button>
 								<button type="button" class="btn btn-success make-gme">Create GME</button>
-								<button type="button" class="btn btn-success copy-gme" style="display: none;">Copy
+								<button type="button" class="btn btn-success needs-tiptoi" style="display: none;">Copy
 									GME to TipToi</button>
 								<button type="button" class="btn btn-success print" style="display: none;">Print</button>
 								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>

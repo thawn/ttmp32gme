@@ -22,3 +22,4 @@ nytprof.out
 ._*
 
 /src/library/*
+dist/

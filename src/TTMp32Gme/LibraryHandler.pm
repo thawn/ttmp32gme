@@ -289,11 +289,14 @@ sub createLibraryEntry {
 }
 
 sub get_album_list {
-	my ( $dbh, $httpd ) = @_;
+	my ( $dbh, $httpd, $debug ) = @_;
 	my @albumList;
-	my $albums = $dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ), 'oid' );
+	my $albums         = $dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ), 'oid' );
+	my %gmes_on_tiptoi = get_gmes_already_on_tiptoi();
+	if ($debug) { debug( 'Found gme files on tiptoi: ' . Dumper( \%gmes_on_tiptoi ), $debug ); }
 	foreach my $oid ( sort keys %{$albums} ) {
 		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
+		$albums->{$oid}->{'gme_on_tiptoi'} = exists( $gmes_on_tiptoi{ $albums->{$oid}->{'gme_file'} } );
 		put_cover_online( $albums->{$oid}, $httpd );
 		push( @albumList, $albums->{$oid} );
 	}
