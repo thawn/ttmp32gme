@@ -49,7 +49,7 @@ $debug=0;
 	my $configfile = "";
 	my $versionFlag;
 
-	my $version = Perl::Version->new("0.2.2");
+	my $version = Perl::Version->new("0.2.3");
 
 # Command line startup options
 # Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
@@ -461,7 +461,8 @@ $httpd->reg_cb(
 					'open_browser' => $config{'open_browser'} eq 'TRUE'
 					? 'checked="checked"'
 					: '',
-					'audio_format' => $config{'audio_format'}
+					'audio_format' => $config{'audio_format'},
+					'pen_language' => $config{'pen_language'}
 				}
 			);
 			$req->respond(

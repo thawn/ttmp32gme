@@ -13,6 +13,10 @@ END
 	'0.2.1' => <<'END',
 UPDATE "config" SET value='0.2.1' WHERE param='version';
 END
+	'0.2.3' => <<'END',
+UPDATE "config" SET value='0.2.3' WHERE param='version';
+INSERT INTO "config" ("param", "value") VALUES ('pen_language', 'GERMAN');
+END
 };
 
 sub update {

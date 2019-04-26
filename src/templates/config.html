@@ -5,7 +5,8 @@ var updateConfig = function(caller)\{
 						'host' : $('#host').val(),
 					  'port' : $('#port').val(),
 					  'open_browser' : testCheckBox('#open_browser'),
-					  'audio_format' : $('#audio_format').val()
+					  'audio_format' : $('#audio_format').val(),
+					  'pen_language' : $('#pen_language').val()
 					  \};
 	$.post('/config',
 		   'action=update&data=' + escape(JSON.stringify(configVars)))
@@ -22,6 +23,8 @@ var updateConfig = function(caller)\{
 \}
 
 $(function()\{
+    $('#audio_format').val("{ $audio_format }");
+    $('#pen_language').val("{ $pen_language }");
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#submit').click(function()\{
 		updateConfig( $(this) );
@@ -50,9 +53,23 @@ $(function()\{
 			</label>
 		</div>
 		<div class="form-group">
-			<label for="port">audio format:</label> <input type="text" id="audio_format"
-				class="form-control" value="{ $audio_format }" data-toggle="tooltip"
+			<label for="port">audio format:</label>
+			<select type="text" id="audio_format"
+				class="custom-select form-control" data-toggle="tooltip"
 				title="Set this either to mp3 (high quality for headphones, large files) or ogg (low quality for speaker, small files).">
+				<option value="mp3">mp3</option>
+				<option value="ogg">ogg</option>
+			</select>
+		</div>
+		<div class="form-group">
+			<label for="port">TipToi pen language:</label>
+			<select id="pen_language" class="custom-select form-control" data-toggle="tooltip"
+				title="Choose the language of your TipToi Pen.">
+				<option value="GERMAN">GERMAN</option>
+				<option value="ENGLISH">ENGLISH</option>
+				<option value="FRENCH">FRENCH</option>
+				<option value="ITALIAN">ITALIAN</option>
+			</select>
 		</div>
 		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover">Save
 			Configuration</button>

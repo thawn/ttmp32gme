@@ -111,7 +111,7 @@ if ( $^O =~ /MSWin/ ) {
 
 	chdir($copyTo);
 
-	my $result = `pp -c $filesToAdd -o mp32gme ttmp32gme.pl`;
+	my $result = `/usr/local/bin/pp -c $filesToAdd -o mp32gme ttmp32gme.pl`;
 
 	print $result;
 	if ( $? != 0 ) { die "Build failed.\n"; }

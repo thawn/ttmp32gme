@@ -1,4 +1,4 @@
 CFBundleName = "ttmp32gme";
-CFBundleShortVersionString = "0.2.2";
-CFBundleGetInfoString = "ttmp32gme version 0.2.2 Copyright 2017 thawn";
+CFBundleShortVersionString = "0.2.3";
+CFBundleGetInfoString = "ttmp32gme version 0.2.3 Copyright 2017 thawn";
 NSHumanReadableCopyright = "Copyright 2017 thawn.";
