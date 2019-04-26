@@ -82,6 +82,10 @@
 	margin: 10px 0px;
 }
 
+.margin-t {
+	margin-top: 5px;
+}
+
 </style>
 
 <script type="text/javascript">
@@ -422,6 +426,15 @@
 				}
 			});
 		});
+		$('#select-all-tiptoi').click(function(){
+			$('input[name=enabled]').each(function(){
+				if ($(this).data('item-id')) {
+					if ($(this).data('item-id').find('.is_on_tiptoi').html()) {
+						$(this).prop('checked', true);
+					}
+				}
+			});
+		});
 		$('#print-selected').click(function(){
 			var oids = [];
 			$('input[name=enabled]:checked').each(function(){
@@ -495,150 +508,158 @@
 		});
 	});
 </script>
-<p>
-	<button id="select-all" class="btn btn-default">Select all</button>
-	<button id="deselect-all" class="btn btn-default">Deselect all</button>
-	<button id="toggle-all" class="btn btn-default">Invert selection</button>
-	<button id="copy-selected" class="btn btn-success needs-tiptoi" data-toggle="popover" style="display: none;">Copy
-		selected to TipToi</button>
-	<button id="tiptoi-delete-selected" class="btn btn-danger needs-tiptoi" data-toggle="popover" style="display: none;">Delete
-		selected from TipToi</button>
-	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print selected</button>
-	<button id="cleanup-selected" class="btn btn-warning" data-toggle="popover">Cleanup selected</button>
-	<button id="delete-selected" class="btn btn-danger" data-toggle="popover">Delete selected from library</button>
-</p>
-<div id="progress-container" style="display: none;">
-	<div id="progress">
-		<div class="alert alert-info" role="alert">
-			Copying files to tiptoi, please <strong>do not disconnect</strong> the pen until the operation is complete.
-		</div>
-		<div class="progress">
-			<div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0"
-				aria-valuemax="100" style="width: 0%">
-				<span class="sr-only">0% Complete</span>
+<div class="row">
+	<div class="col-lg-4">
+		<p>
+			<button id="select-all" class="btn btn-default margin-t">Select all</button>
+			<button id="deselect-all" class="btn btn-default margin-t">Deselect all</button>
+			<button id="toggle-all" class="btn btn-default margin-t">Invert selection</button>
+			<button id="select-all-tiptoi" class="btn btn-default margin-t">Select all on TipToi</button>
+		</p>
+	</div>
+	<div class="col-lg-4">
+		<p>
+			<button id="copy-selected" class="btn btn-success needs-tiptoi margin-t" data-toggle="popover" style="display: none;">Copy
+				selected to TipToi</button>
+			<button id="tiptoi-delete-selected" class="btn btn-danger needs-tiptoi margin-t" data-toggle="popover" style="display: none;">Delete
+				selected from TipToi</button>
+		</p>
+	</div>
+	<div class="col-lg-4">
+		<p>
+			<button id="print-selected" class="btn btn-success margin-t" data-toggle="popover">Print selected</button>
+			<button id="cleanup-selected" class="btn btn-warning margin-t" data-toggle="popover">Cleanup selected</button>
+			<button id="delete-selected" class="btn btn-danger margin-t" data-toggle="popover">Delete selected from library</button>
+		</p>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<div id="progress-container" style="display: none;">
+			<div id="progress">
+				<div class="alert alert-info" role="alert">
+					Copying files to tiptoi, please <strong>do not disconnect</strong> the pen until the operation is complete.
+				</div>
+				<div class="progress">
+					<div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+						aria-valuemax="100" style="width: 0%">
+						<span class="sr-only">0% Complete</span>
+					</div>
+				</div>
+				<div class="alert alert-success" role="alert" style="display: none;">
+					<button type="button" class="close" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<strong>All files copied successfully!</strong> It is now safe to disconnect the tiptoi from the computer.
+				</div>
 			</div>
 		</div>
-		<div class="alert alert-success" role="alert" style="display: none;">
-			<button type="button" class="close" aria-label="Close">
-				<span aria-hidden="true">&times;</span>
-			</button>
-			<strong>All files copied successfully!</strong> It is now safe to disconnect the tiptoi from the computer.
-		</div>
-	</div>
-</div>
 
-<div class="btn-group pull-right" role="group" aria-label="sorting buttons">
-	<div id="sort1" class="btn-group">
-		<button type="button" class="btn btn-info dropdown-toggle"
-			data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-			Sort by <span class="caret"></span>
-		</button>
-		<ul class="dropdown-menu">
-			<li class="active"><a class="album_artist">Artist</a></li>
-			<li><a class="album_title">Title</a></li>
-			<li><a class="album_year">Year</a></li>
-			<li><a class="oid">OID</a></li>
-		</ul>
-	</div>
-	<div id="sort2" class="btn-group">
-		<button type="button" class="btn btn-info dropdown-toggle"
-			data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-			Secondary sort <span class="caret"></span>
-		</button>
-		<ul class="dropdown-menu">
-			<li><a class="album_artist">Artist</a></li>
-			<li class="active"><a class="album_title">Title</a></li>
-			<li><a class="album_year">Year</a></li>
-			<li><a class="oid">OID</a></li>
-		</ul>
-	</div>
-</div>
-<div class="row" id="albums">
-	<div class="panel panel-default">
-		<div class="panel-body">
-			<table id="element-list" class="table table-striped">
-				<thead>
-					<tr>
-						<th style="white-space: nowrap;">Select</th>
-						<th class="needs-tiptoi" style="white-space: nowrap; display: none;">On Tiptoi?</th>
-						<th style="width: 99%;">Album</th>
-						<th style="white-space: nowrap;">Edit</th>
-					</tr>
-				</thead>
-				<tbody>
-				</tbody>
-			</table>
+		<div class="btn-group pull-right" role="group" aria-label="sorting buttons">
+			<div id="sort1" class="btn-group">
+				<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+					aria-expanded="false">
+					Sort by <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu">
+					<li class="active"><a class="album_artist">Artist</a></li>
+					<li><a class="album_title">Title</a></li>
+					<li><a class="album_year">Year</a></li>
+					<li><a class="oid">OID</a></li>
+				</ul>
+			</div>
+			<div id="sort2" class="btn-group">
+				<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+					aria-expanded="false">
+					Secondary sort <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu">
+					<li><a class="album_artist">Artist</a></li>
+					<li class="active"><a class="album_title">Title</a></li>
+					<li><a class="album_year">Year</a></li>
+					<li><a class="oid">OID</a></li>
+				</ul>
+			</div>
 		</div>
+		<div class="row" id="albums">
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<table id="element-list" class="table table-striped">
+						<thead>
+							<tr>
+								<th style="white-space: nowrap;">Select</th>
+								<th class="needs-tiptoi" style="white-space: nowrap; display: none;">On Tiptoi?</th>
+								<th style="width: 99%;">Album</th>
+								<th style="white-space: nowrap;">Edit</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		<table style="display: none;">
+			<tr id="element-template" class="library-entry" style="display: none;">
+				<td><input type="checkbox" name="enabled"></td>
+				<td class="is_on_tiptoi needs-tiptoi" style="display: none;"></td>
+				<td class="filter-item"><span class="item-title"></span>
+					<div class="panel panel-default edit" style="display: none;">
+						<div class="panel-heading">
+							<h4 class="panel-title">Edit album:</h4>
+						</div>
+						<div class="panel-body">
+							<div class="row" style="padding-bottom: 15px;">
+								<div class="col-sm-12">
+									<div class="btn-group" role="group" aria-label="save cancel delete button group">
+										<button type="button" class="btn btn-primary update">Update</button>
+										<button type="button" class="btn btn-success make-gme">Create GME</button>
+										<button type="button" class="btn btn-success needs-tiptoi" style="display: none;">Copy GME to TipToi</button>
+										<button type="button" class="btn btn-success print" style="display: none;">Print</button>
+										<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
+										<button type="button" class="btn btn-danger delete">Delete</button>
+										<button type="button" class="btn btn-info cancel">Cancel</button>
+									</div>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-sm-6 album-info">
+									<img class="img-responsive cover box" alt="cover">
+									<div class="image-uploader"></div>
+									<div class="form-group">
+										<label for="title">OID:</label> <input type="text" name="oid" class="form-control"><input
+											type="hidden" name="old_oid">
+									</div>
+									<div class="form-group">
+										<label for="title">Album title:</label> <input type="text" name="album_title" class="form-control">
+									</div>
+									<div class="form-group">
+										<label for="title">Album artist:</label> <input type="text" name="album_artist" class="form-control">
+									</div>
+									<div class="form-group">
+										<label for="title">Album year:</label> <input type="text" name="album_year" class="form-control">
+									</div>
+									<div class="form-group">
+										<label for="title">GME file:</label> <input type="text" name="gme_file" class="form-control" disabled>
+									</div>
+									<div class="form-group">
+										<label for="title">Path:</label> <input type="text" name="path" class="form-control" disabled>
+									</div>
+								</div>
+								<div class="col-sm-6">
+									<div class="form-inline">
+										<label>Tracks (drag &amp; drop to change order):</label>
+										<ol class="track-list"></ol>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div></td>
+				<td>
+					<button type="button" class="btn btn-info btn-xs hidden-xs edit-button" data-toggle="tooltip" data-placement="top">Edit</button>
+					<button type="button" class="btn btn-info visible-xs-block edit-button" data-placement="top">Edit</button>
+				</td>
+			</tr>
+		</table>
 	</div>
 </div>
-<table style="display: none;">
-	<tr id="element-template" class="library-entry" style="display: none;">
-		<td><input type="checkbox" name="enabled"></td>
-		<td class="is_on_tiptoi needs-tiptoi" style="display: none;"></td>
-		<td class="filter-item"><span class="item-title"></span>
-			<div class="panel panel-default edit" style="display: none;">
-				<div class="panel-heading">
-					<h4 class="panel-title">Edit album:</h4>
-				</div>
-				<div class="panel-body">
-					<div class="row" style="padding-bottom: 15px;">
-						<div class="col-sm-12">
-							<div class="btn-group" role="group"
-								aria-label="save cancel delete button group">
-								<button type="button" class="btn btn-primary update">Update</button>
-								<button type="button" class="btn btn-success make-gme">Create GME</button>
-								<button type="button" class="btn btn-success needs-tiptoi" style="display: none;">Copy
-									GME to TipToi</button>
-								<button type="button" class="btn btn-success print" style="display: none;">Print</button>
-								<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
-								<button type="button" class="btn btn-danger delete">Delete</button>
-								<button type="button" class="btn btn-info cancel">Cancel</button>
-							</div>
-						</div>
-					</div>
-					<div class="row">
-						<div class="col-sm-6 album-info">
-							<img class="img-responsive cover box" alt="cover">
-							<div class="image-uploader"></div>
-							<div class="form-group">
-								<label for="title">OID:</label> <input type="text" name="oid"
-									class="form-control"><input type="hidden" name="old_oid">
-							</div>
-							<div class="form-group">
-								<label for="title">Album title:</label> <input type="text" name="album_title"
-									class="form-control">
-							</div>
-							<div class="form-group">
-								<label for="title">Album artist:</label> <input type="text"
-									name="album_artist" class="form-control">
-							</div>
-							<div class="form-group">
-								<label for="title">Album year:</label> <input type="text" name="album_year"
-									class="form-control">
-							</div>
-							<div class="form-group">
-								<label for="title">GME file:</label> <input type="text" name="gme_file"
-									class="form-control" disabled>
-							</div>
-							<div class="form-group">
-								<label for="title">Path:</label> <input type="text" name="path"
-									class="form-control" disabled>
-							</div>
-						</div>
-						<div class="col-sm-6">
-							<div class="form-inline">
-								<label>Tracks (drag &amp; drop to change order):</label>
-								<ol class="track-list"></ol>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div></td>
-		<td>
-			<button type="button" class="btn btn-info btn-xs hidden-xs edit-button"
-				data-toggle="tooltip" data-placement="top">Edit</button>
-			<button type="button" class="btn btn-info visible-xs-block edit-button"
-				data-placement="top">Edit</button>
-		</td>
-	</tr>
-</table>
