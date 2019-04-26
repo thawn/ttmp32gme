@@ -12,9 +12,8 @@ use TTMp32Gme::Build::FileHandler;
 use TTMp32Gme::LibraryHandler;
 
 require Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT =
-	qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme);
+our @ISA    = qw(Exporter);
+our @EXPORT = qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme);
 
 ## internal functions:
 
@@ -93,7 +92,7 @@ scriptcodes:
 sub convert_tracks {
 	my ( $album, $yaml_file, $config, $dbh ) = @_;
 	my $media_path = dir( $album->{'path'}, "audio" );
-	my @tracks = get_sorted_tracks($album);
+	my @tracks     = get_sorted_tracks($album);
 
 	$media_path->mkpath();
 	if ( $config->{'audio_format'} eq 'ogg' ) {
@@ -106,8 +105,7 @@ sub convert_tracks {
 		}
 	} else {
 		foreach my $i ( 0 .. $#tracks ) {
-			file( $album->{'path'}, $album->{ $tracks[$i] }->{'filename'} )
-				->copy_to( file( $media_path, "track_$i.mp3" ) );
+			file( $album->{'path'}, $album->{ $tracks[$i] }->{'filename'} )->copy_to( file( $media_path, "track_$i.mp3" ) );
 		}
 	}
 	my $next = "  next:\n";
@@ -119,8 +117,7 @@ sub convert_tracks {
 		if ( $i < $#tracks ) {
 			$play .= "  - \$current==$i? P(@{[$i]}) J(t@{[$i+1]})\n";
 			if ( $i < $#tracks - 1 ) {
-				$next .=
-"  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]}) J(t@{[$i+2]})\n";
+				$next .= "  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]}) J(t@{[$i+2]})\n";
 			} else {
 				$next .= "  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]}) C\n";
 			}
@@ -128,30 +125,23 @@ sub convert_tracks {
 			$play .= "  - \$current==$i? P(@{[$i]}) C\n";
 		}
 		if ( $i > 0 ) {
-			$prev .=
-				"  - \$current==$i? \$current:=@{[$i-1]} P(@{[$i-1]}) J(t@{[$i]})\n";
+			$prev .= "  - \$current==$i? \$current:=@{[$i-1]} P(@{[$i-1]}) J(t@{[$i]})\n";
 		}
 		if ( $i < $#tracks ) {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) J(t@{[$i+1]})\n";
 		} else {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) C\n";
 		}
-		my %data = ( 'tt_script' => "t$i" );
-		my @selectors = (
-			$album->{ $tracks[$i] }->{'parent_oid'},
-			$album->{ $tracks[$i] }->{'track'}
-		);
-		updateTableEntry( 'tracks', 'parent_oid=? and track=?',
-			\@selectors, \%data, $dbh );
+		my %data      = ( 'tt_script' => "t$i" );
+		my @selectors = ( $album->{ $tracks[$i] }->{'parent_oid'}, $album->{ $tracks[$i] }->{'track'} );
+		updateTableEntry( 'tracks', 'parent_oid=? and track=?', \@selectors, \%data, $dbh );
 	}
 	my $lastTrack = $#tracks;
 	if ( scalar @tracks < $config->{'print_max_track_controls'} ) {
 
 		#in case we use general track controls, we just play the last available
 		#track if the user selects a track number that does not exist in this album.
-		foreach
-			my $i ( scalar @tracks .. $config->{'print_max_track_controls'} - 1 )
-		{
+		foreach my $i ( scalar @tracks .. $config->{'print_max_track_controls'} - 1 ) {
 			$track_scripts .= "  t$i:\n  - \$current:=$lastTrack P($lastTrack) C\n";
 		}
 	}
@@ -185,10 +175,9 @@ sub convert_tracks {
 
 sub get_tttool_parameters {
 	my ($dbh) = @_;
-	my $tt_params = $dbh->selectall_hashref(
-q(SELECT * FROM config WHERE param LIKE 'tt\_%' ESCAPE '\' AND value IS NOT NULL),
-		'param'
-	);
+	my $tt_params =
+		$dbh->selectall_hashref( q(SELECT * FROM config WHERE param LIKE 'tt\_%' ESCAPE '\' AND value IS NOT NULL),
+		'param' );
 	my %formatted_parameters;
 	foreach my $param ( keys %{$tt_params} ) {
 		my $parameter = $param;
@@ -235,7 +224,7 @@ sub get_sorted_tracks {
 	#need to jump through some hoops here to get proper numeric sorting:
 	my @tracks = grep { $_ =~ /^track_/ } keys %{$album};
 	@tracks = sort { $a <=> $b } map { $_ =~ s/^track_//r } @tracks;
-	@tracks = map { 'track_' . $_ } @tracks;
+	@tracks = map  { 'track_' . $_ } @tracks;
 	return @tracks;
 }
 
@@ -243,9 +232,8 @@ sub make_gme {
 	my ( $oid, $config, $dbh ) = @_;
 	my $album = get_album( $oid, $dbh );
 	$album->{'old_oid'} = $oid;
-	my $yaml_file = file( $album->{'path'},
-		sprintf( '%s.yaml', cleanup_filename( $album->{'album_title'} ) ) );
-	my $fh = $yaml_file->openw();
+	my $yaml_file = file( $album->{'path'}, sprintf( '%s.yaml', cleanup_filename( $album->{'album_title'} ) ) );
+	my $fh        = $yaml_file->openw();
 	print $fh "#this file was generated automatically by ttmp32gme\n";
 	print $fh "product-id: $oid\n";
 	if ( $config->{'pen_language'} ne 'GERMAN' ) {
@@ -254,12 +242,12 @@ sub make_gme {
 	close($fh);
 	my $media_path = convert_tracks( $album, $yaml_file, $config, $dbh );
 	my $codes_file = generate_codes_yaml( $yaml_file, $dbh );
-	my $yaml = $yaml_file->basename();
+	my $yaml       = $yaml_file->basename();
 
 	if ( run_tttool( "assemble $yaml", $album->{'path'}, $dbh ) ) {
 		my $gme_filename = $yaml_file->basename();
 		$gme_filename =~ s/yaml$/gme/;
-		my %data = ( 'gme_file' => $gme_filename );
+		my %data     = ( 'gme_file' => $gme_filename );
 		my @selector = ($oid);
 		updateTableEntry( 'gme_library', 'oid=?', \@selector, \%data, $dbh );
 	}
@@ -274,8 +262,7 @@ sub create_oids {
 	my @files;
 	my $tt_command = " --code-dim " . $size . " oid-code ";
 	foreach my $oid ( @{$oids} ) {
-		my $oid_file = file( $target_path,
-			"$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );
+		my $oid_file = file( $target_path, "$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );
 		if ( !-f $oid_file ) {
 			run_tttool( $tt_command . $oid, "", $dbh )
 				or die "Could not create oid file: $!";
@@ -288,16 +275,12 @@ sub create_oids {
 
 sub copy_gme {
 	my ( $oid, $config, $dbh ) = @_;
-	my $album_data = $dbh->selectrow_hashref(
-		q(SELECT path,gme_file FROM gme_library WHERE oid=?),
-		{}, $oid );
+	my $album_data = $dbh->selectrow_hashref( q(SELECT path,gme_file FROM gme_library WHERE oid=?), {}, $oid );
 	if ( !$album_data->{'gme_file'} ) {
 		make_gme( $oid, $config, $dbh );
-		$album_data = $dbh->selectrow_hashref(
-			q(SELECT path,gme_file FROM gme_library WHERE oid=?),
-			{}, $oid );
+		$album_data = $dbh->selectrow_hashref( q(SELECT path,gme_file FROM gme_library WHERE oid=?), {}, $oid );
 	}
-	my $gme_file = file( $album_data->{'path'}, $album_data->{'gme_file'} );
+	my $gme_file   = file( $album_data->{'path'}, $album_data->{'gme_file'} );
 	my $tiptoi_dir = get_tiptoi_dir();
 	msg( "Copying $album_data->{'gme_file'} to $tiptoi_dir", 1 );
 	$gme_file->copy_to( file( $tiptoi_dir, $gme_file->basename() ) );

@@ -26,8 +26,7 @@ sub update {
 		if ( Perl::Version->new($u)->numify > $dbVersion->numify ) {
 			my $batch = DBIx::MultiStatementDo->new( dbh => $dbh );
 			$batch->do( $updates->{$u} )
-				or die "Can't update config file.\n\tError: "
-				. $batch->dbh->errstr . "\n";
+				or die "Can't update config file.\n\tError: " . $batch->dbh->errstr . "\n";
 		}
 	}
 

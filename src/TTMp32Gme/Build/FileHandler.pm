@@ -11,8 +11,7 @@ our @ISA = qw(Exporter);
 our @EXPORT =
 	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir);
 
-my @build_imports =
-	qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
+my @build_imports = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 if ( PAR::read_file('build.txt') ) {
 	if ( $^O eq 'darwin' ) {
@@ -49,7 +48,7 @@ sub getLibraryPath {
 }
 
 sub checkConfigFile {
-	my $configdir = get_local_storage();
+	my $configdir  = get_local_storage();
 	my $configfile = file( $configdir, 'config.sqlite' );
 	if ( !-f $configfile ) {
 		my $cfgToCopy = file( get_par_tmp(), 'config.sqlite' );
@@ -60,7 +59,7 @@ sub checkConfigFile {
 }
 
 sub loadStatic {
-	my $static = {};
+	my $static      = {};
 	my @staticFiles = ( 'upload.html', 'library.html', 'help.html', );
 	foreach my $file (@staticFiles) {
 		$static->{$file} = loadFile($file);
@@ -91,10 +90,8 @@ sub makeNewAlbumDir {
 
 sub moveToAlbum {
 	my ( $albumPath, $filePath ) = @_;
-	my $file = file($filePath);
-	my $target =
-		get_unique_path(
-		file( $albumPath, cleanup_filename( $file->basename() ) )->stringify );
+	my $file        = file($filePath);
+	my $target      = get_unique_path( file( $albumPath, cleanup_filename( $file->basename() ) )->stringify );
 	my $target_file = file($target);
 	my $album_file  = $file->move_to($target_file);
 	return $album_file->basename();

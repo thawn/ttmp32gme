@@ -32,8 +32,7 @@ our @EXPORT =
 
 sub oid_exist {
 	my ( $oid, $dbh ) = @_;
-	my @old_oids = map { @$_ }
-		@{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid') };
+	my @old_oids = map { @$_ } @{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid') };
 	if ( grep( /^$oid$/, @old_oids ) ) {
 		return 1;
 	} else {
@@ -45,9 +44,7 @@ sub newOID {
 	my $dbh = $_[0];
 	my $oid;
 	my @old_oids =
-		map { @$_ }
-		@{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid DESC')
-		};
+		map { @$_ } @{ $dbh->selectall_arrayref('SELECT oid FROM gme_library ORDER BY oid DESC') };
 	if (@old_oids) {
 		if ( $old_oids[0] < 999 ) {
 
@@ -58,7 +55,7 @@ sub newOID {
 			#if oid 999 is already in the database,
 			#then look for oids freed by deleting old ones
 			my %oid_test = map { $_ => 1 } @old_oids;
-			my $new_oid = $old_oids[-1] + 1;
+			my $new_oid  = $old_oids[-1] + 1;
 			while ( ( $new_oid < 1001 ) and ( $oid_test{$new_oid} ) ) {
 				$new_oid++;
 			}
@@ -73,11 +70,7 @@ sub newOID {
 				if ( $new_oid > 1 ) {
 					$oid = $new_oid;
 				} else {
-					error(
-						'could not find a free oid.'
-							. ' Try deleting oids from your library.',
-						1
-					);
+					error( 'could not find a free oid.' . ' Try deleting oids from your library.', 1 );
 				}
 			} else {
 				$oid = $new_oid;
@@ -93,19 +86,15 @@ sub writeToDatabase {
 	my ( $table, $data, $dbh ) = @_;
 	my @fields = sort keys %$data;
 	my @values = @{$data}{@fields};
-	my $query  = sprintf(
-		"INSERT INTO $table (%s) VALUES (%s)",
-		join( ", ", @fields ),
-		join( ", ", map { '?' } @values )
-	);
+	my $query =
+		sprintf( "INSERT INTO $table (%s) VALUES (%s)", join( ", ", @fields ), join( ", ", map { '?' } @values ) );
 	my $qh = $dbh->prepare($query);
 	$qh->execute(@values);
 }
 
 sub get_tracks {
 	my ( $album, $dbh ) = @_;
-	my $query =
-		"SELECT * FROM tracks WHERE parent_oid=$album->{'oid'} ORDER BY track";
+	my $query  = "SELECT * FROM tracks WHERE parent_oid=$album->{'oid'} ORDER BY track";
 	my $tracks = $dbh->selectall_hashref( $query, 'track' );
 	foreach my $track ( sort keys %{$tracks} ) {
 		$album->{ 'track_' . $track } = $tracks->{$track};
@@ -117,8 +106,7 @@ sub put_cover_online {
 	my ( $album, $httpd ) = @_;
 	if ( $album->{'picture_filename'} ) {
 		my $picture_file = file( $album->{'path'}, $album->{'picture_filename'} );
-		my $online_path =
-			'/assets/images/' . $album->{'oid'} . '/' . $album->{'picture_filename'};
+		my $online_path  = '/assets/images/' . $album->{'oid'} . '/' . $album->{'picture_filename'};
 		put_file_online( $picture_file, $online_path, $httpd );
 		return 1;
 	} else {
@@ -128,7 +116,7 @@ sub put_cover_online {
 
 sub switchTracks {
 	my ( $oid, $new_tracks, $dbh ) = @_;
-	my $query = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
+	my $query  = "SELECT * FROM tracks WHERE parent_oid=$oid ORDER BY track";
 	my $tracks = $dbh->selectall_hashref( $query, 'track' );
 	$dbh->do("DELETE FROM tracks WHERE parent_oid=$oid");
 	foreach my $track ( sort keys %{$new_tracks} ) {
@@ -144,9 +132,9 @@ sub sortByDiscTrackFilename {
 
 sub sortTracks {
 	my ($track_data) = @_;
-	my @tracks = map( $_->{'track'}, @{$track_data} );
+	my @tracks            = map( $_->{'track'}, @{$track_data} );
 	my @sorted_track_data = sort sortByDiscTrackFilename @{$track_data};
-	foreach my $track_no ( 0..$#sorted_track_data ) {
+	foreach my $track_no ( 0 .. $#sorted_track_data ) {
 		$sorted_track_data[$track_no]->{'track'} = $track_no + 1;
 	}
 	return @sorted_track_data;
@@ -158,12 +146,7 @@ sub updateTableEntry {
 	my ( $table, $keyname, $search_keys, $data, $dbh ) = @_;
 	my @fields = sort keys %$data;
 	my @values = @{$data}{@fields};
-	my $qh     = $dbh->prepare(
-		sprintf(
-			'UPDATE %s SET %s=? WHERE %s',
-			$table, join( "=?, ", @fields ), $keyname
-		)
-	);
+	my $qh     = $dbh->prepare( sprintf( 'UPDATE %s SET %s=? WHERE %s', $table, join( "=?, ", @fields ), $keyname ) );
 	push( @values, @{$search_keys} );
 	$qh->execute(@values);
 	return !$dbh->errstr;
@@ -173,7 +156,7 @@ sub put_file_online {
 	my ( $file, $online_path, $httpd ) = @_;
 	$httpd->reg_cb(
 		$online_path => sub {
-			my $file_data = $file->slurp(iomode => '<:raw');
+			my $file_data = $file->slurp( iomode => '<:raw' );
 			my ( $httpd, $req ) = @_;
 			$req->respond( { content => [ '', $file_data ] } );
 		}
@@ -192,7 +175,7 @@ sub createLibraryEntry {
 			my $trackNo = 1;
 			foreach my $fileId ( sort keys %{$album} ) {
 				if ( $album->{$fileId} =~ /\.(mp3|ogg)$/i ) {
-					if ($debug) { debug("Parsing audio file: $album->{$fileId}",$debug);	}
+					if ($debug) { debug( "Parsing audio file: $album->{$fileId}", $debug ); }
 
 					#handle mp3 and ogg audio files
 					my $info = Music::Tag->new( $album->{$fileId} );
@@ -201,7 +184,7 @@ sub createLibraryEntry {
 					#fill in album info
 					if ( !$album_data{'album_title'} && $info->album() ) {
 						$album_data{'album_title'} = $info->album();
-						$album_data{'path'}        = cleanup_filename($album_data{'album_title'});
+						$album_data{'path'}        = cleanup_filename( $album_data{'album_title'} );
 					}
 					if ( !$album_data{'album_artist'} && $info->albumartist() ) {
 						$album_data{'album_artist'} = $info->albumartist();
@@ -213,7 +196,7 @@ sub createLibraryEntry {
 					}
 					if ( !$album_data{'picture_filename'} && $info->picture_exists() ) {
 						if ( $info->picture_filename() ) {
-							$album_data{'picture_filename'} = cleanup_filename($info->picture_filename());
+							$album_data{'picture_filename'} = cleanup_filename( $info->picture_filename() );
 						} elsif ( $info->picture() ) {
 							my %pic = $info->picture();
 							$pictureData = $pic{'_Data'};
@@ -227,10 +210,11 @@ sub createLibraryEntry {
 						#try to use MP3::Tag directly.
 						my $mp3 = MP3::Tag->new( $album->{$fileId} );
 						$mp3->get_tags();
+
 						#if ($debug) {print Dumper($mp3);}
 						my $id3v2_tagdata = $mp3->{ID3v2};
-						if ( $id3v2_tagdata ) {
-							my $apic          = $id3v2_tagdata->get_frame("APIC");
+						if ($id3v2_tagdata) {
+							my $apic = $id3v2_tagdata->get_frame("APIC");
 							$pictureData = $$apic{'_Data'};
 							my $mimetype = $$apic{'MIME type'};
 							if ($mimetype) {
@@ -260,15 +244,17 @@ sub createLibraryEntry {
 						$trackInfo{'track'} = $trackNo;
 						$trackNo++;
 						$trackInfo{'title'} = cleanup_filename( ( file( $album->{$fileId} ) )->basename() );
-						error("No useable id3 info found in $album->{$fileId}.\nPlease add an id3v2 tag to your mp3 file in order to get proper album and track info.");
+						error(
+"No useable id3 info found in $album->{$fileId}.\nPlease add an id3v2 tag to your mp3 file in order to get proper album and track info."
+						);
 					}
 					push( @track_data, \%trackInfo );
 				} elsif ( $album->{$fileId} =~ /\.(jpg|jpeg|tif|tiff|png|gif)$/i ) {
-					if ($debug) { debug("Parsing cover image: $album->{$fileId}",$debug);	}
+					if ($debug) { debug( "Parsing cover image: $album->{$fileId}", $debug ); }
 
 					#handle pictures
 					my $picture_file = file( $album->{$fileId} );
-					$pictureData = $picture_file->slurp(iomode => '<:raw');
+					$pictureData = $picture_file->slurp( iomode => '<:raw' );
 					$album_data{'picture_filename'} = cleanup_filename( $picture_file->basename() );
 				}
 			}
@@ -282,7 +268,7 @@ sub createLibraryEntry {
 			if ( $album_data{'picture_filename'} and $pictureData ) {
 				my $picture_file =
 					file( $album_data{'path'}, $album_data{'picture_filename'} );
-				$picture_file->spew(iomode => '>:raw', $pictureData);
+				$picture_file->spew( iomode => '>:raw', $pictureData );
 			}
 			@track_data = sortTracks( \@track_data );
 			foreach my $track (@track_data) {
@@ -292,10 +278,10 @@ sub createLibraryEntry {
 			}
 			writeToDatabase( 'gme_library', \%album_data, $dbh );
 			if ($debug) {
-				debug("Found the following album info:\n",$debug);
-				debug(Dumper(\%album_data),$debug);
-				debug("\nFound the following track info:\n",$debug);
-				debug(Dumper(\@track_data),$debug);
+				debug( "Found the following album info:\n",   $debug );
+				debug( Dumper( \%album_data ),                $debug );
+				debug( "\nFound the following track info:\n", $debug );
+				debug( Dumper( \@track_data ),                $debug );
 			}
 		}
 	}
@@ -305,9 +291,7 @@ sub createLibraryEntry {
 sub get_album_list {
 	my ( $dbh, $httpd ) = @_;
 	my @albumList;
-	my $albums =
-		$dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ),
-		'oid' );
+	my $albums = $dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ), 'oid' );
 	foreach my $oid ( sort keys %{$albums} ) {
 		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
 		put_cover_online( $albums->{$oid}, $httpd );
@@ -318,9 +302,7 @@ sub get_album_list {
 
 sub get_album {
 	my ( $oid, $dbh ) = @_;
-	my $album =
-		$dbh->selectrow_hashref( q( SELECT * FROM gme_library WHERE oid=? ),
-		{}, $oid );
+	my $album = $dbh->selectrow_hashref( q( SELECT * FROM gme_library WHERE oid=? ), {}, $oid );
 	$album = get_tracks( $album, $dbh );
 	return $album;
 }
@@ -339,8 +321,7 @@ sub updateAlbum {
 	if ( $old_oid != $postData->{'oid'} ) {
 		if ( oid_exist( $old_oid, $dbh ) ) {
 			return 0;
-			$dbh->set_err( '',
-				'Could not update album, oid already exists. Try a different oid.' );
+			$dbh->set_err( '', 'Could not update album, oid already exists. Try a different oid.' );
 		} else {
 			for my $track ( grep /^track_/, keys %{$postData} ) {
 				$postData->{$track}{'parent_oid'} = $postData->{'oid'};
@@ -354,9 +335,8 @@ sub updateAlbum {
 		$new_tracks{$old_track} = $postData->{$track}{'track'};
 		delete( $postData->{$track}{'track'} );
 		my %track_data = %{ $postData->{$track} };
-		my @selectors = ( $old_oid, $old_track );
-		updateTableEntry( 'tracks', 'parent_oid=? and track=?',
-			\@selectors, \%track_data, $dbh );
+		my @selectors  = ( $old_oid, $old_track );
+		updateTableEntry( 'tracks', 'parent_oid=? and track=?', \@selectors, \%track_data, $dbh );
 		delete( $postData->{$track} );
 	}
 	switchTracks( $postData->{'oid'}, \%new_tracks, $dbh );
@@ -367,12 +347,9 @@ sub updateAlbum {
 
 sub deleteAlbum {
 	my ( $oid, $httpd, $dbh ) = @_;
-	my $album_data = $dbh->selectrow_hashref(
-		q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
-		{}, $oid );
+	my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
 	if ( $album_data->{'picture_filename'} ) {
-		$httpd->unreg_cb(
-			'/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
+		$httpd->unreg_cb( '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
 	}
 	if ( remove_library_dir( $album_data->{'path'} ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
@@ -383,10 +360,8 @@ sub deleteAlbum {
 
 sub cleanupAlbum {
 	my ( $oid, $httpd, $dbh ) = @_;
-	my $album_data = $dbh->selectrow_hashref(
-		q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
-		{}, $oid );
-	my $query = q(SELECT filename FROM tracks WHERE parent_oid=? ORDER BY track);
+	my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
+	my $query      = q(SELECT filename FROM tracks WHERE parent_oid=? ORDER BY track);
 	my @file_list =
 		map { @$_ } @{ $dbh->selectall_arrayref( $query, {}, $oid ) };
 	my $data = { 'filename' => undef };
@@ -399,14 +374,10 @@ sub cleanupAlbum {
 sub replace_cover {
 	my ( $oid, $filename, $file_data, $httpd, $dbh ) = @_;
 	if ( $filename && $file_data ) {
-		my $album_data = $dbh->selectrow_hashref(
-			q(SELECT path,picture_filename FROM gme_library WHERE oid=?),
-			{}, $oid );
+		my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
 		if ( $album_data->{'picture_filename'} ) {
-			$httpd->unreg_cb(
-				'/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
-			file( $album_data->{'path'}, $album_data->{'picture_filename'} )
-				->remove();
+			$httpd->unreg_cb( '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
+			file( $album_data->{'path'}, $album_data->{'picture_filename'} )->remove();
 			if ( $filename eq $album_data->{'picture_filename'} ) {
 
 				#hack to make sure the cover is refreshed properly
@@ -419,7 +390,7 @@ sub replace_cover {
 		updateTableEntry( 'gme_library', 'oid=?', \@selector, $album_data, $dbh );
 		my $picture_file =
 			file( $album_data->{'path'}, $album_data->{'picture_filename'} );
-		$picture_file->spew(iomode => '>:raw', $file_data);
+		$picture_file->spew( iomode => '>:raw', $file_data );
 		return $oid;
 	} else {
 		return 0;

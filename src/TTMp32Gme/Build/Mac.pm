@@ -6,9 +6,8 @@ use warnings;
 use Path::Class;
 
 require Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT =
-	qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
+our @ISA    = qw(Exporter);
+our @EXPORT = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 sub loadFile {
 	my $path    = $_[0];
@@ -17,8 +16,7 @@ sub loadFile {
 }
 
 sub get_local_storage {
-	my $storage =
-		dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' );
+	my $storage = dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' );
 	$storage->mkpath();
 	return $storage;
 }
@@ -59,7 +57,7 @@ sub loadAssets {
 			my ( $httpd, $req ) = @_;
 
 			$req->respond( { content => [ $mime, $content ] } );
-			}
+		}
 	}
 
 	return %assets;

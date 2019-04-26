@@ -34,11 +34,11 @@ use TTMp32Gme::PrintHandler;
 
 # Set the UserAgent for external async requests.  Don't want to get flagged, do we?
 $AnyEvent::HTTP::USERAGENT =
-'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10 ( .NET CLR 3.5.30729)';
+	'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10 ( .NET CLR 3.5.30729)';
 
 # Declare globals... I know tisk tisk
 my ( $dbh, %config, $watchers, %templates, $static, %assets, $debug );
-$debug=0;
+$debug = 0;
 
 # Encapsulate configuration code
 {
@@ -51,17 +51,16 @@ $debug=0;
 
 	my $version = Perl::Version->new("0.2.3");
 
-# Command line startup options
-# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
+	# Command line startup options
+	# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
 	GetOptions(
-		"port=i" => \$port,    # Port for the local web server to run on
-		"host=s" => \$host,    # Host for the local web server to run on
-		"directory=s" =>
-			\$directory,    # Directory to change to after starting (for dev mostly)
-		"configdir=s" => \$configdir,    # Where your config files are located
+		"port=i"      => \$port,          # Port for the local web server to run on
+		"host=s"      => \$host,          # Host for the local web server to run on
+		"directory=s" => \$directory,     # Directory to change to after starting (for dev mostly)
+		"configdir=s" => \$configdir,     # Where your config files are located
 		"version"     => \$versionFlag,
-		"debug"     => \$debug
-	);                                 # Get the version number
+		"debug"       => \$debug
+	);                                  # Get the version number
 
 	if ($versionFlag) {
 		print STDOUT "mp32gme version $version\n";
@@ -110,8 +109,7 @@ $static    = loadStatic();
 %assets    = loadAssets();
 
 sub fetchConfig {
-	my $configArrayRef =
-		$dbh->selectall_arrayref(q( SELECT param, value FROM config ))
+	my $configArrayRef = $dbh->selectall_arrayref(q( SELECT param, value FROM config ))
 		or die "Can't fetch configuration\n";
 
 	my %tempConfig = ();
@@ -150,16 +148,12 @@ sub getNavigation {
 }
 
 my %siteMap = (
-	'/' =>
-'<span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Upload',
-	'/library' =>
-'<span class="glyphicon glyphicon-th-list" aria-hidden="true"></span> Library',
+	'/'        => '<span class="glyphicon glyphicon-upload" aria-hidden="true"></span> Upload',
+	'/library' => '<span class="glyphicon glyphicon-th-list" aria-hidden="true"></span> Library',
 
-#	'/print' => '<span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print',
-	'/config' =>
-'<span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Configuration',
-	'/help' =>
-'<span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help',
+	#	'/print' => '<span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print',
+	'/config' => '<span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Configuration',
+	'/help'   => '<span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Help',
 );
 
 my %siteMapOrder = (
@@ -179,9 +173,9 @@ msg(
 	1
 );
 
-if (-X get_executable_path('tttool')) {
+if ( -X get_executable_path('tttool') ) {
 	msg( "using tttool: " . get_executable_path('tttool'), 1 );
-} else{
+} else {
 	error( "no useable tttool found: " . get_executable_path('tttool'), 1 );
 }
 
@@ -212,9 +206,8 @@ $httpd->reg_cb(
 							HASH => {
 								'title'         => $siteMap{ $req->url },
 								'strippedTitle' => $siteMap{ $req->url } =~ s/<span.*span> //r,
-								'navigation' =>
-									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content' => $static->{'upload.html'}
+								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
+								'content'       => $static->{'upload.html'}
 							}
 						)
 					]
@@ -266,12 +259,7 @@ $httpd->reg_cb(
 				$statusMessage        = 'OK';
 			}
 			$content = encode_json($content);
-			$req->respond(
-				[
-					$statusCode, $statusMessage,
-					{ 'Content-Type' => 'application/json' }, $content
-				]
-			);
+			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
 	'/library' => sub {
@@ -285,9 +273,8 @@ $httpd->reg_cb(
 							HASH => {
 								'title'         => $siteMap{ $req->url },
 								'strippedTitle' => $siteMap{ $req->url } =~ s/<span.*span> //r,
-								'navigation' =>
-									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content' => $static->{'library.html'}
+								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
+								'content'       => $static->{'library.html'}
 							}
 						)
 					]
@@ -301,15 +288,12 @@ $httpd->reg_cb(
 			my $statusMessage = 'Could not parse POST data.';
 			if ( $req->parm('action') ) {
 				if ( $req->parm('action') eq 'list' ) {
-					$statusMessage =
-						'Could not get list of albums. Possible database error.';
+					$statusMessage = 'Could not get list of albums. Possible database error.';
 					$content->{'list'} = get_album_list( $dbh, $httpd );
 					if (get_tiptoi_dir) {
 						$content->{'tiptoi_connected'} = \1;
 					}
-				} elsif (
-					$req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme)/ )
-				{
+				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme)/ ) {
 					my $postData =
 						decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 					if ( $req->parm('action') eq 'update' ) {
@@ -322,31 +306,19 @@ $httpd->reg_cb(
 							deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
 					} elsif ( $req->parm('action') eq 'cleanup' ) {
 						$statusMessage = 'Could not clean up album folder.';
-						$content->{'element'} =
-							get_album_online(
-							cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ),
-							$httpd, $dbh );
+						$content->{'element'} = get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ), $httpd, $dbh );
 					} elsif ( $req->parm('action') eq 'make_gme' ) {
 						$statusMessage = 'Could not create gme file.';
-						$content->{'element'} =
-							get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ),
-							$httpd, $dbh );
+						$content->{'element'} = get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ), $httpd, $dbh );
 					} elsif ( $req->parm('action') eq 'copy_gme' ) {
 						$statusMessage = 'Could not copy gme file.';
-						$content->{'element'} =
-							get_album_online( copy_gme( $postData->{'uid'}, \%config, $dbh ),
-							$httpd, $dbh );
+						$content->{'element'} = get_album_online( copy_gme( $postData->{'uid'}, \%config, $dbh ), $httpd, $dbh );
 					}
 				} elsif ( $req->parm('action') eq 'add_cover' ) {
 					$statusMessage = 'Could not update cover. Possible i/o error.';
 					$content->{'uid'} = get_album_online(
-						replace_cover(
-							$req->parm('uid'),    $req->parm('qqfilename'),
-							$req->parm('qqfile'), $httpd,
-							$dbh
-						),
-						$httpd, $dbh
-					);
+						replace_cover( $req->parm('uid'), $req->parm('qqfilename'), $req->parm('qqfile'), $httpd, $dbh ),
+						$httpd, $dbh );
 				}
 			}
 			if ( !$dbh->errstr ) {
@@ -358,12 +330,7 @@ $httpd->reg_cb(
 				$statusMessage = $dbh->errstr;
 			}
 			$content = decode_utf8( encode_json($content) );
-			$req->respond(
-				[
-					$statusCode, $statusMessage,
-					{ 'Content-Type' => 'application/json' }, $content
-				]
-			);
+			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
 	'/print' => sub {
@@ -380,13 +347,10 @@ $httpd->reg_cb(
 								'title' =>
 '<span class="hidden-print"><span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print</span>',
 								'strippedTitle' => 'Print',
-								'navigation' =>
-									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'print_button' => format_print_button(),
-								'content' => create_print_layout(
-									$getData->{'oids'}, $templates{'printing_contents'},
-									\%config, $httpd, $dbh
-								)
+								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
+								'print_button'  => format_print_button(),
+								'content' =>
+									create_print_layout( $getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh )
 							}
 						)
 					]
@@ -399,11 +363,10 @@ $httpd->reg_cb(
 			my $statusCode    = 501;
 			my $statusMessage = 'Could not parse POST data.';
 			if ( $req->parm('action') eq 'get_config' ) {
-				$statusMessage =
-					'Could not get configuration. Possible database error.';
+				$statusMessage = 'Could not get configuration. Possible database error.';
 				$content->{'element'} = \%config;
-			} elsif ($req->parm('action') =~ /(save_config|save_pdf)/) {
-				$statusMessage        = 'Could not parse POST data.';
+			} elsif ( $req->parm('action') =~ /(save_config|save_pdf)/ ) {
+				$statusMessage = 'Could not parse POST data.';
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				if ( $req->parm('action') eq 'save_config' ) {
@@ -412,8 +375,8 @@ $httpd->reg_cb(
 					$content->{'element'} = \%config;
 				} elsif ( $req->parm('action') eq 'save_pdf' ) {
 					$statusMessage = 'Could not save pdf.';
-					$printContent = $postData->{'content'};
-					my $pdf_file = create_pdf($config{'port'});
+					$printContent  = $postData->{'content'};
+					my $pdf_file = create_pdf( $config{'port'} );
 					put_file_online( $pdf_file, '/print.pdf', $httpd );
 				}
 			}
@@ -426,12 +389,7 @@ $httpd->reg_cb(
 				$statusMessage = $dbh->errstr;
 			}
 			$content = decode_utf8( encode_json($content) );
-			$req->respond(
-				[
-					$statusCode, $statusMessage,
-					{ 'Content-Type' => 'application/json' }, $content
-				]
-			);
+			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
 	'/pdf' => sub {
@@ -439,11 +397,12 @@ $httpd->reg_cb(
 		if ( $req->method() eq 'GET' ) {
 			$req->respond(
 				[
-					200, 'OK',{'Content-Type' => 'text/html'},
+					200, 'OK',
+					{ 'Content-Type' => 'text/html' },
 					$templates{'pdf'}->fill_in(
 						HASH => {
 							'strippedTitle' => 'PDF',
-							'content' => encode_utf8( $printContent )
+							'content'       => encode_utf8($printContent)
 						}
 					)
 				]
@@ -473,9 +432,8 @@ $httpd->reg_cb(
 							HASH => {
 								'title'         => $siteMap{ $req->url },
 								'strippedTitle' => $siteMap{ $req->url } =~ s/<span.*span> //r,
-								'navigation' =>
-									getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content' => $configHtml
+								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
+								'content'       => $configHtml
 							}
 						)
 					]
@@ -495,8 +453,7 @@ $httpd->reg_cb(
 
 				$req->respond(
 					{
-						content =>
-							[ 'application/json', '{ "status" : "' . $status . '" }' ]
+						content => [ 'application/json', '{ "status" : "' . $status . '" }' ]
 					}
 				);
 			}
@@ -512,9 +469,8 @@ $httpd->reg_cb(
 						HASH => {
 							'title'         => $siteMap{ $req->url },
 							'strippedTitle' => $siteMap{ $req->url } =~ s/<span.*span> //r,
-							'navigation' =>
-								getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-							'content' => $static->{'help.html'}
+							'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
+							'content'       => $static->{'help.html'}
 						}
 					)
 				]

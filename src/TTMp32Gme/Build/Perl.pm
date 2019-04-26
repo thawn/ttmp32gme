@@ -8,9 +8,8 @@ use Path::Class;
 use Cwd;
 
 require Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT =
-	qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
+our @ISA    = qw(Exporter);
+our @EXPORT = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 my $maindir = cwd();
 
@@ -32,7 +31,7 @@ sub get_local_storage {
 			return dir( $ENV{'HOME'}, '.ttmp32gme' );
 		}
 	} else {
-		return dir ( $maindir );
+		return dir($maindir);
 	}
 }
 
@@ -70,7 +69,7 @@ sub loadAssets {
 				my ( $httpd, $req ) = @_;
 
 				$req->respond( { content => [ $mime, $content ] } );
-				}
+			}
 		},
 		'assets/'
 	);

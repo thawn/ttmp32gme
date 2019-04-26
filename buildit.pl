@@ -49,21 +49,20 @@ $src_dir->recurse(
 
 ( file( $copyTo, 'templates.list' ) )->spew($templatesList);
 
-my $lib_dir = dir($copyTo, 'lib');
+my $lib_dir = dir( $copyTo, 'lib' );
 $lib_dir->mkpath();
-	
+
 if ( $^O =~ /MSWin/ ) {
 	use Win32::Exe;
 	print "\nWindows build.\n\n";
 
-	( file( 'build', 'win', 'ttmp32gme.ico' ) )
-		->copy_to( file( $copyTo, 'ttmp32gme.ico' ) );
-		
-	(dir('lib','win'))->recurse(
+	( file( 'build', 'win', 'ttmp32gme.ico' ) )->copy_to( file( $copyTo, 'ttmp32gme.ico' ) );
+
+	( dir( 'lib', 'win' ) )->recurse(
 		callback => sub {
 			my ($source) = @_;
 			my $name = $source->basename();
-			if (-f $source && $name !~ /^\./ ) {
+			if ( -f $source && $name !~ /^\./ ) {
 				$source->copy_to( file( $lib_dir, $name ) );
 				print 'lib/' . $name . "\n";
 				$filesToAdd .= " -a " . qq(lib/$name);
@@ -72,15 +71,15 @@ if ( $^O =~ /MSWin/ ) {
 	);
 
 	chdir($copyTo);
-	
+
 	my $addDlls = '-l libxml2-2__.dll -l libiconv-2__.dll -l zlib1__.dll -l liblzma-5__.dll';
-	
+
 	my $result = `pp -M Win32API::File -c $addDlls $filesToAdd -o ttmp32gme.exe ttmp32gme.pl`;
 
-# newer versions of pp don't support the --icon option any more, use Win32::Exe to manually replace the icon:
-#	$exe = Win32::Exe->new('ttmp32gme.exe');
-#	$exe->set_single_group_icon('ttmp32gme.ico');
-#	$exe->write;
+	# newer versions of pp don't support the --icon option any more, use Win32::Exe to manually replace the icon:
+	#	$exe = Win32::Exe->new('ttmp32gme.exe');
+	#	$exe->set_single_group_icon('ttmp32gme.ico');
+	#	$exe->write;
 
 	print $result;
 	if ( $? != 0 ) { die "Build failed.\n"; }
@@ -89,19 +88,18 @@ if ( $^O =~ /MSWin/ ) {
 	my $distdir = dir('dist');
 	$distdir->mkpath();
 
-	( file( $copyTo, 'ttmp32gme.exe' ) )
-		->copy_to( file( $distdir, 'ttmp32gme.exe' ) );
+	( file( $copyTo, 'ttmp32gme.exe' ) )->copy_to( file( $distdir, 'ttmp32gme.exe' ) );
 	`explorer dist`;
 	print "Build successful.\n";
 
 } elsif ( $^O eq 'darwin' ) {
 	print "\nMac OS X build.\n\n";
 
-	(dir('lib','mac'))->recurse(
+	( dir( 'lib', 'mac' ) )->recurse(
 		callback => sub {
 			my ($source) = @_;
 			my $name = $source->basename();
-			if (-f $source && $name !~ /^\./ ) {
+			if ( -f $source && $name !~ /^\./ ) {
 				$source->copy_to( file( $lib_dir, $name ) );
 				print 'lib/' . $name . "\n";
 				$filesToAdd .= ' -a ' . 'lib/' . $name;
@@ -120,15 +118,13 @@ if ( $^O =~ /MSWin/ ) {
 	my $distdir = dir('dist');
 	$distdir->mkpath();
 	my $app_dir = dir( $distdir, 'ttmp32gme.app' );
-	dircopy( ( dir( 'build', 'mac', 'ttmp32gme.app' ) )->stringify,
-		($app_dir)->stringify );
-	( file( $copyTo, 'mp32gme' ) )
-		->copy_to( file( $app_dir, 'Contents', 'Resources', 'ttmp32gme' ) );
+	dircopy( ( dir( 'build', 'mac', 'ttmp32gme.app' ) )->stringify, ($app_dir)->stringify );
+	( file( $copyTo, 'mp32gme' ) )->copy_to( file( $app_dir, 'Contents', 'Resources', 'ttmp32gme' ) );
 	`open dist`;
 	print "Build successful.\n";
 } else {
 	print
-"Unsupported platform.  Try installing the required perl modules and running the script out of the src folder.\n"
+		"Unsupported platform.  Try installing the required perl modules and running the script out of the src folder.\n"
 		. "Maybe even send in a patch with a build script for your platform.\n";
 }
 
