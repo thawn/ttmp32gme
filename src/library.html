@@ -176,6 +176,8 @@
 		    if (i == 'gme_on_tiptoi') {
 			    if (data[i]) {
 			        $id.find('.is_on_tiptoi').html('<span class="glyphicon glyphicon-ok text-success"></span>');
+			    } else {
+			        $id.find('.is_on_tiptoi').html('');
 			    }
 			} else if (data[i] === 'TRUE' || data[i] === 'FALSE') {
 				if (data[i] === 'TRUE') {
@@ -278,7 +280,7 @@
 			});
 	}
 
-	var copyGME = function($id,uid) {
+	var copyGME = function($id, uid) {
 		var filterVars = {
 			'uid' : uid
 		};
@@ -304,6 +306,28 @@
 			});
 	}
 
+	var deleteGMETiptoi  = function($id,uid) {
+		var filterVars = {
+			'uid' : uid
+		};
+		$.post(
+			document.baseURI,
+			'action=delete_gme_tiptoi&data=' + escape(JSON.stringify(filterVars)),
+			function(data,textStatus,jqXHR) {
+				if (data.success) {
+					fillInElement($id, data.element);
+					$id.find('input[name=enabled]').prop('checked', false);
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
+							2000);
+				} else {
+					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
+							4000);
+				}
+			}, 'json').fail(function(data) {
+				notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
+			});
+	}
+
 	var printAlbums = function(oids) {
 		//expects an array of oids
 		var url = "print?data=" + encodeURIComponent(JSON.stringify({'oids': oids}));
@@ -314,24 +338,23 @@
 	var totalFilesCopying = 0;
 	
 	var setProgress = function() {
-		$('#progress').show();
+		$('#progress-container').show();
 		var $progressBar = $('#progress').find('.progress-bar');
 		var percentage = (copyProgress/totalFilesCopying*100) << 0;
 		if (percentage >= 100) {
 			percentage = 100;
-			$('#progress>.alert-info').hide();
-			$('#progress>.alert-success').show();
-			$progressBar.hide();
+			$('#progress').find('.alert-info').hide();
+			$('#progress').find('.alert-success').show();
+			$('#progress').find('.progress').hide();
 		} else {
-			$('#progress>.alert-info').show();
-			$('#progress>.alert-success').hide();
+			$('#progress').find('.alert-info').show();
+			$('#progress').find('.alert-success').hide();
 		}
 		$progressBar.attr('aria-valuenow',percentage);
 		$progressBar.css({width: percentage + '%'});
 		$progressBar.find('.sr-only').text(percentage+'% Complete');		
 	}
-
-
+	
 	$( function() {
 		// Add tips for the new filter input
 		$('[data-toggle="tooltip"]').tooltip();
@@ -369,11 +392,11 @@
 			toggleShow($(this).data('item-id'));
 		});
 
-		$('#progress>.alert-success>button').click( function () {
+		$('#progress').find('.alert-success>button').click( function () {
 			copyProgress = 0;
 			setProgress();
-			$('#progress').find('.progress-bar').show();
-			$('#progress').hide();
+			$('#progress').find('.progress').show();
+			$('#progress-container').hide();
 			totalFilesCopying = 0;
 		});
 		// Grab the list of albums.
@@ -415,6 +438,16 @@
 			if ($selected.length > 0) {
 				$selected.each(function(index){
 					copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+				});
+			} else {
+				alert("Please select an album first");
+			}
+		});
+		$('#tiptoi-delete-selected').click(function(){
+			$selected=$('input[name=enabled]:checked');
+			if ($selected.length > 0) {
+				$selected.each(function(index){
+					deleteGMETiptoi($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
 				});
 			} else {
 				alert("Please select an album first");
@@ -466,15 +499,34 @@
 	<button id="select-all" class="btn btn-default">Select all</button>
 	<button id="deselect-all" class="btn btn-default">Deselect all</button>
 	<button id="toggle-all" class="btn btn-default">Invert selection</button>
-	<button id="copy-selected" class="btn btn-success needs-tiptoi" data-toggle="popover"
-		style="display: none;">Copy selected to TipToi</button>
-	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print
-		selected</button>
-	<button id="cleanup-selected" class="btn btn-warning" data-toggle="popover">Cleanup
-		selected</button>
-	<button id="delete-selected" class="btn btn-danger" data-toggle="popover">Delete
-		selected</button>
+	<button id="copy-selected" class="btn btn-success needs-tiptoi" data-toggle="popover" style="display: none;">Copy
+		selected to TipToi</button>
+	<button id="tiptoi-delete-selected" class="btn btn-danger needs-tiptoi" data-toggle="popover" style="display: none;">Delete
+		selected from TipToi</button>
+	<button id="print-selected" class="btn btn-success" data-toggle="popover">Print selected</button>
+	<button id="cleanup-selected" class="btn btn-warning" data-toggle="popover">Cleanup selected</button>
+	<button id="delete-selected" class="btn btn-danger" data-toggle="popover">Delete selected from library</button>
 </p>
+<div id="progress-container" style="display: none;">
+	<div id="progress">
+		<div class="alert alert-info" role="alert">
+			Copying files to tiptoi, please <strong>do not disconnect</strong> the pen until the operation is complete.
+		</div>
+		<div class="progress">
+			<div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+				aria-valuemax="100" style="width: 0%">
+				<span class="sr-only">0% Complete</span>
+			</div>
+		</div>
+		<div class="alert alert-success" role="alert" style="display: none;">
+			<button type="button" class="close" aria-label="Close">
+				<span aria-hidden="true">&times;</span>
+			</button>
+			<strong>All files copied successfully!</strong> It is now safe to disconnect the tiptoi from the computer.
+		</div>
+	</div>
+</div>
+
 <div class="btn-group pull-right" role="group" aria-label="sorting buttons">
 	<div id="sort1" class="btn-group">
 		<button type="button" class="btn btn-info dropdown-toggle"
@@ -499,26 +551,6 @@
 			<li><a class="album_year">Year</a></li>
 			<li><a class="oid">OID</a></li>
 		</ul>
-	</div>
-</div>
-
-<div id="progress" style="display: none;">
-	<div class="alert alert-info" role="alert">
-		Copying files to tiptoi, please <strong>do not disconnect</strong> the pen until
-		the operation is complete.
-	</div>
-	<div class="progress">
-		<div class="progress-bar progress-bar-striped active" role="progressbar"
-			aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
-			<span class="sr-only">0% Complete</span>
-		</div>
-	</div>
-	<div class="alert alert-success" role="alert" style="display: none;">
-		<button type="button" class="close" aria-label="Close">
-			<span aria-hidden="true">&times;</span>
-		</button>
-		<strong>All files copied successfully!</strong> It is now safe to disconnect the
-		tiptoi from the computer.
 	</div>
 </div>
 <div class="row" id="albums">

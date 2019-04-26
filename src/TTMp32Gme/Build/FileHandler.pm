@@ -11,7 +11,7 @@ use Data::Dumper;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi);
+	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi delete_gme_tiptoi);
 
 my @build_imports = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
@@ -244,12 +244,28 @@ sub get_tiptoi_dir {
 sub get_gmes_already_on_tiptoi {
 	my $tiptoi_path = get_tiptoi_dir();
 	if ($tiptoi_path) {
-		my @gme_list = grep( !$_->is_dir && $_->basename =~ /^(?!._).*\.gme\z/, $tiptoi_path->children() );
-		my %gme_names = map {$_->basename => 1 } @gme_list;
+		my @gme_list = grep( !$_->is_dir && $_->basename =~ /^(?!\._).*\.gme\z/, $tiptoi_path->children() );
+		my %gme_names = map { $_->basename => 1 } @gme_list;
 		return %gme_names;
 	} else {
 		return ();
 	}
+}
+
+sub delete_gme_tiptoi {
+	my ( $oid, $dbh, $debug ) = @_;
+	my $album_data = $dbh->selectrow_hashref( q(SELECT gme_file FROM gme_library WHERE oid=?), {}, $oid );
+	if ( $album_data->{'gme_file'} ) {
+		my $gme_file = file( get_tiptoi_dir(), $album_data->{'gme_file'} );
+		if ($debug) { debug( 'Attempting to delete: ' . $gme_file->stringify(), $debug ); }
+		if ( $gme_file->remove() ) {
+			msg( 'Deleted: ' . $gme_file->stringify(), \1 );
+			return $oid;
+		} elsif ($debug) {
+			debug( 'Failed to delete: ' . $gme_file->stringify(), $debug );
+		}
+	}
+	return 0;
 }
 
 1;

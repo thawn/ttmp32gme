@@ -312,9 +312,14 @@ sub get_album {
 
 sub get_album_online {
 	my ( $oid, $httpd, $dbh ) = @_;
-	my $album = get_album( $oid, $dbh );
-	put_cover_online( $album, $httpd );
-	return $album;
+	if ($oid) {
+		my $album          = get_album( $oid, $dbh );
+		my %gmes_on_tiptoi = get_gmes_already_on_tiptoi();
+		$album->{'gme_on_tiptoi'} = exists( $gmes_on_tiptoi{ $album->{'gme_file'} } );
+		put_cover_online( $album, $httpd );
+		return $album;
+	}
+	return 0;
 }
 
 sub updateAlbum {

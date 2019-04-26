@@ -293,7 +293,7 @@ $httpd->reg_cb(
 					if (get_tiptoi_dir) {
 						$content->{'tiptoi_connected'} = \1;
 					}
-				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme)/ ) {
+				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme|delete_gme_tiptoi)/ ) {
 					my $postData =
 						decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 					if ( $req->parm('action') eq 'update' ) {
@@ -313,6 +313,9 @@ $httpd->reg_cb(
 					} elsif ( $req->parm('action') eq 'copy_gme' ) {
 						$statusMessage = 'Could not copy gme file.';
 						$content->{'element'} = get_album_online( copy_gme( $postData->{'uid'}, \%config, $dbh ), $httpd, $dbh );
+					} elsif ( $req->parm('action') eq 'delete_gme_tiptoi' ) {
+						$statusMessage = 'Could not copy gme file.';
+						$content->{'element'} = get_album_online( delete_gme_tiptoi( $postData->{'uid'}, $dbh ), $httpd, $dbh );
 					}
 				} elsif ( $req->parm('action') eq 'add_cover' ) {
 					$statusMessage = 'Could not update cover. Possible i/o error.';
@@ -321,13 +324,15 @@ $httpd->reg_cb(
 						$httpd, $dbh );
 				}
 			}
-			if ( !$dbh->errstr ) {
+			if ( !$dbh->errstr && ( $content->{'element'} || $content->{'list'} || $content->{'uid'} ) ) {
 				$content->{'success'} = \1;
 				$statusCode           = 200;
 				$statusMessage        = 'OK';
 			} else {
-				$statusCode    = 501;
-				$statusMessage = $dbh->errstr;
+				$statusCode = 501;
+				if ( $dbh->errstr ) {
+					$statusMessage = $dbh->errstr;
+				}
 			}
 			$content = decode_utf8( encode_json($content) );
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
