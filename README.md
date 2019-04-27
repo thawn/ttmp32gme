@@ -166,7 +166,6 @@ For building from source, you also need:
 pp
 
 ## ToDo
-* detect which albums are already uploaded to a connected tiptoi and mark them in the library
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
