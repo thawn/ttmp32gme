@@ -179,7 +179,7 @@ pp
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
 * make library path configurable (already possible with docker by re-configuring the library volume)
-* add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs. Issue #24
+* add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs. [Issue #24](https://github.com/thawn/ttmp32gme/issues/24)
 
 ### Maybe later
 * automatic splitting of audio files as described [here.](https://stackoverflow.com/questions/36074224/how-to-split-video-or-audio-by-silent-parts)
