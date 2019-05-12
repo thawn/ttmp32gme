@@ -165,11 +165,21 @@ For building from source, you also need:
 
 pp
 
+## Web Links
+* [tttool home page](http://tttool.entropia.de/)
+* [tttool manual](https://tttool.readthedocs.io/de/latest/)
+* [ttaudio](https://github.com/sidiandi/ttaudio/)
+* [scienceblogs.de article on astrodicticum-simplex](http://scienceblogs.de/astrodicticum-simplex/2018/03/15/die-sternengeschichten-als-hoerbuch-auf-dem-tiptoi-stift/)
+* [Caschys Blog](https://stadt-bremerhaven.de/tiptoi-stift-eigene-hoerspiele-und-musik-mit-ttmp32gme/)
+* [It Dad](https://it-dad.de/2019/01/24/eigene-tiptoi-hoerbuecher-und-alben/)
+
+
 ## ToDo
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
-* make library path configurable
+* make library path configurable (already possible with docker by re-configuring the library volume)
+* add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs. Issue #24
 
 ### Maybe later
 * automatic splitting of audio files as described [here.](https://stackoverflow.com/questions/36074224/how-to-split-video-or-audio-by-silent-parts)
@@ -178,4 +188,3 @@ pp
 * interface to use external CD ripping tools such as fre:ac
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
 * integrate wkhtml2pdf into docker image for linux
-* add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs
