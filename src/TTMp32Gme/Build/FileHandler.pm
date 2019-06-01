@@ -227,9 +227,10 @@ sub get_tiptoi_dir {
 			}
 		}
 	} else {
+		my $user = $ENV{'USER'} || "root";
 		my @mount_points = (
-			'/mnt/tiptoi',             "/media/$ENV{'USER'}/tiptoi",
-			'/media/removable/tiptoi', "/media/$ENV{'USER'}/TIPTOI",
+			'/mnt/tiptoi',             "/media/$user/tiptoi",
+			'/media/removable/tiptoi', "/media/$user/TIPTOI",
 			'/media/removable/TIPTOI'
 		);
 		foreach my $mount_point (@mount_points) {

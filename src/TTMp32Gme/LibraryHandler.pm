@@ -181,6 +181,8 @@ sub createLibraryEntry {
 					my $info = Music::Tag->new( $album->{$fileId} );
 					$info->get_tag( $album->{$fileId} );
 
+					#if ($debug) {print 'Music::Tag::get_tag returned:' . Dumper($info);}
+
 					#fill in album info
 					if ( !$album_data{'album_title'} && $info->album() ) {
 						$album_data{'album_title'} = $info->album();
@@ -198,9 +200,10 @@ sub createLibraryEntry {
 						if ( $info->picture_filename() ) {
 							$album_data{'picture_filename'} = cleanup_filename( $info->picture_filename() );
 						} elsif ( $info->picture() ) {
-							my %pic = $info->picture();
-							$pictureData = $pic{'_Data'};
-							$album_data{'picture_filename'} = cleanup_filename( ( file( $pic{'filename'} ) )->basename() );
+							my $pic = $info->picture();
+							$pictureData = $$pic{'_Data'};
+							my $mimetype = $$pic{'MIME type'};
+							$album_data{'picture_filename'} = get_cover_filename($mimetype, $pictureData);
 						}
 					} elsif ( !$album_data{'picture_filename'}
 						&& !$info->picture_exists()
@@ -211,19 +214,13 @@ sub createLibraryEntry {
 						my $mp3 = MP3::Tag->new( $album->{$fileId} );
 						$mp3->get_tags();
 
-						#if ($debug) {print Dumper($mp3);}
+						if ($debug) { print Dumper($mp3); }
 						my $id3v2_tagdata = $mp3->{ID3v2};
 						if ($id3v2_tagdata) {
 							my $apic = $id3v2_tagdata->get_frame("APIC");
 							$pictureData = $$apic{'_Data'};
 							my $mimetype = $$apic{'MIME type'};
-							if ($mimetype) {
-								$mimetype =~ s/.*\///;
-								$album_data{'picture_filename'} = 'cover.' . $mimetype;
-							} elsif ($pictureData) {
-								my $imgType = image_type( \$pictureData );
-								$album_data{'picture_filename'} = 'cover.' . $imgType;
-							}
+							$album_data{'picture_filename'} = get_cover_filename($mimetype, $pictureData);
 						}
 					}
 
@@ -288,6 +285,18 @@ sub createLibraryEntry {
 	removeTempDir();
 }
 
+sub get_cover_filename {
+	my ( $mimetype, $pictureData ) = @_;
+	if ( $mimetype =~ /^image/i ) {
+		$mimetype =~ s/.*\///;
+		return 'cover.' . $mimetype;
+	} elsif ($pictureData) {
+		my $imgType = image_type( \$pictureData );
+		return 'cover.' . $imgType;
+	}
+	return 0;
+}
+
 sub get_album_list {
 	my ( $dbh, $httpd, $debug ) = @_;
 	my @albumList;
@@ -296,7 +305,11 @@ sub get_album_list {
 	if ($debug) { debug( 'Found gme files on tiptoi: ' . Dumper( \%gmes_on_tiptoi ), $debug ); }
 	foreach my $oid ( sort keys %{$albums} ) {
 		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
-		$albums->{$oid}->{'gme_on_tiptoi'} = exists( $gmes_on_tiptoi{ $albums->{$oid}->{'gme_file'} } );
+		if ( $albums->{$oid}->{'gme_file'} ) {
+			$albums->{$oid}->{'gme_on_tiptoi'} = exists( $gmes_on_tiptoi{ $albums->{$oid}->{'gme_file'} } );
+		} else {
+			$albums->{$oid}->{'gme_on_tiptoi'} = 0;
+		}
 		put_cover_online( $albums->{$oid}, $httpd );
 		push( @albumList, $albums->{$oid} );
 	}

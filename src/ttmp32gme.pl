@@ -24,7 +24,8 @@ use Getopt::Long;
 use Perl::Version;
 use DBI;
 use DBIx::MultiStatementDo;
-use Log::Message::Simple qw(msg error);
+use Log::Message::Simple qw(msg debug error);
+use Data::Dumper;
 
 use lib ".";
 
@@ -215,7 +216,7 @@ $httpd->reg_cb(
 			);
 		} elsif ( $req->method() eq 'POST' ) {
 
-			#print Dumper($req);
+			#if ($debug) { debug( 'Upload POST request: ' . Dumper($req), $debug ); } ;
 			my $content       = { 'success' => \0 };
 			my $statusCode    = 501;
 			my $statusMessage = 'Could not parse POST data.';
