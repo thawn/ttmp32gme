@@ -1,0 +1,4 @@
+dist/
+build/mac/
+build/win/
+lib/
