@@ -251,7 +251,7 @@ sub make_gme {
 		my @selector = ($oid);
 		updateTableEntry( 'gme_library', 'oid=?', \@selector, \%data, $dbh );
 	}
-	remove_library_dir($media_path);
+	remove_library_dir( $media_path, $config->{'library_path'} );
 	return $oid;
 }
 

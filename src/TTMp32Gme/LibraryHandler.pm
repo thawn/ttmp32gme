@@ -165,7 +165,7 @@ sub put_file_online {
 }
 
 sub createLibraryEntry {
-	my ( $albumList, $dbh, $debug ) = @_;
+	my ( $albumList, $dbh, $library_path, $debug ) = @_;
 	foreach my $album ( @{$albumList} ) {
 		if ($album) {
 			my $oid = newOID($dbh);
@@ -203,7 +203,7 @@ sub createLibraryEntry {
 							my $pic = $info->picture();
 							$pictureData = $$pic{'_Data'};
 							my $mimetype = $$pic{'MIME type'};
-							$album_data{'picture_filename'} = get_cover_filename($mimetype, $pictureData);
+							$album_data{'picture_filename'} = get_cover_filename( $mimetype, $pictureData );
 						}
 					} elsif ( !$album_data{'picture_filename'}
 						&& !$info->picture_exists()
@@ -220,7 +220,7 @@ sub createLibraryEntry {
 							my $apic = $id3v2_tagdata->get_frame("APIC");
 							$pictureData = $$apic{'_Data'};
 							my $mimetype = $$apic{'MIME type'};
-							$album_data{'picture_filename'} = get_cover_filename($mimetype, $pictureData);
+							$album_data{'picture_filename'} = get_cover_filename( $mimetype, $pictureData );
 						}
 					}
 
@@ -261,7 +261,7 @@ sub createLibraryEntry {
 				$album_data{'path'}        = 'unknown';
 				$album_data{'album_title'} = $album_data{'path'};
 			}
-			$album_data{'path'} = makeNewAlbumDir( $album_data{'path'} );
+			$album_data{'path'} = makeNewAlbumDir( $album_data{'path'}, $library_path );
 			if ( $album_data{'picture_filename'} and $pictureData ) {
 				my $picture_file =
 					file( $album_data{'path'}, $album_data{'picture_filename'} );
@@ -282,7 +282,7 @@ sub createLibraryEntry {
 			}
 		}
 	}
-	removeTempDir();
+	removeTempDir($library_path);
 }
 
 sub get_cover_filename {
@@ -367,12 +367,12 @@ sub updateAlbum {
 }
 
 sub deleteAlbum {
-	my ( $oid, $httpd, $dbh ) = @_;
+	my ( $oid, $httpd, $dbh, $library_path ) = @_;
 	my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
 	if ( $album_data->{'picture_filename'} ) {
 		$httpd->unreg_cb( '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
 	}
-	if ( remove_library_dir( $album_data->{'path'} ) ) {
+	if ( remove_library_dir( $album_data->{'path'}, $library_path ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
 		$dbh->do( q( DELETE FROM gme_library WHERE oid=? ), {}, $oid );
 	}
@@ -380,13 +380,13 @@ sub deleteAlbum {
 }
 
 sub cleanupAlbum {
-	my ( $oid, $httpd, $dbh ) = @_;
+	my ( $oid, $httpd, $dbh, $library_path ) = @_;
 	my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
 	my $query      = q(SELECT filename FROM tracks WHERE parent_oid=? ORDER BY track);
 	my @file_list =
 		map { @$_ } @{ $dbh->selectall_arrayref( $query, {}, $oid ) };
 	my $data = { 'filename' => undef };
-	if ( clearAlbum( $album_data->{'path'}, \@file_list ) ) {
+	if ( clearAlbum( $album_data->{'path'}, \@file_list, $library_path ) ) {
 		updateTableEntry( 'tracks', 'parent_oid=?', [$oid], $data, $dbh );
 	}
 	return $oid;

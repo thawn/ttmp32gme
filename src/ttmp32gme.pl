@@ -32,6 +32,8 @@ use lib ".";
 use TTMp32Gme::LibraryHandler;
 use TTMp32Gme::TttoolHandler;
 use TTMp32Gme::PrintHandler;
+use TTMp32Gme::Build::FileHandler qw(get_default_library_path);
+
 
 # Set the UserAgent for external async requests.  Don't want to get flagged, do we?
 $AnyEvent::HTTP::USERAGENT =
@@ -50,7 +52,7 @@ $debug = 0;
 	my $configfile = "";
 	my $versionFlag;
 
-	my $version = Perl::Version->new("0.2.3");
+	my $version = Perl::Version->new("0.3.0");
 
 	# Command line startup options
 	# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
@@ -117,6 +119,7 @@ sub fetchConfig {
 	foreach my $cfgParam (@$configArrayRef) {
 		$tempConfig{ $$cfgParam[0] } = $$cfgParam[1];
 	}
+	$tempConfig{'library_path'} = $tempConfig{'library_path'} ? $tempConfig{'library_path'} : get_default_library_path();
 
 	return %tempConfig;
 }
@@ -187,7 +190,7 @@ my $albumCount = 0;
 
 #normally the temp directory 0 stays empty, but we need to create it
 #in case the browser was still open with files dropped when we started
-my $currentAlbum = makeTempAlbumDir($albumCount);
+my $currentAlbum = makeTempAlbumDir( $albumCount, $config{'library_path'} );
 my @fileList;
 my @albumList;
 my $printContent = 'Please go to the /print page, configure your layout, and click "save as pdf"';
@@ -198,7 +201,7 @@ $httpd->reg_cb(
 		if ( $req->method() eq 'GET' ) {
 			$albumCount++;
 			$fileCount    = 0;
-			$currentAlbum = makeTempAlbumDir($albumCount);
+			$currentAlbum = makeTempAlbumDir( $albumCount, $config{'library_path'} );
 			$req->respond(
 				{
 					content => [
@@ -249,10 +252,10 @@ $httpd->reg_cb(
 				}
 			} elsif ( $req->parm('action') ) {
 				print "copying albums to library\n";
-				createLibraryEntry( \@albumList, $dbh, $debug );
+				createLibraryEntry( \@albumList, $dbh, $config{'library_path'}, $debug );
 				$fileCount            = 0;
 				$albumCount           = 0;
-				$currentAlbum         = makeTempAlbumDir($albumCount);
+				$currentAlbum         = makeTempAlbumDir( $albumCount, $config{'library_path'} );
 				@fileList             = ();
 				@albumList            = ();
 				$content->{'success'} = \1;
@@ -304,10 +307,12 @@ $httpd->reg_cb(
 					} elsif ( $req->parm('action') eq 'delete' ) {
 						$statusMessage = 'Could not update database.';
 						$content->{'element'}{'oid'} =
-							deleteAlbum( $postData->{'uid'}, $httpd, $dbh );
+							deleteAlbum( $postData->{'uid'}, $httpd, $dbh, $config{'library_path'} );
 					} elsif ( $req->parm('action') eq 'cleanup' ) {
 						$statusMessage = 'Could not clean up album folder.';
-						$content->{'element'} = get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh ), $httpd, $dbh );
+						$content->{'element'} =
+							get_album_online( cleanupAlbum( $postData->{'uid'}, $httpd, $dbh, $config{'library_path'} ),
+							$httpd, $dbh );
 					} elsif ( $req->parm('action') eq 'make_gme' ) {
 						$statusMessage = 'Could not create gme file.';
 						$content->{'element'} = get_album_online( make_gme( $postData->{'uid'}, \%config, $dbh ), $httpd, $dbh );
@@ -382,7 +387,7 @@ $httpd->reg_cb(
 				} elsif ( $req->parm('action') eq 'save_pdf' ) {
 					$statusMessage = 'Could not save pdf.';
 					$printContent  = $postData->{'content'};
-					my $pdf_file = create_pdf( $config{'port'} );
+					my $pdf_file = create_pdf( $config{'port'}, $config{'library_path'} );
 					put_file_online( $pdf_file, '/print.pdf', $httpd );
 				}
 			}
@@ -427,7 +432,8 @@ $httpd->reg_cb(
 					? 'checked="checked"'
 					: '',
 					'audio_format' => $config{'audio_format'},
-					'pen_language' => $config{'pen_language'}
+					'pen_language' => $config{'pen_language'},
+					'library_path' => $config{'library_path'}
 				}
 			);
 			$req->respond(

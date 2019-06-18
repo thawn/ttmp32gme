@@ -17,6 +17,10 @@ END
 UPDATE "config" SET value='0.2.3' WHERE param='version';
 INSERT INTO "config" ("param", "value") VALUES ('pen_language', 'GERMAN');
 END
+	'0.3.0' => <<'END',
+UPDATE "config" SET value='0.3.0' WHERE param='version';
+INSERT INTO "config" ("param", "value") VALUES ('library_path', '');
+END
 };
 
 sub update {

@@ -11,7 +11,7 @@ use Data::Dumper;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(loadTemplates loadAssets openBrowser getLibraryPath checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi delete_gme_tiptoi);
+	qw(loadTemplates loadAssets openBrowser get_default_library_path checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi delete_gme_tiptoi);
 
 my @build_imports = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
@@ -43,7 +43,7 @@ sub get_unique_path {
 
 ##public functions:
 
-sub getLibraryPath {
+sub get_default_library_path {
 	my $library = dir( get_local_storage(), 'library' );
 	$library->mkpath();
 	return $library->stringify();
@@ -71,20 +71,23 @@ sub loadStatic {
 }
 
 sub makeTempAlbumDir {
-	my $albumPath = dir( getLibraryPath(), 'temp', $_[0] );
+	my ( $temp_name, $library_path ) = @_;
+	$library_path = $library_path ? $library_path : get_default_library_path();
+	my $albumPath = dir( $library_path, 'temp', $temp_name );
 	$albumPath->mkpath();
 	return $albumPath;
 }
 
 sub makeNewAlbumDir {
-	my $albumTitle = $_[0];
+	my ( $albumTitle, $library_path ) = @_;
+	$library_path = $library_path ? $library_path : get_default_library_path();
 
 	#make sure no album hogs the temp directory
 	if ( $albumTitle eq 'temp' ) {
 		$albumTitle .= '_0';
 	}
 	my $album_path =
-		get_unique_path( ( dir( getLibraryPath(), $albumTitle ) )->stringify );
+		get_unique_path( ( dir( $library_path, $albumTitle ) )->stringify );
 	$album_path = dir($album_path);
 	$album_path->mkpath();
 	return $album_path->stringify;
@@ -100,7 +103,9 @@ sub moveToAlbum {
 }
 
 sub removeTempDir {
-	my $tempPath = dir( getLibraryPath(), 'temp' );
+	my ($library_path) = @_;
+	$library_path = $library_path ? $library_path : get_default_library_path();
+	my $tempPath = dir( $library_path, 'temp' );
 	if ( $tempPath =~ /temp/ && -d $tempPath ) {
 		print "deleting $tempPath\n";
 		$tempPath->rmtree();
@@ -109,10 +114,10 @@ sub removeTempDir {
 }
 
 sub clearAlbum {
-	my ( $path, $file_list ) = @_;
-	my $libraryPath = getLibraryPath();
-	$libraryPath =~ s/\\/\\\\/g;    #fix windows paths
-	if ( $path =~ /^$libraryPath/ ) {
+	my ( $path, $file_list, $library_path ) = @_;
+	$library_path = $library_path ? $library_path : get_default_library_path();
+	$library_path =~ s/\\/\\\\/g;    #fix windows paths
+	if ( $path =~ /^$library_path/ ) {
 		foreach my $file ( @{$file_list} ) {
 			if ($file) {
 				my $full_file = file( $path, $file );
@@ -121,18 +126,6 @@ sub clearAlbum {
 				}
 			}
 		}
-		return 1;
-	} else {
-		return 0;
-	}
-}
-
-sub removeAlbum {
-	my ($path) = @_;
-	my $libraryPath = getLibraryPath();
-	$libraryPath =~ s/\\/\\\\/g;    #fix windows paths
-	if ( $path =~ /^$libraryPath/ ) {
-		( dir($path) )->rmtree();
 		return 1;
 	} else {
 		return 0;
@@ -149,11 +142,11 @@ sub cleanup_filename {
 }
 
 sub remove_library_dir {
-	my ($media_path) = @_;
-	my $media_dir    = dir($media_path);
-	my $libraryPath  = getLibraryPath();
-	$libraryPath =~ s/\\/\\\\/g;    #fix windows paths
-	if ( $media_dir =~ /^$libraryPath/ ) {
+	my ( $media_path, $library_path ) = @_;
+	$library_path = $library_path ? $library_path : get_default_library_path();
+	my $media_dir = dir($media_path);
+	$library_path =~ s/\\/\\\\/g;    #fix windows paths
+	if ( $media_dir =~ /^$library_path/ ) {
 		$media_dir->rmtree();
 		return 1;
 	} else {
@@ -227,10 +220,9 @@ sub get_tiptoi_dir {
 			}
 		}
 	} else {
-		my $user = $ENV{'USER'} || "root";
+		my $user         = $ENV{'USER'} || "root";
 		my @mount_points = (
-			'/mnt/tiptoi',             "/media/$user/tiptoi",
-			'/media/removable/tiptoi', "/media/$user/TIPTOI",
+			'/mnt/tiptoi', "/media/$user/tiptoi", '/media/removable/tiptoi', "/media/$user/TIPTOI",
 			'/media/removable/TIPTOI'
 		);
 		foreach my $mount_point (@mount_points) {

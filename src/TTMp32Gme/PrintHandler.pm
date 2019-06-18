@@ -142,14 +142,14 @@ sub create_print_layout {
 	}
 	$content .= '</div></div></div>';
 	return $content;
-
 }
 
 sub create_pdf {
-	my ($port) = @_;
+	my ( $port, $library_path ) = @_;
 	my $wkhtmltopdf_command = get_executable_path('wkhtmltopdf');
+	$library_path = $library_path ? $library_path : get_default_library_path();
 	if ($wkhtmltopdf_command) {
-		my $pdf_file = file( getLibraryPath(), 'print.pdf' );
+		my $pdf_file = file( $library_path, 'print.pdf' );
 		my $args     = "-B 0.5in -T 0.5in -L 0.5in -R 0.5in http://localhost:$port/pdf \"$pdf_file\"";
 		my $fullCmd  = "$wkhtmltopdf_command $args";
 		print "$fullCmd\n";
