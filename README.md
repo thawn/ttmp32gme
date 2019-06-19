@@ -178,7 +178,6 @@ pp
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
-* make library path configurable (already possible with docker by re-configuring the library volume)
 * add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs. [Issue #24](https://github.com/thawn/ttmp32gme/issues/24)
 
 ### Maybe later
