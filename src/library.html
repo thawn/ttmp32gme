@@ -509,27 +509,19 @@
 	});
 </script>
 <div class="row">
-	<div class="col-lg-4">
+	<div class="col-lg-6">
 		<p>
-			<button id="select-all" class="btn btn-default margin-t">Select all</button>
-			<button id="deselect-all" class="btn btn-default margin-t">Deselect all</button>
-			<button id="toggle-all" class="btn btn-default margin-t">Invert selection</button>
-			<button id="select-all-tiptoi" class="btn btn-default margin-t">Select all on TipToi</button>
+			<button id="print-selected" class="btn btn-success margin-t" data-toggle="popover">Print selected</button>
+			<button id="cleanup-selected" class="btn btn-warning margin-t" data-toggle="popover">Cleanup selected</button>
+			<button id="delete-selected" class="btn btn-danger margin-t" data-toggle="popover">Delete selected from library</button>
 		</p>
 	</div>
-	<div class="col-lg-4">
+	<div class="col-lg-6">
 		<p>
 			<button id="copy-selected" class="btn btn-success needs-tiptoi margin-t" data-toggle="popover" style="display: none;">Copy
 				selected to TipToi</button>
 			<button id="tiptoi-delete-selected" class="btn btn-danger needs-tiptoi margin-t" data-toggle="popover" style="display: none;">Delete
 				selected from TipToi</button>
-		</p>
-	</div>
-	<div class="col-lg-4">
-		<p>
-			<button id="print-selected" class="btn btn-success margin-t" data-toggle="popover">Print selected</button>
-			<button id="cleanup-selected" class="btn btn-warning margin-t" data-toggle="popover">Cleanup selected</button>
-			<button id="delete-selected" class="btn btn-danger margin-t" data-toggle="popover">Delete selected from library</button>
 		</p>
 	</div>
 </div>
@@ -553,6 +545,19 @@
 					<strong>All files copied successfully!</strong> It is now safe to disconnect the tiptoi from the computer.
 				</div>
 			</div>
+		</div>
+
+		<div class="dropdown pull-left">
+			<button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
+				aria-haspopup="true" aria-expanded="true">
+				Select <span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+				<li><a href="#" id="select-all">Select all</a></li>
+				<li><a href="#" id="deselect-all">Deselect all</a></li>
+				<li><a href="#" id="toggle-all">Invert selection</a></li>
+				<li><a href="#" id="select-all-tiptoi">Select all on TipToi</a></li>
+			</ul>
 		</div>
 
 		<div class="btn-group pull-right" role="group" aria-label="sorting buttons">
