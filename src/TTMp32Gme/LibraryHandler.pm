@@ -140,6 +140,18 @@ sub sortTracks {
 	return @sorted_track_data;
 }
 
+sub get_cover_filename {
+	my ( $mimetype, $pictureData ) = @_;
+	if ( $mimetype =~ /^image/i ) {
+		$mimetype =~ s/.*\///;
+		return 'cover.' . $mimetype;
+	} elsif ($pictureData) {
+		my $imgType = image_type( \$pictureData );
+		return 'cover.' . $imgType;
+	}
+	return 0;
+}
+
 ## public methods:
 
 sub updateTableEntry {
@@ -154,6 +166,7 @@ sub updateTableEntry {
 
 sub put_file_online {
 	my ( $file, $online_path, $httpd ) = @_;
+	delete $httpd->{__oe_events}->{$online_path};
 	$httpd->reg_cb(
 		$online_path => sub {
 			my $file_data = $file->slurp( iomode => '<:raw' );
@@ -285,18 +298,6 @@ sub createLibraryEntry {
 	removeTempDir($library_path);
 }
 
-sub get_cover_filename {
-	my ( $mimetype, $pictureData ) = @_;
-	if ( $mimetype =~ /^image/i ) {
-		$mimetype =~ s/.*\///;
-		return 'cover.' . $mimetype;
-	} elsif ($pictureData) {
-		my $imgType = image_type( \$pictureData );
-		return 'cover.' . $imgType;
-	}
-	return 0;
-}
-
 sub get_album_list {
 	my ( $dbh, $httpd, $debug ) = @_;
 	my @albumList;
@@ -326,9 +327,13 @@ sub get_album {
 sub get_album_online {
 	my ( $oid, $httpd, $dbh ) = @_;
 	if ($oid) {
-		my $album          = get_album( $oid, $dbh );
-		my %gmes_on_tiptoi = get_gmes_already_on_tiptoi();
-		$album->{'gme_on_tiptoi'} = exists( $gmes_on_tiptoi{ $album->{'gme_file'} } );
+		my $album = get_album( $oid, $dbh );
+		if ( defined $album->{'gme_file'} ) {
+			my %gmes_on_tiptoi = get_gmes_already_on_tiptoi();
+			$album->{'gme_on_tiptoi'} = exists( $gmes_on_tiptoi{ $album->{'gme_file'} } );
+		} else {
+			$album->{'gme_on_tiptoi'} = \0;
+		}
 		put_cover_online( $album, $httpd );
 		return $album;
 	}
@@ -370,7 +375,7 @@ sub deleteAlbum {
 	my ( $oid, $httpd, $dbh, $library_path ) = @_;
 	my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
 	if ( $album_data->{'picture_filename'} ) {
-		$httpd->unreg_cb( '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
+		delete $httpd->{__oe_events}->{ '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} };
 	}
 	if ( remove_library_dir( $album_data->{'path'}, $library_path ) ) {
 		$dbh->do( q(DELETE FROM tracks WHERE parent_oid=?), {}, $oid );
@@ -397,12 +402,11 @@ sub replace_cover {
 	if ( $filename && $file_data ) {
 		my $album_data = $dbh->selectrow_hashref( q(SELECT path,picture_filename FROM gme_library WHERE oid=?), {}, $oid );
 		if ( $album_data->{'picture_filename'} ) {
-			$httpd->unreg_cb( '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} );
+			delete $httpd->{__oe_events}->{ '/assets/images/' . $oid . '/' . $album_data->{'picture_filename'} };
 			file( $album_data->{'path'}, $album_data->{'picture_filename'} )->remove();
 			if ( $filename eq $album_data->{'picture_filename'} ) {
 
-				#hack to make sure the cover is refreshed properly
-				#despite browser caching.
+				#hack to make sure the cover is refreshed properly despite browser caching.
 				$filename = "0_$filename";
 			}
 		}

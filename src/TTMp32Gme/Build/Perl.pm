@@ -23,16 +23,18 @@ sub loadFile {
 sub get_local_storage {
 	my $retdir;
 	if ( defined $ENV{'APPDATA'} ) {
-		return dir( $ENV{'APPDATA'}, 'ttmp32gme' );
+		$retdir = dir( $ENV{'APPDATA'}, 'ttmp32gme' );
 	} elsif ( defined $ENV{'HOME'} ) {
 		if ( $^O eq 'darwin' ) {
-			return dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' );
+			$retdir = dir( $ENV{'HOME'}, 'Library', 'Application Support', 'ttmp32gme' );
 		} else {
-			return dir( $ENV{'HOME'}, '.ttmp32gme' );
+			$retdir = dir( $ENV{'HOME'}, '.ttmp32gme' );
 		}
 	} else {
-		return dir($maindir);
+		$retdir = dir($maindir);
 	}
+	$retdir->mkpath();
+	return $retdir;
 }
 
 sub get_par_tmp {

@@ -32,15 +32,14 @@ use lib ".";
 use TTMp32Gme::LibraryHandler;
 use TTMp32Gme::TttoolHandler;
 use TTMp32Gme::PrintHandler;
-use TTMp32Gme::Build::FileHandler qw(get_default_library_path);
-
+use TTMp32Gme::Build::FileHandler qw(get_default_library_path move_library);
 
 # Set the UserAgent for external async requests.  Don't want to get flagged, do we?
 $AnyEvent::HTTP::USERAGENT =
 	'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.10) Gecko/20100914 Firefox/3.6.10 ( .NET CLR 3.5.30729)';
 
 # Declare globals... I know tisk tisk
-my ( $dbh, %config, $watchers, %templates, $static, %assets, $debug );
+my ( $dbh, %config, $watchers, %templates, $static, %assets, $httpd, $debug );
 $debug = 0;
 
 # Encapsulate configuration code
@@ -126,12 +125,25 @@ sub fetchConfig {
 
 sub save_config {
 	my ($configParams) = @_;
-	my $qh = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
+	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
+	my $moved_library  = 'Success.';
+	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
+		my $new_path = dir( $configParams->{'library_path'} )->stringify(); #make sure to remove slashes from end of path
+		msg( 'Moving library to new path: ' . $new_path, 1 );
+		$moved_library = move_library( $config{'library_path'}, $new_path, $dbh, $httpd );
+		if ( $moved_library ne 'Success.' ) {
+			$configParams->{'library_path'} = $config{'library_path'};
+		} else {
+			$configParams->{'library_path'} = $new_path;
+			my $albums = get_album_list( $dbh, $httpd, $debug );    #update image paths for cover images
+		}
+	}
 	foreach my $param (%$configParams) {
 		$qh->execute( $configParams->{$param}, $param );
 		if ( $qh->errstr ) { last; }
 	}
-	return fetchConfig();
+	my %conf = fetchConfig();
+	return ( \%conf, $moved_library );
 }
 
 sub getNavigation {
@@ -169,7 +181,7 @@ my %siteMapOrder = (
 	'/help'   => 99,
 );
 
-my $httpd =
+$httpd =
 	AnyEvent::HTTPD->new( host => $config{'host'}, port => $config{'port'} );
 msg(
 	"Server running on port: $config{'port'}\n"
@@ -381,8 +393,10 @@ $httpd->reg_cb(
 				my $postData =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 				if ( $req->parm('action') eq 'save_config' ) {
-					$statusMessage        = 'Could not save configuration.';
-					%config               = save_config($postData);
+					$statusMessage = 'Could not save configuration.';
+					my $cnf;
+					( $cnf, $statusMessage ) = save_config($postData);
+					%config = %$cnf;
 					$content->{'element'} = \%config;
 				} elsif ( $req->parm('action') eq 'save_pdf' ) {
 					$statusMessage = 'Could not save pdf.';
@@ -455,14 +469,12 @@ $httpd->reg_cb(
 			if ( $req->parm('action') eq 'update' ) {
 				my $configParams =
 					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
-				%config = save_config($configParams);
-				my $status;
-				if ( !$dbh->errstr ) {
-					$status = 'Success.';
-				} else {
+				my ( $cnf, $status );
+				( $cnf, $status ) = save_config($configParams);
+				%config = %$cnf;
+				if ( $dbh->errstr ) {
 					$status = 'Could not update config.  Try reloading ttmp32gme.';
 				}
-
 				$req->respond(
 					{
 						content => [ 'application/json', '{ "status" : "' . $status . '" }' ]

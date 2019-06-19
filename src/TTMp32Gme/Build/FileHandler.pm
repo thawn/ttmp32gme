@@ -5,14 +5,14 @@ use warnings;
 
 use PAR;
 use Path::Class;
+use File::Copy;
 use Log::Message::Simple qw(msg debug error);
 use Data::Dumper;
 
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT =
-	qw(loadTemplates loadAssets openBrowser get_default_library_path checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi delete_gme_tiptoi);
-
+	qw(loadTemplates loadAssets openBrowser get_default_library_path checkConfigFile loadStatic makeTempAlbumDir makeNewAlbumDir moveToAlbum removeTempDir clearAlbum removeAlbum cleanup_filename remove_library_dir get_executable_path get_oid_cache get_tiptoi_dir get_gmes_already_on_tiptoi delete_gme_tiptoi move_library);
 my @build_imports = qw(loadFile get_local_storage get_par_tmp loadTemplates loadAssets openBrowser);
 
 if ( PAR::read_file('build.txt') ) {
@@ -259,6 +259,35 @@ sub delete_gme_tiptoi {
 		}
 	}
 	return 0;
+}
+
+sub move_library {
+	my ( $from, $to, $dbh, $httpd ) = @_;
+	my $library = dir($to);
+	unless ( -w $library || $library->mkpath() ) {
+		return 'error: could not write to target directory';
+	}
+	msg('raw: ' . $to, 1);
+	msg('class: ' . $library, 1);
+	$library->resolve;
+	msg('resolved: ' . $library, 1);
+	if ( $library->children() ) {
+		return 'error: target directory not empty';
+	}
+	my $albums = $dbh->selectall_hashref(q( SELECT path, oid FROM gme_library ), 'oid');
+	my $qh    = $dbh->prepare('UPDATE gme_library SET path=? WHERE oid=?');
+	local($dbh->{AutoCommit}) = 0;
+	foreach my $oid ( sort keys %{$albums} ) {
+		eval { $qh->execute( $albums->{$oid}->{'path'} =~ s/$from/$library/r, $oid ); }
+	}
+	if ($@) {
+		$dbh->rollback();
+		return 'error: could not update album path in database';
+	} else {
+		$dbh->commit();
+		move( $from, $library );
+		return 'Success.';
+	}
 }
 
 1;

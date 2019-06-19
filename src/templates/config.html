@@ -6,7 +6,8 @@ var updateConfig = function(caller)\{
 					  'port' : $('#port').val(),
 					  'open_browser' : testCheckBox('#open_browser'),
 					  'audio_format' : $('#audio_format').val(),
-					  'pen_language' : $('#pen_language').val()
+					  'pen_language' : $('#pen_language').val(),
+					  'library_path' : $('#library_path').val()
 					  \};
 	$.post('/config',
 		   'action=update&data=' + escape(JSON.stringify(configVars)))
@@ -62,7 +63,7 @@ $(function()\{
 			</select>
 		</div>
 		<div class="form-group">
-			<label for="port">ttmp32gme library path:</label> <input type="text" id="library_path"
+			<label for="library_path">ttmp32gme library path:</label> <input type="text" id="library_path"
 				class="form-control" value="{ $library_path }" data-toggle="tooltip"
 				title="The path where the library of GME and mp3 files is stored">
 		</div>
