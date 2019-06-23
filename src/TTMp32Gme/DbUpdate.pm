@@ -20,6 +20,7 @@ END
 	'0.3.0' => <<'END',
 UPDATE "config" SET value='0.3.0' WHERE param='version';
 INSERT INTO "config" ("param", "value") VALUES ('library_path', '');
+INSERT INTO "config" ("param", "value") VALUES ('player_mode', 'music');
 END
 };
 

@@ -128,14 +128,14 @@ sub save_config {
 	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
 	my $moved_library  = 'Success.';
 	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
-		my $new_path = dir( $configParams->{'library_path'} )->stringify(); #make sure to remove slashes from end of path
+		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
 		msg( 'Moving library to new path: ' . $new_path, 1 );
 		$moved_library = move_library( $config{'library_path'}, $new_path, $dbh, $httpd );
 		if ( $moved_library ne 'Success.' ) {
 			$configParams->{'library_path'} = $config{'library_path'};
 		} else {
 			$configParams->{'library_path'} = $new_path;
-			my $albums = get_album_list( $dbh, $httpd, $debug );    #update image paths for cover images
+			my $albums = get_album_list( $dbh, $httpd, $debug );                 #update image paths for cover images
 		}
 	}
 	foreach my $param (%$configParams) {
@@ -447,7 +447,8 @@ $httpd->reg_cb(
 					: '',
 					'audio_format' => $config{'audio_format'},
 					'pen_language' => $config{'pen_language'},
-					'library_path' => $config{'library_path'}
+					'library_path' => $config{'library_path'},
+					'player_mode'  => $config{'player_mode'}
 				}
 			);
 			$req->respond(

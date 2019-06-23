@@ -178,7 +178,6 @@ pp
 * handle more than 10 tracks for CD booklet (two column track layout)
 * upload multiple albums at once from the upload page
 * add and remove music files from library page
-* add a config option and/or a control button to stop playing after each song/repeat one song/repeat all songs. [Issue #24](https://github.com/thawn/ttmp32gme/issues/24)
 
 ### Maybe later
 * automatic splitting of audio files as described [here.](https://stackoverflow.com/questions/36074224/how-to-split-video-or-audio-by-silent-parts)
