@@ -134,15 +134,15 @@ var saveConfig = function($id) {
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					fillInElement($id, data.element);
-					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
+					notify($('#config-save'), '', jqXHR.statusText, 'bg-success',
 							2000);
 				} else {
-					notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
+					notify($('#config-save'), '', jqXHR.statusText, 'bg-danger',
 							4000);
 				}
 			}, 'json').fail(
 			function() {
-				notify($id.find('button.edit-button'), '', 'Connection error', 'bg-danger',
+				notify($('#config-save'), '', 'Connection error', 'bg-danger',
 						4000);
 			});
 }
@@ -221,11 +221,16 @@ var toggleField = function($checkbox) {
 	}
 }
 
-var changeTileSize = function($id) {
+var 
+changeTileSize = function($id) {
 	if ($id.val()) {
 		var PPcm = 56.692845103;
 		var size = $id.val() * PPcm;
 		$('.album').css({ 'min-width': size + 'px', 'min-height': size + 'px', 'max-width': size + 'px', 'max-height': size + 'px', 'overflow': 'hidden'});
+		/**
+		 * TODO detect track ul overflow ( https://stackoverflow.com/questions/7138772/how-to-detect-overflow-in-div-element )
+		 *      and increase number of columns as needed ( https://stackoverflow.com/questions/19836567/bootstrap-3-multi-column-within-a-single-ul-not-floating-properly )
+		 */
 	} else {
 		$('.album').removeAttr('style');
 	}

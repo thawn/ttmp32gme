@@ -126,16 +126,25 @@ sub fetchConfig {
 sub save_config {
 	my ($configParams) = @_;
 	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
-	my $moved_library  = 'Success.';
+	my $answer         = 'Success.';
 	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
 		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
 		msg( 'Moving library to new path: ' . $new_path, 1 );
-		$moved_library = move_library( $config{'library_path'}, $new_path, $dbh, $httpd );
-		if ( $moved_library ne 'Success.' ) {
+		$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd );
+		if ( $answer ne 'Success.' ) {
 			$configParams->{'library_path'} = $config{'library_path'};
 		} else {
 			$configParams->{'library_path'} = $new_path;
 			my $albums = get_album_list( $dbh, $httpd, $debug );                 #update image paths for cover images
+		}
+	}
+	if ( defined $configParams->{'tt_dpi'}
+		&& ( int( $configParams->{'tt_dpi'} ) / int( $configParams->{'tt_pixel-size'} ) ) < 200 )
+	{
+		$configParams->{'tt_dpi'}        = $config{'tt_dpi'};
+		$configParams->{'tt_pixel-size'} = $config{'tt_pixel-size'};
+		if ( $answer eq 'Success.' ) {
+			$answer = 'OID pixels too large, please increase resolution and/or decrease pixel size.';
 		}
 	}
 	foreach my $param (%$configParams) {
@@ -143,7 +152,7 @@ sub save_config {
 		if ( $qh->errstr ) { last; }
 	}
 	my %conf = fetchConfig();
-	return ( \%conf, $moved_library );
+	return ( \%conf, $answer );
 }
 
 sub getNavigation {
@@ -383,11 +392,12 @@ $httpd->reg_cb(
 
 			#print Dumper($req);
 			my $content       = { 'success' => \0 };
-			my $statusCode    = 501;
+			my $statusCode    = 200;
 			my $statusMessage = 'Could not parse POST data.';
 			if ( $req->parm('action') eq 'get_config' ) {
-				$statusMessage = 'Could not get configuration. Possible database error.';
+				$statusMessage        = 'Could not get configuration. Possible database error.';
 				$content->{'element'} = \%config;
+				$statusMessage        = 'OK';
 			} elsif ( $req->parm('action') =~ /(save_config|save_pdf)/ ) {
 				$statusMessage = 'Could not parse POST data.';
 				my $postData =
@@ -398,20 +408,17 @@ $httpd->reg_cb(
 					( $cnf, $statusMessage ) = save_config($postData);
 					%config = %$cnf;
 					$content->{'element'} = \%config;
+					$statusMessage = $statusMessage eq 'Success.' ? 'OK' : $statusMessage;
 				} elsif ( $req->parm('action') eq 'save_pdf' ) {
 					$statusMessage = 'Could not save pdf.';
 					$printContent  = $postData->{'content'};
 					my $pdf_file = create_pdf( $config{'port'}, $config{'library_path'} );
 					put_file_online( $pdf_file, '/print.pdf', $httpd );
+					$statusMessage        = 'OK';
 				}
 			}
-			if ( !$dbh->errstr ) {
+			if ( $statusMessage eq 'OK') {
 				$content->{'success'} = \1;
-				$statusCode           = 200;
-				$statusMessage        = 'OK';
-			} else {
-				$statusCode    = 501;
-				$statusMessage = $dbh->errstr;
 			}
 			$content = decode_utf8( encode_json($content) );
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
