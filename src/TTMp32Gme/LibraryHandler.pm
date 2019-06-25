@@ -142,7 +142,7 @@ sub sortTracks {
 
 sub get_cover_filename {
 	my ( $mimetype, $pictureData ) = @_;
-	if ( $mimetype =~ /^image/i ) {
+	if ( defined $mimetype && $mimetype =~ /^image/i ) {
 		$mimetype =~ s/.*\///;
 		return 'cover.' . $mimetype;
 	} elsif ($pictureData) {
