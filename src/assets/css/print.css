@@ -32,6 +32,13 @@
 	margin-right: 10px;
 	overflow: hidden;
 }
+.track-title {
+	width: 100%;
+	max-width: 0;
+}
+.runtime {
+	padding-left: 10px;
+}
 
 .play-img {
 	position: absolute;
@@ -85,6 +92,7 @@
 	page-break-inside: avoid;
 }
 
+
 @media print {
 	/* make sure the responsiveness of bootstrap does not mess up our print layout.
 	a4 usable page width with 0.5 in margins (default for firefox where it is not changable) is
@@ -92,4 +100,13 @@
 	.container {
 		width: 1044px;
 	}
+}
+
+@-moz-document url-prefix() {
+	@media print {
+		/* firefox scales a little bit different than chrome. Hence we override the container width for firefox here */
+		.container {
+			width: 1036px;
+		}
+}
 }

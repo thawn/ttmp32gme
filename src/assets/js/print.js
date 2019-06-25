@@ -61,7 +61,7 @@ var fillInElement = function($id, data) {
 			$id.find('input[name=' + i + ']').change();
 		}
 	}
-	cssPagedMedia.size($id.find('input[name=page_size]').val());
+	cssPagedMedia.size($id.find('input[name=print_page_size]').val());
 	$id.find('.preset').removeClass('active');
 	$('#' + $id.find('input[name=print_preset]').val()).addClass('active')
 	$id.find('button').each(function() {
@@ -221,19 +221,37 @@ var toggleField = function($checkbox) {
 	}
 }
 
-var 
-changeTileSize = function($id) {
+var changeTileSize = function($id) {
 	if ($id.val()) {
 		var PPcm = 56.692845103;
 		var size = $id.val() * PPcm;
+		var column_sizes = [6, 4];
 		$('.album').css({ 'min-width': size + 'px', 'min-height': size + 'px', 'max-width': size + 'px', 'max-height': size + 'px', 'overflow': 'hidden'});
+		$('.album').find('.tracks').each(function(unused, tracks) {
+		    resetTracks($(tracks).find('ul'));
+		    var i = 0;
+		    var $ul = $(tracks).find('ul');
+		    while ($ul.prop('scrollHeight') > size - 156 && i < column_sizes.length ) {
+		        $ul.find('li').removeClass().addClass('list-group-item col-xs-' + column_sizes[i++]);
+		        $ul.find('.track-title').css({'overflow':'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap'});
+		    }
+		});
 		/**
 		 * TODO detect track ul overflow ( https://stackoverflow.com/questions/7138772/how-to-detect-overflow-in-div-element )
 		 *      and increase number of columns as needed ( https://stackoverflow.com/questions/19836567/bootstrap-3-multi-column-within-a-single-ul-not-floating-properly )
 		 */
 	} else {
 		$('.album').removeAttr('style');
+        $('.album').find('.tracks').each(function(unused, tracks) {
+            resetTracks($(tracks).find('ul'));
+        });
 	}
+}
+
+var resetTracks = function($ul) {
+    $ul.removeClass('row');
+    $ul.find('li').removeClass().addClass('list-group-item');
+    $ul.find('.track-title').css({'overflow':'visible', 'text-overflow': 'clip', 'white-space': 'normal'});    
 }
 
 var changeNumberOfColumns = function($id) {
