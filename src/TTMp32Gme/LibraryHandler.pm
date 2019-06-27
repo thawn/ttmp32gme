@@ -255,7 +255,7 @@ sub createLibraryEntry {
 						$trackNo++;
 						$trackInfo{'title'} = cleanup_filename( ( file( $album->{$fileId} ) )->basename() );
 						error(
-"No useable id3 info found in $album->{$fileId}.\nPlease add an id3v2 tag to your mp3 file in order to get proper album and track info."
+"WARNING: No useable id3 info found in $album->{$fileId}.\nPlease add an id3v2 tag containing at least album, title and track number to your mp3 file in order to get proper album and track info."
 						);
 					}
 					push( @track_data, \%trackInfo );
