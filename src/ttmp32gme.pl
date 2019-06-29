@@ -51,7 +51,7 @@ $debug = 0;
 	my $configfile = "";
 	my $versionFlag;
 
-	my $version = Perl::Version->new("0.3.0");
+	my $version = Perl::Version->new("0.3.1");
 
 	# Command line startup options
 	# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
@@ -323,8 +323,13 @@ $httpd->reg_cb(
 						decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
 					if ( $req->parm('action') eq 'update' ) {
 						$statusMessage = 'Could not update database.';
+						my $old_player_mode = $postData->{'old_player_mode'};
+						delete( $postData->{'old_player_mode'} );
 						$content->{'element'} =
 							get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
+						if ( $old_player_mode ne $postData->{'player_mode'} ) {
+							make_gme( $postData->{'oid'}, \%config, $dbh );
+						}
 					} elsif ( $req->parm('action') eq 'delete' ) {
 						$statusMessage = 'Could not update database.';
 						$content->{'element'}{'oid'} =
@@ -406,18 +411,18 @@ $httpd->reg_cb(
 					$statusMessage = 'Could not save configuration.';
 					my $cnf;
 					( $cnf, $statusMessage ) = save_config($postData);
-					%config = %$cnf;
+					%config               = %$cnf;
 					$content->{'element'} = \%config;
-					$statusMessage = $statusMessage eq 'Success.' ? 'OK' : $statusMessage;
+					$statusMessage        = $statusMessage eq 'Success.' ? 'OK' : $statusMessage;
 				} elsif ( $req->parm('action') eq 'save_pdf' ) {
 					$statusMessage = 'Could not save pdf.';
 					$printContent  = $postData->{'content'};
 					my $pdf_file = create_pdf( $config{'port'}, $config{'library_path'} );
 					put_file_online( $pdf_file, '/print.pdf', $httpd );
-					$statusMessage        = 'OK';
+					$statusMessage = 'OK';
 				}
 			}
-			if ( $statusMessage eq 'OK') {
+			if ( $statusMessage eq 'OK' ) {
 				$content->{'success'} = \1;
 			}
 			$content = decode_utf8( encode_json($content) );
@@ -454,8 +459,7 @@ $httpd->reg_cb(
 					: '',
 					'audio_format' => $config{'audio_format'},
 					'pen_language' => $config{'pen_language'},
-					'library_path' => $config{'library_path'},
-					'player_mode'  => $config{'player_mode'}
+					'library_path' => $config{'library_path'}
 				}
 			);
 			$req->respond(

@@ -22,6 +22,11 @@ UPDATE "config" SET value='0.3.0' WHERE param='version';
 INSERT INTO "config" ("param", "value") VALUES ('library_path', '');
 INSERT INTO "config" ("param", "value") VALUES ('player_mode', 'music');
 END
+	'0.3.1' => <<'END',
+UPDATE "config" SET value='0.3.1' WHERE param='version';
+DELETE FROM "config" WHERE param='player_mode';
+ALTER TABLE "gme_library" ADD COLUMN "player_mode" TEXT DEFAULT 'music';
+END
 };
 
 sub update {

@@ -7,8 +7,7 @@ var updateConfig = function(caller)\{
 					  'open_browser' : testCheckBox('#open_browser'),
 					  'audio_format' : $('#audio_format').val(),
 					  'pen_language' : $('#pen_language').val(),
-					  'library_path' : $('#library_path').val(),
-					  'player_mode' : $('input[name="player_mode"]:checked').val()
+					  'library_path' : $('#library_path').val()
 					  \};
 	$.post('/config',
 		   'action=update&data=' + escape(JSON.stringify(configVars)))
@@ -27,7 +26,6 @@ var updateConfig = function(caller)\{
 $(function()\{
     $('#audio_format').val("{ $audio_format }");
     $('#pen_language').val("{ $pen_language }");
-    $('#player_mode_{ $player_mode }').prop('checked', true);
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#submit').click(function()\{
 		updateConfig( $(this) );
@@ -77,21 +75,6 @@ $(function()\{
 				<option value="FRENCH">FRENCH</option>
 				<option value="ITALIAN">ITALIAN</option>
 			</select>
-		</div>
-		<div class="radio">
-			<label data-toggle="tooltip"
-				title="This setting will only affect gme files that you create in the future. If you want to change already existing gme files, you need to re-create the gme files from the library (edit->create GME) and them to the tiptoi again.">
-				<input type="radio" name="player_mode" id="player_mode_music" value="music"> Music/Audiobook mode: Play all
-				songs once an album is activated (like a CD player). This is the default setting.
-			</label>
-		</div>
-		<div class="radio">
-			<label data-toggle="tooltip"
-				title="This setting will only affect gme files that you create in the future. If you want to change already existing gme files, you need to re-create the gme files from the library (edit->create GME) and them to the tiptoi again.">
-				<input type="radio" name="player_mode" id="player_mode_tiptoi" value="tiptoi"> Tiptoi mode: Play only the
-				first track once an album is activated. All other tracks must be activated by touching the respective OID code
-				fields with the tiptoi (like in a tiptoi book or game).
-			</label>
 		</div>
 		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover">Save
 			Configuration</button>

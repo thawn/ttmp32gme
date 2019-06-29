@@ -116,10 +116,10 @@ sub convert_tracks {
 	foreach my $i ( 0 .. $#tracks ) {
 		if ( $i < $#tracks ) {
 			$play .= "  - \$current==$i? P(@{[$i]})";
-			$play .= $config->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i+1]})\n";
+			$play .= $album->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i+1]})\n";
 			if ( $i < $#tracks - 1 ) {
 				$next .= "  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]})";
-				$next .= $config->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i+2]})\n";
+				$next .= $album->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i+2]})\n";
 			} else {
 				$next .= "  - \$current==$i? \$current:=@{[$i+1]} P(@{[$i+1]}) C\n";
 			}
@@ -128,11 +128,11 @@ sub convert_tracks {
 		}
 		if ( $i > 0 ) {
 			$prev .= "  - \$current==$i? \$current:=@{[$i-1]} P(@{[$i-1]})";
-			$prev .= $config->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i]})\n";
+			$prev .= $album->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i]})\n";
 		}
 		if ( $i < $#tracks ) {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i)";
-			$track_scripts .= $config->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i+1]})\n";
+			$track_scripts .= $album->{'player_mode'} eq 'tiptoi' ? " C\n" : " J(t@{[$i+1]})\n";
 		} else {
 			$track_scripts .= "  t$i:\n  - \$current:=$i P($i) C\n";
 		}
@@ -159,7 +159,7 @@ sub convert_tracks {
 		$welcome = "welcome: " . "'$lastTrack'" . "\n";
 	} else {
 		$welcome =
-			$config->{'player_mode'} eq 'tiptoi'
+			$album->{'player_mode'} eq 'tiptoi'
 			? "welcome: " . "'0'" . "\n"
 			: "welcome: " . join( ', ', ( 0 .. $#tracks ) ) . "\n";
 
