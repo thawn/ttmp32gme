@@ -244,9 +244,8 @@ sub make_gme {
 	my $fh        = $yaml_file->openw();
 	print $fh "#this file was generated automatically by ttmp32gme\n";
 	print $fh "product-id: $oid\n";
-	if ( $config->{'pen_language'} ne 'GERMAN' ) {
-		print $fh "gme-lang: $config->{'pen_language'}\n";
-	}
+  print $fh "comment: CHOMPTECH DATA FORMAT CopyRight 2019 Ver0.00.0001";
+	print $fh "gme-lang: $config->{'pen_language'}\n";
 	close($fh);
 	my $media_path = convert_tracks( $album, $yaml_file, $config, $dbh );
 	my $codes_file = generate_codes_yaml( $yaml_file, $dbh );
