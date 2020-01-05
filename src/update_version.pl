@@ -9,7 +9,7 @@ use Perl::Version;
 use DBI;
 use DBIx::MultiStatementDo;
 
-my $version_str = "0.3.1";
+my $version_str = "0.3.2";
 
 # Command line startup options
 #  Usage: update_version [-v|--version]
@@ -31,9 +31,7 @@ sub replace_version {
 my %file_list = (
 	'ttmp32gme.pl' => '(Perl::Version->new\(")[\d\.]*("\))',
 	file( '..', 'build', 'mac', 'ttmp32gme.app', 'Contents', 'Info.plist' )->stringify() =>
-		'(ttmp32gme |<string>)\d\.\d\.\d( Copyright|</string>)',
-	file( '..', 'build', 'mac', 'ttmp32gme.app', 'Contents', 'Resources', 'English.lproj', 'InfoPlist.strings' )
-		->stringify() => '(CFBundleShortVersionString = "|ttmp32gme version )[\d\.]*(";| Copyright)',
+		'(ttmp32gme |<string>)\d\.\d\.\d(</string>)',
 );
 
 for my $path ( keys %file_list ) {

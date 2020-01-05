@@ -6,13 +6,17 @@ usage="Usage: $0 <start|stop> [path-to-mounted-tiptoi]"
 if [ ! "$1" = "start" ] && [ ! "$1" = "stop" ]; then
 	echo "$usage"
 	exit 0
-elif [ -z ${1+x} ] && [ -w "${1}/tiptoi.ico" ]; then
-	volumes="${volumes} --volume ${1}:/mnt/tiptoi"
+elif [ -w "${2}/tiptoi.ico" ]; then
+	echo "Found tiptoi: ${2}"
+	volumes="${volumes} --volume ${2}:/mnt/tiptoi"
 elif [ -w "/mnt/tiptoi/tiptoi.ico" ]; then
+	echo "Found tiptoi: /mnt/tiptoi/"
 	volumes="${volumes} --volume /mnt/tiptoi:/mnt/tiptoi"
-elif [ -w "/media/${'USER'}/tiptoi/tiptoi.ico" ]; then
+elif [ -w "/media/${USER}/tiptoi/tiptoi.ico" ]; then
+	echo "Found tiptoi: /media/${USER}/tiptoi"
 	volumes="${volumes} --volume /media/${USER}/tiptoi:/mnt/tiptoi"
 elif [ -w "/media/removable/tiptoi/tiptoi.ico" ]; then
+	echo "Found tiptoi: /media/removable/tiptoi"
 	volumes="${volumes} --volume /media/removable/tiptoi:/mnt/tiptoi"
 fi
 if [ "$1" = "start" ]; then
@@ -22,7 +26,7 @@ if [ "$1" = "start" ]; then
 	    ${volumes} \
     	--name ttmp32gme \
     	thawn/ttmp32gme:latest && \
-    echo "Successfully started ttmp32gme open http://localhost:8080 in your browser to continue."
+    echo "Successfully started ttmp32gme. Open http://localhost:8080 in your browser to continue."
 else 
 	docker stop ttmp32gme && \
 	echo "Successfully stopped ttmp32gme."

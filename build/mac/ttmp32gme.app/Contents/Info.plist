@@ -3,39 +3,32 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>English</string>
-	<key>CFBundleDisplayName</key>
-	<string>ttmp32gme</string>
+	<string>en</string>
 	<key>CFBundleExecutable</key>
 	<string>ttmp32gme</string>
-	<key>CFBundleGetInfoString</key>
-	<string>ttmp32gme 0.3.1 Copyright 2017 thawn</string>
 	<key>CFBundleIconFile</key>
-	<string>appIcon.icns</string>
+	<string>AppIcon.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.ttmp32gme.ttmp32gme</string>
+	<string>org.korten.ttmp32gme</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>ttmp32gme</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.3.1</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>LSEnvironment</key>
-	<dict/>
-	<key>LSHasLocalizedDisplayName</key>
-	<false/>
+	<string>0.3.2</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.4</string>
+	<string>10.8.0</string>
 	<key>LSUIElement</key>
 	<false/>
-	<key>NSAppleScriptEnabled</key>
-	<false/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>NSHumanReadableCopyright</key>
-	<string>ttmp32gme 0.3.1 Copyright 2017 ttmp32gme</string>
+	<string>© 2020 Till Korten</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
