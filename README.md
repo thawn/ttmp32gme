@@ -177,6 +177,7 @@ pp
 ## ToDo
 * integrate wkhtml2pdf into docker image for linux
 * save last selected albums in the browsers local storage
+* import/migrate library from one computer to another
 
 ### Maybe later
 * add and remove music files from library page
