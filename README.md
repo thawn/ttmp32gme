@@ -172,6 +172,7 @@ pp
 * [scienceblogs.de article on astrodicticum-simplex](http://scienceblogs.de/astrodicticum-simplex/2018/03/15/die-sternengeschichten-als-hoerbuch-auf-dem-tiptoi-stift/)
 * [Caschys Blog](https://stadt-bremerhaven.de/tiptoi-stift-eigene-hoerspiele-und-musik-mit-ttmp32gme/)
 * [It Dad](https://it-dad.de/2019/01/24/eigene-tiptoi-hoerbuecher-und-alben/)
+* [TipToi Fahrzeugerkundung der Kinderfeuerwehr](https://www.ffrh.de/tiptoi-projekt/)
 
 
 ## ToDo
