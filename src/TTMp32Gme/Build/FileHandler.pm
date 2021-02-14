@@ -57,7 +57,11 @@ sub checkConfigFile {
 		$cfgToCopy->copy_to($configfile)
 			or die "Could not create local copy of config file '$cfgToCopy': $!";
 	}
-	return $configfile;
+	if ( $^O =~ /MSWin/ ) {
+		return Win32::GetShortPathName($configfile);
+	} else {
+		return $configfile;
+	}
 }
 
 sub loadStatic {
