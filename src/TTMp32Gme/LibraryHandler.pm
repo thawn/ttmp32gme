@@ -7,6 +7,7 @@ use Path::Class;
 use List::MoreUtils qw(uniq);
 use Cwd;
 use Data::Dumper;
+use Encode qw(encode);
 
 use Image::Info qw(image_type);
 use Music::Tag ( traditional => 1 );
@@ -160,6 +161,7 @@ sub updateTableEntry {
 	my @values = @{$data}{@fields};
 	my $qh     = $dbh->prepare( sprintf( 'UPDATE %s SET %s=? WHERE %s', $table, join( "=?, ", @fields ), $keyname ) );
 	push( @values, @{$search_keys} );
+	@values = map {encode("latin1", $_)} @values;
 	$qh->execute(@values);
 	return !$dbh->errstr;
 }

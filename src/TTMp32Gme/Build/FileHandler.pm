@@ -266,12 +266,15 @@ sub delete_gme_tiptoi {
 }
 
 sub move_library {
-	my ( $from, $to, $dbh, $httpd ) = @_;
+	my ( $from, $to, $dbh, $httpd, $debug ) = @_;
+	debug('raw: '.$to, $debug);
 	my $library = dir($to);
 	unless ( -w $library || $library->mkpath() ) {
 		return 'error: could not write to target directory';
 	}
+	debug('mkdir: '.$library, $debug);
 	$library->resolve;
+	debug('resolved: '.$library, $debug);
 	if ( $library->children() ) {
 		return 'error: target directory not empty';
 	}

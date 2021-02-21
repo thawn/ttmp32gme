@@ -59,7 +59,7 @@ var insertElement = function(data) \{
 var addElement = function(callback) \{
 	var $id = $('#new-element-form');
 	var filterVars = getElementValues($id);
-	$.post(document.baseURI, 'action=add&data=' + escape(JSON.stringify(filterVars)))
+	$.post(document.baseURI, 'action=add&data=' + encodeURIComponent(JSON.stringify(filterVars)))
 			.done(function(data,textStatus,jqXHR) \{
 				if (data.status === "Success.") \{
 					insertElement(data.element);
@@ -80,7 +80,7 @@ var updateElement = function($id) \{
 var postUpdate = function($id,elementVars) \{
 	$.post(
 		document.baseURI, 
-		'action=update&data=' + escape(JSON.stringify(elementVars)),
+		'action=update&data=' + encodeURIComponent(JSON.stringify(elementVars)),
 		function(data,textStatus,jqXHR) \{
 			if (data.success) \{
 				fillInElement($id, data.element);
@@ -102,7 +102,7 @@ var deleteElement = function($id,uid) \{
 	\};
 	$.post(
 		document.baseURI,
-		'action=delete&data=' + escape(JSON.stringify(filterVars)),
+		'action=delete&data=' + encodeURIComponent(JSON.stringify(filterVars)),
 		function(data,textStatus,jqXHR) \{
 			if (data.success) \{
 				var alert = "<tr id=\"dismiss\"><td colspan=\"3\"><div class=\"alert alert-success\" role=\"alert\">Deleted.</div></td></tr>";

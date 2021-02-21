@@ -112,7 +112,7 @@ var selectPreset = function(preset) {
 var getConfig = function() {
 	var filterVars = {};
 	$.post(document.baseURI,
-			'action=get_config&data=' + escape(JSON.stringify(filterVars)),
+			'action=get_config&data=' + encodeURIComponent(JSON.stringify(filterVars)),
 			function(data, textStatus, jqXHR) {
 				if (data.success) {
 					var $id = $('#config');
@@ -130,7 +130,7 @@ var saveConfig = function($id) {
 	var elementVars = getElementValues($id);
 	$.post(
 			document.baseURI,
-			'action=save_config&data=' + escape(JSON.stringify(elementVars)),
+			'action=save_config&data=' + encodeURIComponent(JSON.stringify(elementVars)),
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					fillInElement($id, data.element);
@@ -282,7 +282,7 @@ var changeNumberOfColumns = function($id) {
 var savePDF = function() {
 	$.post(
 			document.baseURI,
-			'action=save_pdf&data=' + escape(JSON.stringify({content: $('#wrap-all-print').html()})),
+			'action=save_pdf&data=' + encodeURIComponent(JSON.stringify({content: $('#wrap-all-print').html()})),
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					setTimeout(function() { window.open('/print.pdf'); }, 10000);

@@ -10,7 +10,7 @@ var updateConfig = function(caller)\{
 					  'library_path' : $('#library_path').val()
 					  \};
 	$.post('/config',
-		   'action=update&data=' + escape(JSON.stringify(configVars)))
+		   'action=update&data=' + encodeURIComponent(JSON.stringify(configVars)))
 		   .done( function(data) \{
 			   if ( data.status === "Success." ) \{
 				   notify($( '#submit' ),'',data.status,'bg-success',1000);

@@ -275,7 +275,7 @@
 		};
 		$.post(
 			document.baseURI,
-			'action='+action+'&data=' + escape(JSON.stringify(filterVars)),
+			'action='+action+'&data=' + encodeURIComponent(JSON.stringify(filterVars)),
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					fillInElement($id, data.element);
@@ -298,7 +298,7 @@
 		setProgress();
 		$.post(
 			document.baseURI,
-			'action=copy_gme&data=' + escape(JSON.stringify(filterVars)),
+			'action=copy_gme&data=' + encodeURIComponent(JSON.stringify(filterVars)),
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					copyProgress++;
@@ -322,7 +322,7 @@
 		};
 		$.post(
 			document.baseURI,
-			'action=delete_gme_tiptoi&data=' + escape(JSON.stringify(filterVars)),
+			'action=delete_gme_tiptoi&data=' + encodeURIComponent(JSON.stringify(filterVars)),
 			function(data,textStatus,jqXHR) {
 				if (data.success) {
 					fillInElement($id, data.element);

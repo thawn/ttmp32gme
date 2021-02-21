@@ -12,8 +12,7 @@ use AnyEvent::HTTP;
 
 use PAR;
 
-use Encode qw(decode_utf8 encode_utf8);
-use utf8;
+use Encode qw(encode encode_utf8);
 
 use Path::Class;
 
@@ -128,9 +127,9 @@ sub save_config {
 	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
 	my $answer         = 'Success.';
 	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
-		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
+		my $new_path = dir( encode("latin1", $configParams->{'library_path'}) )->stringify();    #make sure to remove slashes from end of path
 		msg( 'Moving library to new path: ' . $new_path, 1 );
-		$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd );
+		$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd, $debug );
 		if ( $answer ne 'Success.' ) {
 			$configParams->{'library_path'} = $config{'library_path'};
 		} else {
@@ -320,7 +319,7 @@ $httpd->reg_cb(
 					}
 				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme|delete_gme_tiptoi)/ ) {
 					my $postData =
-						decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+						decode_json( $req->parm('data') );
 					if ( $req->parm('action') eq 'update' ) {
 						$statusMessage = 'Could not update database.';
 						my $old_player_mode = $postData->{'old_player_mode'};
@@ -366,7 +365,7 @@ $httpd->reg_cb(
 					$statusMessage = $dbh->errstr;
 				}
 			}
-			$content = decode_utf8( encode_json($content) );
+			$content = encode_json($content);
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
@@ -374,7 +373,7 @@ $httpd->reg_cb(
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
 			my $getData =
-				decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+				decode_json( $req->parm('data') );
 			$req->respond(
 				{
 					content => [
@@ -387,7 +386,7 @@ $httpd->reg_cb(
 								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
 								'print_button'  => format_print_button(),
 								'content' =>
-									create_print_layout( $getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh )
+									encode_utf8(create_print_layout( $getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh ))
 							}
 						)
 					]
@@ -406,7 +405,7 @@ $httpd->reg_cb(
 			} elsif ( $req->parm('action') =~ /(save_config|save_pdf)/ ) {
 				$statusMessage = 'Could not parse POST data.';
 				my $postData =
-					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+					decode_json( $req->parm('data') );
 				if ( $req->parm('action') eq 'save_config' ) {
 					$statusMessage = 'Could not save configuration.';
 					my $cnf;
@@ -425,7 +424,7 @@ $httpd->reg_cb(
 			if ( $statusMessage eq 'OK' ) {
 				$content->{'success'} = \1;
 			}
-			$content = decode_utf8( encode_json($content) );
+			$content = encode_json($content);
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
@@ -459,7 +458,7 @@ $httpd->reg_cb(
 					: '',
 					'audio_format' => $config{'audio_format'},
 					'pen_language' => $config{'pen_language'},
-					'library_path' => $config{'library_path'}
+					'library_path' => encode_utf8($config{'library_path'})
 				}
 			);
 			$req->respond(
@@ -479,8 +478,9 @@ $httpd->reg_cb(
 			);
 		} elsif ( $req->method() eq 'POST' ) {
 			if ( $req->parm('action') eq 'update' ) {
+				msg($req->parm('data'), \1);
 				my $configParams =
-					decode_json( uri_unescape( encode_utf8( $req->parm('data') ) ) );
+					decode_json( $req->parm('data') );
 				my ( $cnf, $status );
 				( $cnf, $status ) = save_config($configParams);
 				%config = %$cnf;
