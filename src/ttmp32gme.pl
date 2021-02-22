@@ -134,13 +134,13 @@ sub save_config {
 		} else {
 			$new_path = encode_utf8($new_path); #fix encoding for filename on macOS
 		}
-		if ( $config{'library_path'} ne $new_path ) {
-			msg( 'Moving library to new path: ' . $new_path, 1 );
-			$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd, $debug );
+		$configParams->{'library_path'} = $new_path;
+		if ( $config{'library_path'} ne $configParams->{'library_path'} ) {
+			msg( 'Moving library to new path: ' . $configParams->{'library_path'}, 1 );
+			$answer = move_library( $config{'library_path'}, $configParams->{'library_path'}, $dbh, $httpd, $debug );
 			if ( $answer ne 'Success.' ) {
 				$configParams->{'library_path'} = $config{'library_path'};
 			} else {
-				$configParams->{'library_path'} = $new_path;
 				my $albums = get_album_list( $dbh, $httpd, $debug );                 #update image paths for cover images
 			}
 		}
