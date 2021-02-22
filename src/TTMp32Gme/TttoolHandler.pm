@@ -101,7 +101,7 @@ sub convert_tracks {
 			my $source_file =
 				file( $album->{'path'}, $album->{ $tracks[$i] }->{'filename'} );
 			my $target_file = file( $media_path, "track_$i.ogg" );
-			`$ff_command -i '$source_file' -ar 22050 -ac 1 '$target_file'`;
+			`$ff_command -i "$source_file" -map 0:a -ar 22050 -ac 1 "$target_file"`;
 		}
 	} else {
 		foreach my $i ( 0 .. $#tracks ) {
