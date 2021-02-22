@@ -118,21 +118,23 @@ sub fetchConfig {
 		$tempConfig{ $$cfgParam[0] } = $$cfgParam[1];
 	}
 	$tempConfig{'library_path'} = $tempConfig{'library_path'} ? $tempConfig{'library_path'} : get_default_library_path();
-
+	debug('fetched config: '.Dumper( \%tempConfig ), $debug );
 	return %tempConfig;
 }
 
 sub save_config {
 	my ($configParams) = @_;
-	debug('new conf:'.Dumper($configParams), $debug);
 	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
 	my $answer         = 'Success.';
+	if ( defined $configParams->{'library_path'} && $^O !~ /MSWin/ ) {
+		$configParams->{'library_path'} = encode_utf8($configParams->{'library_path'});
+	}
+	debug('old conf:'.Dumper(\%config), $debug);
+	debug('new conf:'.Dumper($configParams), $debug);
 	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
-		my $new_path = dir( encode("latin1", $configParams->{'library_path'}) )->stringify();    #make sure to remove slashes from end of path
+		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
 		if ( $^O =~ /MSWin/ ) {
 			$new_path = encode("cp".Win32::GetACP(), $new_path); #fix encoding for filename on windows
-		} else {
-			$new_path = encode_utf8( $new_path ); #fix encoding problems on mac
 		}
 		msg( 'Moving library to new path: ' . $new_path, 1 );
 		$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd, $debug );
