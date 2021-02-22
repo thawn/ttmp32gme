@@ -7,7 +7,7 @@ use Path::Class;
 use List::MoreUtils qw(uniq);
 use Cwd;
 use Data::Dumper;
-use Encode qw(encode);
+use Encode qw(encode encode_utf8);
 
 use Image::Info qw(image_type);
 use Music::Tag ( traditional => 1 );
@@ -163,6 +163,8 @@ sub updateTableEntry {
 	push( @values, @{$search_keys} );
 	if ( $^O =~ /MSWin/ ) {
 		@values = map {encode("cp".Win32::GetACP(), $_)} @values; #fix encoding problems on windows
+	} else {
+		@values = map {encode_utf8($_)} @values; #fix encoding problems on mac
 	}
 	$qh->execute(@values);
 	return !$dbh->errstr;
@@ -231,7 +233,7 @@ sub createLibraryEntry {
 						my $mp3 = MP3::Tag->new( $album->{$fileId} );
 						$mp3->get_tags();
 
-						if ($debug) { print Dumper($mp3); }
+						debug( Dumper($mp3), $debug > 2);
 						my $id3v2_tagdata = $mp3->{ID3v2};
 						if ($id3v2_tagdata) {
 							my $apic = $id3v2_tagdata->get_frame("APIC");
@@ -292,10 +294,10 @@ sub createLibraryEntry {
 			}
 			writeToDatabase( 'gme_library', \%album_data, $dbh );
 			if ($debug) {
-				debug( "Found the following album info:\n",   $debug );
-				debug( Dumper( \%album_data ),                $debug );
-				debug( "\nFound the following track info:\n", $debug );
-				debug( Dumper( \@track_data ),                $debug );
+				debug( "Found the following album info:\n",   $debug > 1 );
+				debug( Dumper( \%album_data ),                $debug > 1 );
+				debug( "\nFound the following track info:\n", $debug > 2 );
+				debug( Dumper( \@track_data ),                $debug > 2 );
 			}
 		}
 	}
@@ -306,8 +308,9 @@ sub get_album_list {
 	my ( $dbh, $httpd, $debug ) = @_;
 	my @albumList;
 	my $albums         = $dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ), 'oid' );
+	debug( Dumper( $albums ), $debug > 2 );
 	my %gmes_on_tiptoi = get_gmes_already_on_tiptoi();
-	if ($debug) { debug( 'Found gme files on tiptoi: ' . Dumper( \%gmes_on_tiptoi ), $debug ); }
+	debug( 'Found gme files on tiptoi: ' . Dumper( \%gmes_on_tiptoi ), $debug > 1);
 	foreach my $oid ( sort keys %{$albums} ) {
 		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
 		if ( $albums->{$oid}->{'gme_file'} ) {

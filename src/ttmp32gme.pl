@@ -12,7 +12,7 @@ use AnyEvent::HTTP;
 
 use PAR;
 
-use Encode qw(encode encode_utf8);
+use Encode qw(encode encode_utf8 decode_utf8);
 
 use Path::Class;
 
@@ -124,12 +124,15 @@ sub fetchConfig {
 
 sub save_config {
 	my ($configParams) = @_;
+	debug('new conf:'.Dumper($configParams), $debug);
 	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
 	my $answer         = 'Success.';
 	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
 		my $new_path = dir( encode("latin1", $configParams->{'library_path'}) )->stringify();    #make sure to remove slashes from end of path
 		if ( $^O =~ /MSWin/ ) {
 			$new_path = encode("cp".Win32::GetACP(), $new_path); #fix encoding for filename on windows
+		} else {
+			$new_path = encode_utf8( $new_path ); #fix encoding problems on mac
 		}
 		msg( 'Moving library to new path: ' . $new_path, 1 );
 		$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd, $debug );
@@ -286,6 +289,9 @@ $httpd->reg_cb(
 				$statusMessage        = 'OK';
 			}
 			$content = encode_json($content);
+			if ( $^O !~ /(MSWin)/ ) {
+				$content = decode_utf8($content);
+			}
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
@@ -368,7 +374,12 @@ $httpd->reg_cb(
 					$statusMessage = $dbh->errstr;
 				}
 			}
+			debug( Dumper( $content ), $debug > 1 );
 			$content = encode_json($content);
+			if ( $^O !~ /(MSWin)/ ) {
+				$content = decode_utf8($content);
+			}
+			debug('library_content_isutf8:'.utf8::is_utf8($content), $debug);
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
@@ -377,6 +388,10 @@ $httpd->reg_cb(
 		if ( $req->method() eq 'GET' ) {
 			my $getData =
 				decode_json( $req->parm('data') );
+			my $content = create_print_layout( $getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh );
+			if ( $^O =~ /(MSWin)/ ) {
+				$content = encode_utf8($content);
+			}
 			$req->respond(
 				{
 					content => [
@@ -388,8 +403,7 @@ $httpd->reg_cb(
 								'strippedTitle' => 'Print',
 								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
 								'print_button'  => format_print_button(),
-								'content' =>
-									encode_utf8(create_print_layout( $getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh ))
+								'content' => $content
 							}
 						)
 					]
@@ -428,6 +442,9 @@ $httpd->reg_cb(
 				$content->{'success'} = \1;
 			}
 			$content = encode_json($content);
+			if ( $^O !~ /(MSWin)/ ) {
+				$content = decode_utf8($content);
+			}
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
@@ -451,7 +468,10 @@ $httpd->reg_cb(
 	'/config' => sub {
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
-
+			my $libPath = $config{'library_path'};
+			if ( $^O =~ /(MSWin)/ ) {
+				$libPath = encode_utf8($libPath);
+			}
 			my $configHtml = $templates{'config'}->fill_in(
 				HASH => {
 					'host'         => $config{'host'},
@@ -461,7 +481,7 @@ $httpd->reg_cb(
 					: '',
 					'audio_format' => $config{'audio_format'},
 					'pen_language' => $config{'pen_language'},
-					'library_path' => encode_utf8($config{'library_path'})
+					'library_path' => $libPath
 				}
 			);
 			$req->respond(
@@ -481,7 +501,7 @@ $httpd->reg_cb(
 			);
 		} elsif ( $req->method() eq 'POST' ) {
 			if ( $req->parm('action') eq 'update' ) {
-				msg($req->parm('data'), \1);
+				debug($req->parm('data'), $debug);
 				my $configParams =
 					decode_json( $req->parm('data') );
 				my ( $cnf, $status );
