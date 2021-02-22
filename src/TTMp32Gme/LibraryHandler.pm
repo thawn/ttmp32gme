@@ -161,7 +161,9 @@ sub updateTableEntry {
 	my @values = @{$data}{@fields};
 	my $qh     = $dbh->prepare( sprintf( 'UPDATE %s SET %s=? WHERE %s', $table, join( "=?, ", @fields ), $keyname ) );
 	push( @values, @{$search_keys} );
-	@values = map {encode("latin1", $_)} @values;
+	if ( $^O =~ /MSWin/ ) {
+		@values = map {encode("cp".Win32::GetACP(), $_)} @values; #fix encoding problems on windows
+	}
 	$qh->execute(@values);
 	return !$dbh->errstr;
 }
