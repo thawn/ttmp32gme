@@ -124,27 +124,29 @@ sub fetchConfig {
 
 sub save_config {
 	my ($configParams) = @_;
+	debug('raw new conf:'.Dumper($configParams), $debug);
 	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
 	my $answer         = 'Success.';
-	if ( defined $configParams->{'library_path'} && $^O !~ /MSWin/ ) {
-		$configParams->{'library_path'} = encode_utf8($configParams->{'library_path'});
+	if ( defined $configParams->{'library_path'} ) {
+		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
+		if ($^O =~ /MSWin/ ) {
+			$new_path = encode("cp".Win32::GetACP(), $new_path); #fix encoding for filename on windows
+		} else {
+			$new_path = encode_utf8($new_path); #fix encoding for filename on macOS
+		}
+		if ( $config{'library_path'} ne $new_path ) {
+			msg( 'Moving library to new path: ' . $new_path, 1 );
+			$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd, $debug );
+			if ( $answer ne 'Success.' ) {
+				$configParams->{'library_path'} = $config{'library_path'};
+			} else {
+				$configParams->{'library_path'} = $new_path;
+				my $albums = get_album_list( $dbh, $httpd, $debug );                 #update image paths for cover images
+			}
+		}
 	}
 	debug('old conf:'.Dumper(\%config), $debug);
 	debug('new conf:'.Dumper($configParams), $debug);
-	if ( defined $configParams->{'library_path'} && $config{'library_path'} ne $configParams->{'library_path'} ) {
-		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
-		if ( $^O =~ /MSWin/ ) {
-			$new_path = encode("cp".Win32::GetACP(), $new_path); #fix encoding for filename on windows
-		}
-		msg( 'Moving library to new path: ' . $new_path, 1 );
-		$answer = move_library( $config{'library_path'}, $new_path, $dbh, $httpd, $debug );
-		if ( $answer ne 'Success.' ) {
-			$configParams->{'library_path'} = $config{'library_path'};
-		} else {
-			$configParams->{'library_path'} = $new_path;
-			my $albums = get_album_list( $dbh, $httpd, $debug );                 #update image paths for cover images
-		}
-	}
 	if ( defined $configParams->{'tt_dpi'}
 		&& ( int( $configParams->{'tt_dpi'} ) / int( $configParams->{'tt_pixel-size'} ) ) < 200 )
 	{
