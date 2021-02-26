@@ -8,6 +8,7 @@ use Path::Class;
 use File::Copy::Recursive qw(dirmove);
 use Log::Message::Simple qw(msg debug error);
 use Data::Dumper;
+use Encode qw(_utf8_off);
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -142,6 +143,7 @@ sub cleanup_filename {
 	$filename =~ s/[^A-Za-z0-9_\-\.]//g;
 	$filename =~ s/\.\./\./g;
 	$filename =~ s/\.$//g;
+	_utf8_off($filename); #prevent perl from messing up filenames with non-ascii characters because of perl open() bug: https://github.com/perl/perl5/issues/15883
 	return $filename;
 }
 
