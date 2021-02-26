@@ -204,13 +204,20 @@ sub createLibraryEntry {
 
 					#fill in album info
 					if ( !$album_data{'album_title'} && $info->album() ) {
-						$album_data{'album_title'} = $info->album();
+						if ($^O =~ /MSWin/ ) {
+							$album_data{'album_title'} = encode("cp".Win32::GetACP(), $info->album());
+						} else {
+							$album_data{'album_title'} = $info->album();
+						}
 						$album_data{'path'}        = cleanup_filename( $album_data{'album_title'} );
 					}
 					if ( !$album_data{'album_artist'} && $info->albumartist() ) {
 						$album_data{'album_artist'} = $info->albumartist();
 					} elsif ( !$album_data{'album_artist'} && $info->artist() ) {
 						$album_data{'album_artist'} = $info->artist();
+					}
+					if ($^O =~ /MSWin/ ) {
+							$album_data{'album_artist'} = encode("cp".Win32::GetACP(), $album_data{'album_artist'});
 					}
 					if ( !$album_data{'album_year'} && $info->year() ) {
 						$album_data{'album_year'} = $info->get_year();
@@ -263,6 +270,11 @@ sub createLibraryEntry {
 						error(
 "WARNING: id3 tag missing or incomplete for $album->{$fileId}.\nPlease add an id3v2 tag containing at least album, title and track number to your mp3 file in order to get proper album and track info."
 						);
+					}
+					if ($^O =~ /MSWin/ ) {
+						foreach my $key (keys %trackInfo) {
+							$trackInfo{$key} = encode("cp".Win32::GetACP(), $trackInfo{$key});
+						}
 					}
 					push( @track_data, \%trackInfo );
 				} elsif ( $album->{$fileId} =~ /\.(jpg|jpeg|tif|tiff|png|gif)$/i ) {
