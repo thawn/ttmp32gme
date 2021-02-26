@@ -39,7 +39,7 @@ $AnyEvent::HTTP::USERAGENT =
 
 # Declare globals... I know tisk tisk
 my ( $dbh, %config, $watchers, %templates, $static, %assets, $httpd, $debug );
-$debug = 0;
+$debug = 1;
 
 # Encapsulate configuration code
 {
@@ -50,7 +50,7 @@ $debug = 0;
 	my $configfile = "";
 	my $versionFlag;
 
-	my $version = Perl::Version->new("0.3.4");
+	my $version = Perl::Version->new("1.0.0");
 
 	# Command line startup options
 	# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]

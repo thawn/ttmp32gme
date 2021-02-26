@@ -27,6 +27,9 @@ UPDATE "config" SET value='0.3.1' WHERE param='version';
 DELETE FROM "config" WHERE param='player_mode';
 ALTER TABLE "gme_library" ADD COLUMN "player_mode" TEXT DEFAULT 'music';
 END
+	'1.0.0' => <<'END',
+UPDATE "config" SET value='1.0.0' WHERE param='version';
+END
 };
 
 sub update {
