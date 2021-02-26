@@ -39,7 +39,7 @@ $AnyEvent::HTTP::USERAGENT =
 
 # Declare globals... I know tisk tisk
 my ( $dbh, %config, $watchers, %templates, $static, %assets, $httpd, $debug );
-$debug = 1;
+$debug = 0;
 
 # Encapsulate configuration code
 {
@@ -383,7 +383,6 @@ $httpd->reg_cb(
 			if ( $^O !~ /(MSWin)/ ) {
 				$content = decode_utf8($content);
 			}
-			debug('library_content_isutf8:'.utf8::is_utf8($content), $debug);
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
@@ -521,9 +520,10 @@ $httpd->reg_cb(
 			}
 			debug( Dumper( $content ), $debug > 1 );
 			$content = encode_json($content);
-			debug('json config: '.$content, $debug);
+			debug('json config content: '.$content, $debug);
 			if ( $^O !~ /(MSWin)/ ) {
 				$content = decode_utf8($content);
+				debug('decoded json config content: '.$content, $debug);
 			}
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
