@@ -39,7 +39,7 @@ $AnyEvent::HTTP::USERAGENT =
 
 # Declare globals... I know tisk tisk
 my ( $dbh, %config, $watchers, %templates, $static, %assets, $httpd, $debug );
-$debug = 0;
+$debug = 1;
 
 # Encapsulate configuration code
 {
@@ -445,6 +445,7 @@ $httpd->reg_cb(
 			if ( $statusMessage eq 'OK' ) {
 				$content->{'success'} = \1;
 			}
+			debug( Dumper( $content ), $debug > 1 );
 			$content = encode_json($content);
 			if ( $^O !~ /(MSWin)/ ) {
 				$content = decode_utf8($content);
@@ -472,22 +473,6 @@ $httpd->reg_cb(
 	'/config' => sub {
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
-			my $libPath = $config{'library_path'};
-			if ( $^O =~ /(MSWin)/ ) {
-				$libPath = encode_utf8($libPath);
-			}
-			my $configHtml = $templates{'config'}->fill_in(
-				HASH => {
-					'host'         => $config{'host'},
-					'port'         => $config{'port'},
-					'open_browser' => $config{'open_browser'} eq 'TRUE'
-					? 'checked="checked"'
-					: '',
-					'audio_format' => $config{'audio_format'},
-					'pen_language' => $config{'pen_language'},
-					'library_path' => $libPath
-				}
-			);
 			$req->respond(
 				{
 					content => [
@@ -497,29 +482,50 @@ $httpd->reg_cb(
 								'title'         => $siteMap{ $req->url },
 								'strippedTitle' => $siteMap{ $req->url } =~ s/<span.*span> //r,
 								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
-								'content'       => $configHtml
+								'content'       => $static->{'config.html'}
 							}
 						)
 					]
 				}
 			);
 		} elsif ( $req->method() eq 'POST' ) {
+			my $content       = { 'success' => \0 };
+			my $statusCode    = 501;
+			my $statusMessage = 'Error saving/loading config. Try restarting ttmp32gme.';
 			if ( $req->parm('action') eq 'update' ) {
+				$statusMessage = 'Could not save config. Try restarting ttmp32gme.';
 				debug($req->parm('data'), $debug);
 				my $configParams =
 					decode_json( $req->parm('data') );
-				my ( $cnf, $status );
-				( $cnf, $status ) = save_config($configParams);
+				my $cnf;
+				( $cnf, $statusMessage ) = save_config($configParams);
 				%config = %$cnf;
-				if ( $dbh->errstr ) {
-					$status = 'Could not update config.  Try reloading ttmp32gme.';
-				}
-				$req->respond(
-					{
-						content => [ 'application/json', '{ "status" : "' . $status . '" }' ]
-					}
-				);
+			} elsif ( $req->parm('action') eq 'load' ) {
+				$statusMessage = 'Success.';
 			}
+			if ( !$dbh->errstr && $statusMessage eq 'Success.' ) {
+				$content->{'config'} = {
+						'host'         => $config{'host'},
+						'port'         => $config{'port'},
+						'open_browser' => $config{'open_browser'},
+						'audio_format' => $config{'audio_format'},
+						'pen_language' => $config{'pen_language'},
+						'library_path' => $config{'library_path'}
+				};
+				$content->{'success'} = \1;
+				$statusCode           = 200;
+			} else {
+				if ( $dbh->errstr ) {
+					$statusMessage = $dbh->errstr;
+				}
+			}
+			debug( Dumper( $content ), $debug > 1 );
+			$content = encode_json($content);
+			debug('json config: '.$content, $debug);
+			if ( $^O !~ /(MSWin)/ ) {
+				$content = decode_utf8($content);
+			}
+			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}
 	},
 	'/help' => sub {

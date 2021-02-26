@@ -66,7 +66,7 @@ sub checkConfigFile {
 
 sub loadStatic {
 	my $static      = {};
-	my @staticFiles = ( 'upload.html', 'library.html', 'help.html', );
+	my @staticFiles = ( 'upload.html', 'library.html', 'config.html', 'help.html', );
 	foreach my $file (@staticFiles) {
 		$static->{$file} = loadFile($file);
 	}

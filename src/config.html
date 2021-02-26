@@ -1,36 +1,68 @@
 <script type="text/javascript">
-var updateConfig = function(caller)\{
+var updateConfig = function(caller){
 	
-	var configVars = \{
+	var configVars = {
 						'host' : $('#host').val(),
 					  'port' : $('#port').val(),
 					  'open_browser' : testCheckBox('#open_browser'),
 					  'audio_format' : $('#audio_format').val(),
 					  'pen_language' : $('#pen_language').val(),
 					  'library_path' : $('#library_path').val()
-					  \};
+					  };
 	$.post('/config',
 		   'action=update&data=' + encodeURIComponent(JSON.stringify(configVars)))
-		   .done( function(data) \{
-			   if ( data.status === "Success." ) \{
-				   notify($( '#submit' ),'',data.status,'bg-success',1000);
-		       \} else \{
-		    	   notify($( '#submit' ),'',data.status,'bg-danger',4000);
-		       \}
-		   \})
-		   .fail( function(data) \{
+		   .done( function(data,textStatus,jqXHR) {
+			   if ( data.success ) {
+				   notify($( '#submit' ),'',"OK",'bg-success',1000);
+		       } else {
+		    	   notify($( '#submit' ),'',jqXHR.statusText,'bg-danger',4000);
+		       }
+		   })
+		   .fail( function(data) {
 			   notify($( '#submit' ),'','Connection Error','bg-danger',4000);
-		   \});
-\}
+		   });
+}
 
-$(function()\{
-    $('#audio_format').val("{ $audio_format }");
-    $('#pen_language').val("{ $pen_language }");
+var fillInElement = function($id, data) {
+    for ( var i in data) {
+		if (data[i] === 'TRUE' || data[i] === 'FALSE') {
+			if (data[i] === 'TRUE') {
+				$('#' + i).prop('checked', true);
+			} else {
+				$('#' + i).prop('checked', false);
+			}
+		} else {
+		    $('#' + i).val(data[i]);
+		}
+    }
+}
+
+var loadConfig = function(){
+	
+	$.post('/config', 'action=load')
+		   .done( function(data,textStatus,jqXHR) {
+			   if ( data.success ) {
+			       fillInElement('', data.config);
+			       document.getElementById('submit').disabled = false;
+		       } else {
+		    	   notify($( '#submit' ),'',jqXHR.statusText,'bg-danger',4000);
+		    	   document.getElementById('submit').disabled = true;
+		       }
+		   })
+		   .fail( function(data) {
+			   notify($( '#submit' ),'','Connection Error','bg-danger',4000);
+			   document.getElementById('submit').disabled = true;
+		   });
+}
+
+$(function(){
+    loadConfig();
 	$('[data-toggle="tooltip"]').tooltip();
-	$('#submit').click(function()\{
+	$('#submit').click(function(){
 		updateConfig( $(this) );
-	\});
-\});
+	});
+});
+
 </script>
 <div class="panel panel-default">
 	<div class="panel-heading">
@@ -39,16 +71,16 @@ $(function()\{
 	<div class="panel-body">
 		<div class="form-group">
 			<label for="host">ttmp32gme http server host:</label> <input type="text" id="host"
-				class="form-control" value="{ $host }" data-toggle="tooltip"
+				class="form-control" value="127.0.0.1" data-toggle="tooltip"
 				title="The TCP address which the HTTP server will listen on. By default it only listens to requests from the same machine (safe). Set this to 0.0.0.0, for a public server (only recommended if you are in a trusted network behind a firewall). Requires restart to take effect.">
 		</div>
 		<div class="form-group">
 			<label for="port">ttmp32gme http server port:</label> <input type="text" id="port"
-				class="form-control" value="{ $port }" data-toggle="tooltip"
+				class="form-control" value="10020" data-toggle="tooltip"
 				title="If you modify this, you will need to restart ttmp32gme.">
 		</div>
 		<div class="checkbox">
-			<label> <input type="checkbox" id="open_browser" { $open_browser }>
+			<label> <input type="checkbox" id="open_browser" checked>
 				Open ttmp32gme web interface in default browser on startup.
 			</label>
 		</div>
@@ -63,7 +95,7 @@ $(function()\{
 		</div>
 		<div class="form-group">
 			<label for="library_path">ttmp32gme library path:</label> <input type="text" id="library_path"
-				class="form-control" value="{ $library_path }" data-toggle="tooltip"
+				class="form-control" value="" data-toggle="tooltip"
 				title="The path where the library of GME and mp3 files is stored">
 		</div>
 		<div class="form-group">
@@ -76,7 +108,7 @@ $(function()\{
 				<option value="ITALIAN">ITALIAN</option>
 			</select>
 		</div>
-		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover">Save
+		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover" disabled>Save
 			Configuration</button>
 	</div>
 </div>
