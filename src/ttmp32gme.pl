@@ -118,21 +118,21 @@ sub fetchConfig {
 		$tempConfig{ $$cfgParam[0] } = $$cfgParam[1];
 	}
 	$tempConfig{'library_path'} = $tempConfig{'library_path'} ? $tempConfig{'library_path'} : get_default_library_path();
-	debug('fetched config: '.Dumper( \%tempConfig ), $debug );
+	debug( 'fetched config: ' . Dumper( \%tempConfig ), $debug );
 	return %tempConfig;
 }
 
 sub save_config {
 	my ($configParams) = @_;
-	debug('raw new conf:'.Dumper($configParams), $debug);
-	my $qh             = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
-	my $answer         = 'Success.';
+	debug( 'raw new conf:' . Dumper($configParams), $debug );
+	my $qh     = $dbh->prepare('UPDATE config SET value=? WHERE param=?');
+	my $answer = 'Success.';
 	if ( defined $configParams->{'library_path'} ) {
 		my $new_path = dir( $configParams->{'library_path'} )->stringify();    #make sure to remove slashes from end of path
-		if ($^O =~ /MSWin/ ) {
-			$new_path = encode("cp".Win32::GetACP(), $new_path); #fix encoding for filename on windows
+		if ( $^O =~ /MSWin/ ) {
+			$new_path = encode( "cp" . Win32::GetACP(), $new_path );             #fix encoding for filename on windows
 		} else {
-			$new_path = encode_utf8($new_path); #fix encoding for filename on macOS
+			$new_path = encode_utf8($new_path);                                  #fix encoding for filename on macOS
 		}
 		$configParams->{'library_path'} = $new_path;
 		if ( $config{'library_path'} ne $configParams->{'library_path'} ) {
@@ -141,12 +141,12 @@ sub save_config {
 			if ( $answer ne 'Success.' ) {
 				$configParams->{'library_path'} = $config{'library_path'};
 			} else {
-				my $albums = get_album_list( $dbh, $httpd, $debug );                 #update image paths for cover images
+				my $albums = get_album_list( $dbh, $httpd, $debug );               #update image paths for cover images
 			}
 		}
 	}
-	debug('old conf:'.Dumper(\%config), $debug);
-	debug('new conf:'.Dumper($configParams), $debug);
+	debug( 'old conf:' . Dumper( \%config ),    $debug );
+	debug( 'new conf:' . Dumper($configParams), $debug );
 	if ( defined $configParams->{'tt_dpi'}
 		&& ( int( $configParams->{'tt_dpi'} ) / int( $configParams->{'tt_pixel-size'} ) ) < 200 )
 	{
@@ -331,8 +331,7 @@ $httpd->reg_cb(
 						$content->{'tiptoi_connected'} = \1;
 					}
 				} elsif ( $req->parm('action') =~ /(update|delete|cleanup|make_gme|copy_gme|delete_gme_tiptoi)/ ) {
-					my $postData =
-						decode_json( $req->parm('data') );
+					my $postData = decode_json( $req->parm('data') );
 					if ( $req->parm('action') eq 'update' ) {
 						$statusMessage = 'Could not update database.';
 						my $old_player_mode = $postData->{'old_player_mode'};
@@ -378,7 +377,7 @@ $httpd->reg_cb(
 					$statusMessage = $dbh->errstr;
 				}
 			}
-			debug( Dumper( $content ), $debug > 1 );
+			debug( Dumper($content), $debug > 1 );
 			$content = encode_json($content);
 			if ( $^O !~ /(MSWin)/ ) {
 				$content = decode_utf8($content);
@@ -389,8 +388,7 @@ $httpd->reg_cb(
 	'/print' => sub {
 		my ( $httpd, $req ) = @_;
 		if ( $req->method() eq 'GET' ) {
-			my $getData =
-				decode_json( $req->parm('data') );
+			my $getData = decode_json( $req->parm('data') );
 			my $content = create_print_layout( $getData->{'oids'}, $templates{'printing_contents'}, \%config, $httpd, $dbh );
 			if ( $^O =~ /(MSWin)/ ) {
 				$content = encode_utf8($content);
@@ -406,7 +404,7 @@ $httpd->reg_cb(
 								'strippedTitle' => 'Print',
 								'navigation'    => getNavigation( $req->url, \%siteMap, \%siteMapOrder ),
 								'print_button'  => format_print_button(),
-								'content' => $content
+								'content'       => $content
 							}
 						)
 					]
@@ -424,8 +422,7 @@ $httpd->reg_cb(
 				$statusMessage        = 'OK';
 			} elsif ( $req->parm('action') =~ /(save_config|save_pdf)/ ) {
 				$statusMessage = 'Could not parse POST data.';
-				my $postData =
-					decode_json( $req->parm('data') );
+				my $postData = decode_json( $req->parm('data') );
 				if ( $req->parm('action') eq 'save_config' ) {
 					$statusMessage = 'Could not save configuration.';
 					my $cnf;
@@ -444,7 +441,7 @@ $httpd->reg_cb(
 			if ( $statusMessage eq 'OK' ) {
 				$content->{'success'} = \1;
 			}
-			debug( Dumper( $content ), $debug > 1 );
+			debug( Dumper($content), $debug > 1 );
 			$content = encode_json($content);
 			if ( $^O !~ /(MSWin)/ ) {
 				$content = decode_utf8($content);
@@ -493,9 +490,8 @@ $httpd->reg_cb(
 			my $statusMessage = 'Error saving/loading config. Try restarting ttmp32gme.';
 			if ( $req->parm('action') eq 'update' ) {
 				$statusMessage = 'Could not save config. Try restarting ttmp32gme.';
-				debug($req->parm('data'), $debug);
-				my $configParams =
-					decode_json( $req->parm('data') );
+				debug( $req->parm('data'), $debug );
+				my $configParams = decode_json( $req->parm('data') );
 				my $cnf;
 				( $cnf, $statusMessage ) = save_config($configParams);
 				%config = %$cnf;
@@ -504,26 +500,26 @@ $httpd->reg_cb(
 			}
 			if ( !$dbh->errstr && $statusMessage eq 'Success.' ) {
 				$content->{'config'} = {
-						'host'         => $config{'host'},
-						'port'         => $config{'port'},
-						'open_browser' => $config{'open_browser'},
-						'audio_format' => $config{'audio_format'},
-						'pen_language' => $config{'pen_language'},
-						'library_path' => $config{'library_path'}
+					'host'         => $config{'host'},
+					'port'         => $config{'port'},
+					'open_browser' => $config{'open_browser'},
+					'audio_format' => $config{'audio_format'},
+					'pen_language' => $config{'pen_language'},
+					'library_path' => $config{'library_path'}
 				};
 				$content->{'success'} = \1;
-				$statusCode           = 200;
+				$statusCode = 200;
 			} else {
 				if ( $dbh->errstr ) {
 					$statusMessage = $dbh->errstr;
 				}
 			}
-			debug( Dumper( $content ), $debug > 1 );
+			debug( Dumper($content), $debug > 1 );
 			$content = encode_json($content);
-			debug('json config content: '.$content, $debug);
+			debug( 'json config content: ' . $content, $debug );
 			if ( $^O !~ /(MSWin)/ ) {
 				$content = decode_utf8($content);
-				debug('decoded json config content: '.$content, $debug);
+				debug( 'decoded json config content: ' . $content, $debug );
 			}
 			$req->respond( [ $statusCode, $statusMessage, { 'Content-Type' => 'application/json' }, $content ] );
 		}

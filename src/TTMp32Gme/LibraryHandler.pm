@@ -132,7 +132,7 @@ sub sortByDiscTrackFilename {
 }
 
 sub sortTracks {
-	my ($track_data) = @_;
+	my ($track_data)      = @_;
 	my @tracks            = map( $_->{'track'}, @{$track_data} );
 	my @sorted_track_data = sort sortByDiscTrackFilename @{$track_data};
 	foreach my $track_no ( 0 .. $#sorted_track_data ) {
@@ -162,9 +162,9 @@ sub updateTableEntry {
 	my $qh     = $dbh->prepare( sprintf( 'UPDATE %s SET %s=? WHERE %s', $table, join( "=?, ", @fields ), $keyname ) );
 	push( @values, @{$search_keys} );
 	if ( $^O =~ /MSWin/ ) {
-		@values = map {encode("cp".Win32::GetACP(), $_)} @values; #fix encoding problems on windows
+		@values = map { encode( "cp" . Win32::GetACP(), $_ ) } @values;    #fix encoding problems on windows
 	} else {
-		@values = map {encode_utf8($_)} @values; #fix encoding problems on mac
+		@values = map { encode_utf8($_) } @values;                         #fix encoding problems on mac
 	}
 	$qh->execute(@values);
 	return !$dbh->errstr;
@@ -204,20 +204,20 @@ sub createLibraryEntry {
 
 					#fill in album info
 					if ( !$album_data{'album_title'} && $info->album() ) {
-						if ($^O =~ /MSWin/ ) {
-							$album_data{'album_title'} = encode("cp".Win32::GetACP(), $info->album());
+						if ( $^O =~ /MSWin/ ) {
+							$album_data{'album_title'} = encode( "cp" . Win32::GetACP(), $info->album() );
 						} else {
 							$album_data{'album_title'} = $info->album();
 						}
-						$album_data{'path'}        = cleanup_filename( $album_data{'album_title'} );
+						$album_data{'path'} = cleanup_filename( $album_data{'album_title'} );
 					}
 					if ( !$album_data{'album_artist'} && $info->albumartist() ) {
 						$album_data{'album_artist'} = $info->albumartist();
 					} elsif ( !$album_data{'album_artist'} && $info->artist() ) {
 						$album_data{'album_artist'} = $info->artist();
 					}
-					if ($^O =~ /MSWin/ ) {
-							$album_data{'album_artist'} = encode("cp".Win32::GetACP(), $album_data{'album_artist'});
+					if ( $^O =~ /MSWin/ ) {
+						$album_data{'album_artist'} = encode( "cp" . Win32::GetACP(), $album_data{'album_artist'} );
 					}
 					if ( !$album_data{'album_year'} && $info->year() ) {
 						$album_data{'album_year'} = $info->get_year();
@@ -240,7 +240,7 @@ sub createLibraryEntry {
 						my $mp3 = MP3::Tag->new( $album->{$fileId} );
 						$mp3->get_tags();
 
-						debug( Dumper($mp3), $debug > 2);
+						debug( Dumper($mp3), $debug > 2 );
 						my $id3v2_tagdata = $mp3->{ID3v2};
 						if ($id3v2_tagdata) {
 							my $apic = $id3v2_tagdata->get_frame("APIC");
@@ -271,9 +271,9 @@ sub createLibraryEntry {
 "WARNING: id3 tag missing or incomplete for $album->{$fileId}.\nPlease add an id3v2 tag containing at least album, title and track number to your mp3 file in order to get proper album and track info."
 						);
 					}
-					if ($^O =~ /MSWin/ ) {
-						foreach my $key (keys %trackInfo) {
-							$trackInfo{$key} = encode("cp".Win32::GetACP(), $trackInfo{$key});
+					if ( $^O =~ /MSWin/ ) {
+						foreach my $key ( keys %trackInfo ) {
+							$trackInfo{$key} = encode( "cp" . Win32::GetACP(), $trackInfo{$key} );
 						}
 					}
 					push( @track_data, \%trackInfo );
@@ -319,10 +319,10 @@ sub createLibraryEntry {
 sub get_album_list {
 	my ( $dbh, $httpd, $debug ) = @_;
 	my @albumList;
-	my $albums         = $dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ), 'oid' );
-	debug( Dumper( $albums ), $debug > 2 );
+	my $albums = $dbh->selectall_hashref( q( SELECT * FROM gme_library ORDER BY oid DESC ), 'oid' );
+	debug( Dumper($albums), $debug > 2 );
 	my %gmes_on_tiptoi = get_gmes_already_on_tiptoi();
-	debug( 'Found gme files on tiptoi: ' . Dumper( \%gmes_on_tiptoi ), $debug > 1);
+	debug( 'Found gme files on tiptoi: ' . Dumper( \%gmes_on_tiptoi ), $debug > 1 );
 	foreach my $oid ( sort keys %{$albums} ) {
 		$albums->{$oid} = get_tracks( $albums->{$oid}, $dbh );
 		if ( $albums->{$oid}->{'gme_file'} ) {

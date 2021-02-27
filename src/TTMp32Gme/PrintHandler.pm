@@ -32,7 +32,7 @@ sub format_tracks {
 		put_file_online( $oid_file, $oid_path, $httpd );
 		$content .= "<li class='list-group-item'>";
 		$content .=
-			"<table width='100%'><tr><td><div class='img-6mm track-img-container'><img class='img-24mm' src='$oid_path' alt='oid $oid[0]'></div></td>";
+"<table width='100%'><tr><td><div class='img-6mm track-img-container'><img class='img-24mm' src='$oid_path' alt='oid $oid[0]'></div></td>";
 		$content .= sprintf(
 			"<td class='track-title'>%d. %s</td><td class='runtime'>(<strong>%02d:%02d</strong>)</td></tr></table></li>\n",
 			$i + 1,

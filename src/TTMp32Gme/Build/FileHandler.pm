@@ -143,7 +143,8 @@ sub cleanup_filename {
 	$filename =~ s/[^A-Za-z0-9_\-\.]//g;
 	$filename =~ s/\.\./\./g;
 	$filename =~ s/\.$//g;
-	_utf8_off($filename); #prevent perl from messing up filenames with non-ascii characters because of perl open() bug: https://github.com/perl/perl5/issues/15883
+	_utf8_off($filename)
+		; #prevent perl from messing up filenames with non-ascii characters because of perl open() bug: https://github.com/perl/perl5/issues/15883
 	return $filename;
 }
 
@@ -243,7 +244,7 @@ sub get_tiptoi_dir {
 sub get_gmes_already_on_tiptoi {
 	my $tiptoi_path = get_tiptoi_dir();
 	if ($tiptoi_path) {
-		my @gme_list = grep( !$_->is_dir && $_->basename =~ /^(?!\._).*\.gme\z/, $tiptoi_path->children() );
+		my @gme_list  = grep( !$_->is_dir && $_->basename =~ /^(?!\._).*\.gme\z/, $tiptoi_path->children() );
 		my %gme_names = map { $_->basename => 1 } @gme_list;
 		return %gme_names;
 	} else {
@@ -269,20 +270,20 @@ sub delete_gme_tiptoi {
 
 sub move_library {
 	my ( $from, $to, $dbh, $httpd, $debug ) = @_;
-	debug('raw: '.$to, $debug);
+	debug( 'raw: ' . $to, $debug );
 	my $library = dir($to);
 	unless ( -w $library || $library->mkpath() ) {
 		return 'error: could not write to target directory';
 	}
-	debug('mkdir: '.$library, $debug);
+	debug( 'mkdir: ' . $library, $debug );
 	$library->resolve;
-	debug('resolved: '.$library, $debug);
+	debug( 'resolved: ' . $library, $debug );
 	if ( $library->children() ) {
 		return 'error: target directory not empty';
 	}
-	my $albums = $dbh->selectall_hashref(q( SELECT path, oid FROM gme_library ), 'oid');
-	my $qh    = $dbh->prepare('UPDATE gme_library SET path=? WHERE oid=?');
-	local($dbh->{AutoCommit}) = 0;
+	my $albums = $dbh->selectall_hashref( q( SELECT path, oid FROM gme_library ), 'oid' );
+	my $qh     = $dbh->prepare('UPDATE gme_library SET path=? WHERE oid=?');
+	local ( $dbh->{AutoCommit} ) = 0;
 	my $escFrom = $from;
 	$escFrom =~ s/\\/\\\\/g;
 	foreach my $oid ( sort keys %{$albums} ) {
@@ -292,14 +293,14 @@ sub move_library {
 		$dbh->rollback();
 		return 'error: could not update album path in database';
 	} else {
-		if (dirmove( $from, $library )) {
+		if ( dirmove( $from, $library ) ) {
 			$dbh->commit();
-			return 'Success.'; 
+			return 'Success.';
 		} else {
 			my $errMsg = $!;
 			$dbh->rollback();
-			return 'error: could not move files: '.$errMsg;
-		};
+			return 'error: could not move files: ' . $errMsg;
+		}
 	}
 }
 
