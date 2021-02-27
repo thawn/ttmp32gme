@@ -39,7 +39,7 @@ $AnyEvent::HTTP::USERAGENT =
 
 # Declare globals... I know tisk tisk
 my ( $dbh, %config, $watchers, %templates, $static, %assets, $httpd, $debug );
-$debug = 1;
+$debug = 0;
 
 # Encapsulate configuration code
 {
