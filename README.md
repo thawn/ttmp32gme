@@ -196,3 +196,4 @@ pp
 * automatic download of cover images
 * enable separate printing of oid codes/text and cover images
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
+* per-track images
