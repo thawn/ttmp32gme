@@ -9,7 +9,7 @@ use Perl::Version;
 use DBI;
 use DBIx::MultiStatementDo;
 
-my $version_str = "1.0.0";
+my $version_str = "1.0.1";
 
 # Command line startup options
 #  Usage: update_version [-v|--version]

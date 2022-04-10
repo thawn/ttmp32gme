@@ -50,7 +50,7 @@ $debug = 0;
 	my $configfile = "";
 	my $versionFlag;
 
-	my $version = Perl::Version->new("1.0.0");
+	my $version = Perl::Version->new("1.0.1");
 
 	# Command line startup options
 	# Usage: ttmp32gme(.exe) [-d|--debug=level] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
