@@ -360,11 +360,13 @@ sub get_album_online {
 }
 
 sub updateAlbum {
-	my ( $postData, $dbh ) = @_;
+	my ( $postData, $dbh, $debug ) = @_;
 	my $old_oid = $postData->{'old_oid'};
 	delete( $postData->{'old_oid'} );
+	debug("Old OID: $old_oid; new OID: $postData->{'oid'}", $debug > 0);
+	debug(Dumper($postData), $debug > 1);
 	if ( $old_oid != $postData->{'oid'} ) {
-		if ( oid_exist( $old_oid, $dbh ) ) {
+		if ( oid_exist( $postData->{'oid'}, $dbh ) ) {
 			return 0;
 			$dbh->set_err( '', 'Could not update album, oid already exists. Try a different oid.' );
 		} else {
