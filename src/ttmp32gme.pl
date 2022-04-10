@@ -53,23 +53,18 @@ $debug = 0;
 	my $version = Perl::Version->new("1.0.0");
 
 	# Command line startup options
-	# Usage: ttmp32gme(.exe) [-d|--directory=dir] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
+	# Usage: ttmp32gme(.exe) [-d|--debug=level] [-h|--host=host#] [-p|--port=port#] [-c|--configdir=dir] [-v|--version]
 	GetOptions(
 		"port=i"      => \$port,          # Port for the local web server to run on
 		"host=s"      => \$host,          # Host for the local web server to run on
-		"directory=s" => \$directory,     # Directory to change to after starting (for dev mostly)
+		"debug=i" 	  => \$debug,     	  # Set debug level (for dev mostly)
 		"configdir=s" => \$configdir,     # Where your config files are located
-		"version"     => \$versionFlag,
-		"debug"       => \$debug
-	);                                  # Get the version number
+		"version"     => \$versionFlag	  # Get the version number
+		);                                  
 
 	if ($versionFlag) {
 		print STDOUT "mp32gme version $version\n";
 		exit(0);
-	}
-
-	if ($directory) {
-		chdir($directory);
 	}
 
 	use TTMp32Gme::Build::FileHandler;
@@ -337,7 +332,7 @@ $httpd->reg_cb(
 						my $old_player_mode = $postData->{'old_player_mode'};
 						delete( $postData->{'old_player_mode'} );
 						$content->{'element'} =
-							get_album_online( updateAlbum( $postData, $dbh ), $httpd, $dbh );
+							get_album_online( updateAlbum( $postData, $dbh, $debug ), $httpd, $dbh );
 						if ( $old_player_mode ne $postData->{'player_mode'} ) {
 							make_gme( $postData->{'oid'}, \%config, $dbh );
 						}
