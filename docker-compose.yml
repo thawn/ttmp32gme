@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+  ttmp32gme:
+    image: thawn/ttmp32gme:latest
+    volumes:
+      - ~/.ttmp32gme:/var/lib/ttmp32gme
+      - /media/${USER}/tiptoi:/mnt/tiptoi
+    ports:
+      - '8080:8080'
+    expose:
+      - '8080'

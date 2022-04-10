@@ -15,8 +15,18 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 * Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer).
 * linux: 
   * docker (recommended):
-     * Using the provided installer: download (right click and save as...) [install.sh](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/install.sh) and [ttmp32gme](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/ttmp32gme) into the same directory on our computer. Run `sudo bash install.sh` in a terminal in the same directory where you saved the files. Afterwards, you can start ttmp32gme with `ttmp32gme start` and stop it with `ttmp32gme stop`. If your tiptoi is mounted but not recognized, you can add the tiptoi path to the start command: `ttmp32gme start /path/to/tiptoi`
-     * Using docker directly: There is [a docker image on the docker hub](https://hub.docker.com/r/thawn/ttmp32gme). Open the port to the ttmp32gme web interface by adding `--publish 8080:8080` to your `docker run` command. You can specify where the library should be stored by adding `--volume ~/.ttmp32gme:/var/lib/ttmp32gme`. Also, you can make a mounted tiptoi accessible by adding `--volume /tiptoi/mount/point:/mnt/tiptoi`. A complete docker run command could look like this: `docker run -d --rm --publish 8080:8080 --volume ~/.ttmp32gme:/var/lib/ttmp32gme --volume /media/${USER}/tiptoi:/mnt/tiptoi --name ttmp32gme thawn/ttmp32gme:latest`
+     * Using the provided installer: download (right click and save as...) [install.sh](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/install.sh) and [ttmp32gme](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/ttmp32gme) into the same directory on our computer. 
+       Run `sudo bash install.sh` in a terminal in the same directory where you saved the files. 
+       Afterwards, you can start ttmp32gme with `ttmp32gme start` and stop it with `ttmp32gme stop`. 
+       If your tiptoi is mounted but not recognized, you can add the tiptoi path to the start command: `ttmp32gme start /path/to/tiptoi`
+     * Using docker directly: There is [a docker image on the docker hub](https://hub.docker.com/r/thawn/ttmp32gme). 
+       Open the port to the ttmp32gme web interface by adding `--publish 8080:8080` to your `docker run` command. 
+       You can specify where the library should be stored by adding `--volume ~/.ttmp32gme:/var/lib/ttmp32gme`. 
+       Also, you can make a mounted tiptoi accessible by adding `--volume /tiptoi/mount/point:/mnt/tiptoi`. 
+       
+       A complete docker run command could look like this: `docker run -d --rm --publish 8080:8080 --volume ~/.ttmp32gme:/var/lib/ttmp32gme --volume /media/${USER}/tiptoi:/mnt/tiptoi --name ttmp32gme thawn/ttmp32gme:latest`
+    
+       Alternatively you can use [docker compose](https://docs.docker.com/compose/) and startup ttmp32gme with `docker-compse up` using the [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml).
   * native: run the perl sources (see [instructions](#required-libraries-and-perl-modules-for-running-ttmp32gme-from-source) below)
 
 ## Usage
@@ -186,3 +196,4 @@ pp
 * automatic download of cover images
 * enable separate printing of oid codes/text and cover images
 * run on a real webserver so that users can generate their gme files online (thanks to Joachim for the idea).
+* per-track images
