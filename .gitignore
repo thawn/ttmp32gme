@@ -24,3 +24,4 @@ nytprof.out
 /src/library/*
 dist/
 build/current/
+.vscode/
