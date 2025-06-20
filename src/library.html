@@ -338,6 +338,13 @@
 			});
 	}
 
+	var downloadGMEs = function(oids) {
+		//expects an array of oids
+		oids.forEach(oid =>
+			window.open("download?data=" + encodeURIComponent(JSON.stringify({'oid': oid})))
+		);
+	}
+
 	var printAlbums = function(oids) {
 		//expects an array of oids
 		var url = "print?data=" + encodeURIComponent(JSON.stringify({'oids': oids}));
@@ -375,6 +382,9 @@
 		});
 		$('#albums').on('click', 'button.make-gme', function() {
 			triggerElementAction('make_gme', $(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
+		});
+		$('#albums').on('click', 'button.download-gme', function() {
+			downloadGMEs([$(this).data('item-id').find('input[name=old_oid]').val()]);
 		});
 		$('#albums').on('click', 'button.needs-tiptoi', function() {
 			copyGME($(this).data('item-id'), $(this).data('item-id').find('input[name=old_oid]').val());
@@ -415,10 +425,18 @@
 			toggleShow($('#albums').find('input[value="'+$.urlParam('oid')+'"]').parents('div.edit'));
 		}
 		$('#select-all').click(function(){
-			$('input[name=enabled]').prop('checked', true);
+			$('input[name=enabled]').each(function(){
+				if ($(this).data('item-id')) {
+					$(this).prop('checked', true);
+				}
+			});
 		});
 		$('#deselect-all').click(function(){
-			$('input[name=enabled]').prop('checked', false);
+			$('input[name=enabled]').each(function(){
+				if ($(this).data('item-id')) {
+					$(this).prop('checked', false);
+				}
+			});
 		});
 		$('#toggle-all').click(function(){
 			$('input[name=enabled]').each(function(){
@@ -447,6 +465,17 @@
 			});
 			if (oids.length >0){
 				printAlbums(oids);
+			} else {
+				alert("Please select an album first");
+			}
+		});
+		$('#download-selected').click(function(){
+			var oids = [];
+			$('input[name=enabled]:checked').each(function(){
+				oids.push($(this).parents('tr.library-entry').find('input[name=old_oid]').val());
+			});
+			if (oids.length >0){
+				downloadGMEs(oids);
 			} else {
 				alert("Please select an album first");
 			}
@@ -521,6 +550,7 @@
 	<div class="col-lg-6">
 		<p>
 			<button id="print-selected" class="btn btn-success margin-t" data-toggle="popover">Print selected</button>
+			<button id="download-selected" class="btn btn-success margin-t" data-toggle="popover">Download selected</button>
 			<button id="cleanup-selected" class="btn btn-warning margin-t" data-toggle="popover">Cleanup selected</button>
 			<button id="delete-selected" class="btn btn-danger margin-t" data-toggle="popover">Delete selected from library</button>
 		</p>
@@ -628,6 +658,7 @@
 									<div class="btn-group" role="group" aria-label="save cancel delete button group">
 										<button type="button" class="btn btn-primary update">Update</button>
 										<button type="button" class="btn btn-success make-gme">Create GME</button>
+										<button type="button" class="btn btn-success download-gme">Download GME</button>
 										<button type="button" class="btn btn-success needs-tiptoi" style="display: none;">Copy GME to TipToi</button>
 										<button type="button" class="btn btn-success print" style="display: none;">Print</button>
 										<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>

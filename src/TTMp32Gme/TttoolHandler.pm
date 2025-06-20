@@ -13,7 +13,7 @@ use TTMp32Gme::LibraryHandler;
 
 require Exporter;
 our @ISA    = qw(Exporter);
-our @EXPORT = qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme);
+our @EXPORT = qw(get_sorted_tracks make_gme generate_oid_images create_oids copy_gme, get_gme_file);
 
 ## internal functions:
 
@@ -280,7 +280,7 @@ sub create_oids {
 	return \@files;
 }
 
-sub copy_gme {
+sub get_gme_file {
 	my ( $oid, $config, $dbh ) = @_;
 	my $album_data = $dbh->selectrow_hashref( q(SELECT path,gme_file FROM gme_library WHERE oid=?), {}, $oid );
 	if ( !$album_data->{'gme_file'} ) {
@@ -288,9 +288,16 @@ sub copy_gme {
 		$album_data = $dbh->selectrow_hashref( q(SELECT path,gme_file FROM gme_library WHERE oid=?), {}, $oid );
 	}
 	my $gme_file   = file( $album_data->{'path'}, $album_data->{'gme_file'} );
-	my $tiptoi_dir = get_tiptoi_dir();
-	msg( "Copying $album_data->{'gme_file'} to $tiptoi_dir", 1 );
-	$gme_file->copy_to( file( $tiptoi_dir, $gme_file->basename() ) );
+	return $gme_file
+}
+
+sub copy_gme {
+	my ( $oid, $config, $dbh ) = @_;
+	my $gme_file     = get_gme_file( $oid, $config, $dbh );
+	my $gme_filename = $gme_file->basename();
+	my $tiptoi_dir   = get_tiptoi_dir();
+	msg( "Copying $gme_filename to $tiptoi_dir", 1 );
+	$gme_file->copy_to( file( $tiptoi_dir, $gme_filename ) );
 	msg( "done.", 1 );
 	return $oid;
 }

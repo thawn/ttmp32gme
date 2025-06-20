@@ -60,7 +60,7 @@ $debug = 0;
 		"debug=i" 	  => \$debug,     	  # Set debug level (for dev mostly)
 		"configdir=s" => \$configdir,     # Where your config files are located
 		"version"     => \$versionFlag	  # Get the version number
-		);                                  
+		);
 
 	if ($versionFlag) {
 		print STDOUT "mp32gme version $version\n";
@@ -460,6 +460,30 @@ $httpd->reg_cb(
 				]
 			);
 		}
+	},
+	'/download' => sub {
+		my ( $httpd, $req ) = @_;
+		my $reqData      = decode_json( $req->parm('data') );
+		my $gme_file     = get_gme_file( $reqData->{'oid'}, \%config, $dbh );
+		my $gme_filename = $gme_file->basename();
+		open ( my $gme_fh, '<', $gme_file ) or $req->respond ([
+			404,
+			'not found',
+			{
+				'Content-Type' => 'text/plain'
+			},
+			"Failed to find gme file '$gme_filename'"
+		]);
+		$req->respond([
+			'200',
+			'ok',
+			{
+				'Content-Disposition' => "filename=$gme_filename",
+				'Content-Type' => 'audio/gme'
+			},
+			do { local $/; <$gme_fh> }
+		]);
+		close( $gme_fh )
 	},
 	'/config' => sub {
 		my ( $httpd, $req ) = @_;
