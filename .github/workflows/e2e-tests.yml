@@ -93,7 +93,7 @@ jobs:
         sudo mv tttool /usr/local/bin/
         
         # Verify installation
-        tttool --help || (echo "Error: tttool installation failed" && exit 1)
+        tttool --help || { echo "Error: tttool installation failed"; exit 1; }
     
     - name: Install ffmpeg (static build)
       run: |

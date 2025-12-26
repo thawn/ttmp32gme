@@ -91,7 +91,7 @@ jobs:
         fi
         
         # Check if server is responding
-        curl -f http://localhost:10020/ || (echo "Error: Server not responding" && kill $SERVER_PID && exit 1)
+        curl -f http://localhost:10020/ || { echo "Error: Server not responding"; kill $SERVER_PID; exit 1; }
     
     - name: Run integration tests with pytest
       run: |
