@@ -98,26 +98,39 @@ ffmpeg -version | head -n1
 print_success "ffmpeg installed"
 
 print_step "Step 5: Installing Python dependencies"
+PIP_LOG="/tmp/pip_install.log"
+echo "Output will be written to: $PIP_LOG"
+
 if command -v uv &> /dev/null; then
     echo "Using uv for package installation..."
-    uv pip install --system -e ".[test]"
+    uv pip install --system -e ".[test]" > "$PIP_LOG" 2>&1
+    INSTALL_EXIT=$?
 else
     echo "uv not available, trying to install..."
-    if curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh; then
+    if curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh >> "$PIP_LOG" 2>&1; then
         # Add uv to PATH
         export PATH="$HOME/.cargo/bin:$PATH"
         export PATH="$HOME/.local/bin:$PATH"
         # Try to find uv
         if command -v uv &> /dev/null; then
-            uv pip install --system -e ".[test]"
+            uv pip install --system -e ".[test]" >> "$PIP_LOG" 2>&1
+            INSTALL_EXIT=$?
         else
             echo "uv installed but not found in PATH, falling back to pip..."
-            pip install -e ".[test]"
+            pip install -e ".[test]" >> "$PIP_LOG" 2>&1
+            INSTALL_EXIT=$?
         fi
     else
         echo "uv installation failed, falling back to pip..."
-        pip install -e ".[test]"
+        pip install -e ".[test]" >> "$PIP_LOG" 2>&1
+        INSTALL_EXIT=$?
     fi
+fi
+
+if [ $INSTALL_EXIT -ne 0 ]; then
+    print_error "Python dependency installation failed. Check $PIP_LOG for details."
+    tail -n 50 "$PIP_LOG"
+    exit 1
 fi
 print_success "Python dependencies installed"
 
