@@ -10,8 +10,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from mutagen.easyid3 import EasyID3, EasyMP3
 from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, APIC, TRCK
+from mutagen.id3 import APIC
 from PIL import Image
 import io
 import subprocess
@@ -60,50 +61,42 @@ def test_audio_files_context():
             test_file = FIXTURES_DIR / test_case['filename']
             shutil.copy(base_mp3, test_file)
             
-            # Add ID3 tags
+            # Add ID3 tags using EasyMP3 for compatibility
             try:
-                audio = MP3(test_file, ID3=ID3)
-                # Try to add tags if they don't exist
-                if audio.tags is None:
-                    audio.add_tags()
-            except Exception as e:
-                print(f"Warning: Could not initialize tags for {test_file}: {e}")
-                # Continue anyway - file exists even without tags
-            
-            # Reload audio to ensure clean state
-            try:
-                audio = MP3(test_file)
+                audio = EasyMP3(test_file)
                 
-                if audio.tags is not None:
-                    if 'title' in test_case:
-                        audio.tags.add(TIT2(encoding=3, text=test_case['title']))
-                    if 'artist' in test_case:
-                        audio.tags.add(TPE1(encoding=3, text=test_case['artist']))
-                    if 'album' in test_case:
-                        audio.tags.add(TALB(encoding=3, text=test_case['album']))
-                    if 'year' in test_case:
-                        audio.tags.add(TDRC(encoding=3, text=test_case['year']))
-                    if 'track' in test_case:
-                        audio.tags.add(TRCK(encoding=3, text=str(test_case['track'])))
+                if 'title' in test_case:
+                    audio['title'] = test_case['title']
+                if 'artist' in test_case:
+                    audio['artist'] = test_case['artist']
+                if 'album' in test_case:
+                    audio['album'] = test_case['album']
+                if 'year' in test_case:
+                    audio['date'] = test_case['year']
+                if 'track' in test_case:
+                    audio['tracknumber'] = str(test_case['track'])
+                
+                audio.save()
+                
+                # Add cover image if requested (need to use MP3 for APIC)
+                if test_case.get('has_cover'):
+                    mp3 = MP3(test_file)
+                    img = Image.new('RGB', (100, 100), color='red')
+                    img_bytes = io.BytesIO()
+                    img.save(img_bytes, format='JPEG')
+                    img_bytes.seek(0)
                     
-                    # Add cover image if requested
-                    if test_case.get('has_cover'):
-                        img = Image.new('RGB', (100, 100), color='red')
-                        img_bytes = io.BytesIO()
-                        img.save(img_bytes, format='JPEG')
-                        img_bytes.seek(0)
-                        
-                        audio.tags.add(
-                            APIC(
-                                encoding=3,
-                                mime='image/jpeg',
-                                type=3,
-                                desc='Cover',
-                                data=img_bytes.read()
-                            )
+                    mp3.tags.add(
+                        APIC(
+                            encoding=3,
+                            mime='image/jpeg',
+                            type=3,
+                            desc='Cover',
+                            data=img_bytes.read()
                         )
+                    )
+                    mp3.save()
                     
-                    audio.save()
             except Exception as e:
                 print(f"Warning: Could not add tags to {test_file}: {e}")
                 # File still exists and can be uploaded
