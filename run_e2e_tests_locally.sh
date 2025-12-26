@@ -3,9 +3,61 @@
 
 set -e  # Exit on any error
 
+# Parse arguments
+SPECIFIC_TEST=""
+SKIP_SETUP=false
+
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -t, --test TEST_NAME    Run specific test (e.g., test_upload_album_with_files)"
+    echo "  -k, --keyword KEYWORD   Run tests matching keyword (pytest -k option)"
+    echo "  -s, --skip-setup        Skip dependency installation (use when already set up)"
+    echo "  -h, --help              Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                                           # Run all tests"
+    echo "  $0 -t test_upload_album_with_files          # Run single test"
+    echo "  $0 -k upload                                 # Run tests matching 'upload'"
+    echo "  $0 -s -t test_navigation_links              # Run test, skip setup"
+    exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -t|--test)
+            SPECIFIC_TEST="$2"
+            shift 2
+            ;;
+        -k|--keyword)
+            TEST_KEYWORD="$2"
+            shift 2
+            ;;
+        -s|--skip-setup)
+            SKIP_SETUP=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
+
 echo "======================================================================"
 echo "Local E2E Test Execution Script"
 echo "======================================================================"
+echo ""
+
+if [ -n "$SPECIFIC_TEST" ]; then
+    echo "Running specific test: $SPECIFIC_TEST"
+elif [ -n "$TEST_KEYWORD" ]; then
+    echo "Running tests matching keyword: $TEST_KEYWORD"
+fi
 echo ""
 
 # Colors for output
@@ -30,7 +82,10 @@ print_error() {
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
-print_step "Step 1: Installing system dependencies"
+if [ "$SKIP_SETUP" = true ]; then
+    print_step "Skipping dependency installation (--skip-setup flag)"
+else
+    print_step "Step 1: Installing system dependencies"
 if ! command -v wget &> /dev/null || ! command -v jq &> /dev/null; then
     echo "Installing required tools (wget, unzip, jq)..."
     sudo apt-get update && sudo apt-get install -y wget unzip jq
@@ -133,14 +188,20 @@ if [ $INSTALL_EXIT -ne 0 ]; then
     exit 1
 fi
 print_success "Python dependencies installed"
+fi  # End of SKIP_SETUP block
 
-print_step "Step 6: Running unit tests (including tttool tests)"
-pytest tests/unit/ -v --tb=short
-TEST_EXIT_CODE=$?
-if [ $TEST_EXIT_CODE -ne 0 ]; then
-    print_error "Unit tests failed with exit code $TEST_EXIT_CODE"
+if [ "$SKIP_SETUP" = false ]; then
+    print_step "Step 6: Running unit tests (including tttool tests)"
+    pytest tests/unit/ -v --tb=short
+    TEST_EXIT_CODE=$?
+    if [ $TEST_EXIT_CODE -ne 0 ]; then
+        print_error "Unit tests failed with exit code $TEST_EXIT_CODE"
+    else
+        print_success "Unit tests passed"
+    fi
 else
-    print_success "Unit tests passed"
+    print_step "Step 6: Skipping unit tests (--skip-setup flag)"
+    TEST_EXIT_CODE=0
 fi
 
 print_step "Step 7: Starting Flask server in background"
@@ -169,8 +230,19 @@ fi
 print_success "Server started successfully on http://localhost:10020"
 
 print_step "Step 8: Running E2E tests with Selenium"
+# Build pytest command
+PYTEST_CMD="pytest tests/e2e/ -v --tb=short"
+
+if [ -n "$SPECIFIC_TEST" ]; then
+    PYTEST_CMD="$PYTEST_CMD -k $SPECIFIC_TEST"
+    echo "Running specific test: $SPECIFIC_TEST"
+elif [ -n "$TEST_KEYWORD" ]; then
+    PYTEST_CMD="$PYTEST_CMD -k $TEST_KEYWORD"
+    echo "Running tests matching: $TEST_KEYWORD"
+fi
+
 # Run E2E tests
-pytest tests/e2e/ -v --tb=short -m "e2e"
+eval $PYTEST_CMD
 E2E_EXIT_CODE=$?
 
 # Stop server
