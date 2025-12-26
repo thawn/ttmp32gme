@@ -1,14 +1,28 @@
 [project]
-name = "ttmp32gme-tests"
-version = "1.0.0"
-description = "Test suite for ttmp32gme web frontend"
+name = "ttmp32gme"
+version = "1.0.1"
+description = "TipToi MP3 to GME converter - Python backend"
 requires-python = ">=3.11"
+readme = "README.md"
+license = {file = "LICENSE"}
 
 dependencies = [
-    "pytest>=7.4.0",
-    "pytest-html>=4.0.0",
+    "flask>=3.0.0",
+    "werkzeug>=3.0.0",
+    "packaging>=23.0",
+    "mutagen>=1.47.0",
+    "pillow>=10.0.0",
     "requests>=2.31.0",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "pytest-html>=4.0.0",
+]
+
+[project.scripts]
+ttmp32gme = "ttmp32gme.ttmp32gme:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
