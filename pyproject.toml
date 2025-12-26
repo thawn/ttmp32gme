@@ -1,0 +1,15 @@
+[project]
+name = "ttmp32gme-tests"
+version = "1.0.0"
+description = "Test suite for ttmp32gme web frontend"
+requires-python = ">=3.11"
+
+dependencies = [
+    "pytest>=7.4.0",
+    "pytest-html>=4.0.0",
+    "requests>=2.31.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

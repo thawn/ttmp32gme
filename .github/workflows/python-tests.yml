@@ -12,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
     
     steps:
     - uses: actions/checkout@v4
@@ -21,17 +21,42 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'pip'
     
-    - name: Install dependencies
+    - name: Set up Perl
+      uses: shogo82148/actions-setup-perl@v1
+      with:
+        perl-version: '5.38'
+    
+    - name: Install Perl dependencies
+      run: |
+        cpanm --notest EV AnyEvent::HTTPD Path::Class JSON::XS URI::Escape
+    
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements-test.txt
+        pip install -e .
+    
+    - name: Start ttmp32gme server
+      run: |
+        cd src
+        perl ttmp32gme.pl &
+        echo $! > /tmp/ttmp32gme.pid
+        sleep 5
+      env:
+        TTMP32GME_PORT: 10020
     
     - name: Run tests with pytest
       run: |
         pytest tests/ -v --tb=short --html=report.html --self-contained-html
-      continue-on-error: true
+      env:
+        TTMP32GME_URL: http://localhost:10020
+    
+    - name: Stop ttmp32gme server
+      run: |
+        if [ -f /tmp/ttmp32gme.pid ]; then
+          kill $(cat /tmp/ttmp32gme.pid) || true
+        fi
+      if: always()
     
     - name: Upload test report
       uses: actions/upload-artifact@v4

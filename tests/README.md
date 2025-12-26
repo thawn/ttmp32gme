@@ -6,7 +6,7 @@ This directory contains pytest-based integration tests for the ttmp32gme web fro
 
 ```bash
 # Install test dependencies (from project root)
-pip install -r requirements-test.txt
+pip install -e .
 
 # Run all tests
 pytest tests/ -v
