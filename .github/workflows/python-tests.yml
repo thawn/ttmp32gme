@@ -29,10 +29,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+    
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[test]"
+        uv pip install --system -e ".[test]"
     
     - name: Run unit tests with pytest
       run: |
@@ -64,10 +68,14 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+    
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[test]"
+        uv pip install --system -e ".[test]"
     
     - name: Start ttmp32gme Python server
       run: |

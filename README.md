@@ -142,8 +142,12 @@ ttmp32gme now includes a Python backend as an alternative to the Perl implementa
    cd ttmp32gme
    ```
 
-2. Install Python dependencies:
+2. Install Python dependencies (recommended: use [uv](https://github.com/astral-sh/uv)):
    ```bash
+   # Using uv (recommended - faster)
+   uv pip install -e .
+   
+   # Or using pip
    pip install -e .
    ```
 

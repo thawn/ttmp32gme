@@ -54,6 +54,11 @@ jobs:
       with:
         python-version: '3.12'
     
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+    
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -76,11 +81,22 @@ jobs:
         sudo chmod +x /usr/local/bin/chromedriver
         rm -rf chromedriver-linux64*
     
-    - name: Install tttool (static build)
+    - name: Install tttool (from releases)
       run: |
-        wget -q https://github.com/entropia/tip-toi-reveng/releases/download/latest/tttool-Linux
-        chmod +x tttool-Linux
-        sudo mv tttool-Linux /usr/local/bin/tttool
+        # Download the latest release from GitHub releases page
+        # The release files follow the pattern: tttool-1.x.x-linux.zip
+        LATEST_RELEASE=$(curl -s https://github.com/entropia/tip-toi-reveng/releases | grep -o 'releases/tag/[0-9.]*' | head -1 | cut -d'/' -f3)
+        if [ -z "$LATEST_RELEASE" ]; then
+          LATEST_RELEASE="1.11.1"  # Fallback to known working version
+        fi
+        echo "Installing tttool version $LATEST_RELEASE"
+        wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${LATEST_RELEASE}/tttool-${LATEST_RELEASE}-linux.zip"
+        unzip -q "tttool-${LATEST_RELEASE}-linux.zip"
+        chmod +x tttool
+        sudo mv tttool /usr/local/bin/
+        
+        # Verify installation
+        tttool --help || echo "Warning: tttool installation may have issues"
     
     - name: Install ffmpeg (static build)
       run: |
@@ -92,15 +108,21 @@ jobs:
     
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[test]"
+        uv pip install --system -e ".[test]"
     
-    - name: Download test audio files (public domain)
+    - name: Download and prepare test audio files
       run: |
         mkdir -p tests/fixtures
-        # Download small public domain audio files for testing
-        # Using a very short silent MP3 file (can be replaced with actual test files)
-        wget -q -O tests/fixtures/test1.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" || echo "Warning: Could not download test file"
+        # Download a small public domain MP3 file (very short, for testing only)
+        wget -q -O tests/fixtures/test_audio.mp3 "https://file-examples.com/storage/fe27a26580566fc2afcde57/2017/11/file_example_MP3_700KB.mp3" || \
+        wget -q -O tests/fixtures/test_audio.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" || \
+        echo "Warning: Could not download test MP3 file"
+        
+        # Create a small test image
+        python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"
+        
+        # Verify files exist
+        ls -lh tests/fixtures/
         
     - name: Run E2E tests with pytest
       run: |
