@@ -31,9 +31,9 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
 print_step "Step 1: Installing system dependencies"
-if ! command -v wget &> /dev/null; then
-    echo "Installing wget..."
-    sudo apt-get update && sudo apt-get install -y wget unzip
+if ! command -v wget &> /dev/null || ! command -v jq &> /dev/null; then
+    echo "Installing required tools (wget, unzip, jq)..."
+    sudo apt-get update && sudo apt-get install -y wget unzip jq
 fi
 print_success "System dependencies installed"
 
