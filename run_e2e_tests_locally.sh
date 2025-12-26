@@ -1,5 +1,8 @@
 #!/bin/bash
 # Script to run E2E tests locally, replicating CI pipeline steps
+# execute the script without the -s flag on first usage so that it can set up the environment.
+# this script may take a long time. do not use head or or tail to truncate this scripts output or you will miss the partial status information.
+
 
 set -e  # Exit on any error
 
