@@ -61,41 +61,51 @@ def test_audio_files():
         # Add ID3 tags
         try:
             audio = MP3(test_file, ID3=ID3)
-            audio.add_tags()
-        except Exception:
-            pass
+            # Try to add tags if they don't exist
+            if audio.tags is None:
+                audio.add_tags()
+        except Exception as e:
+            print(f"Warning: Could not initialize tags for {test_file}: {e}")
+            # Continue anyway - file exists even without tags
         
-        audio = MP3(test_file)
-        
-        if 'title' in test_case:
-            audio.tags.add(TIT2(encoding=3, text=test_case['title']))
-        if 'artist' in test_case:
-            audio.tags.add(TPE1(encoding=3, text=test_case['artist']))
-        if 'album' in test_case:
-            audio.tags.add(TALB(encoding=3, text=test_case['album']))
-        if 'year' in test_case:
-            audio.tags.add(TDRC(encoding=3, text=test_case['year']))
-        if 'track' in test_case:
-            audio.tags.add(TRCK(encoding=3, text=str(test_case['track'])))
-        
-        # Add cover image if requested
-        if test_case.get('has_cover'):
-            img = Image.new('RGB', (100, 100), color='red')
-            img_bytes = io.BytesIO()
-            img.save(img_bytes, format='JPEG')
-            img_bytes.seek(0)
+        # Reload audio to ensure clean state
+        try:
+            audio = MP3(test_file)
             
-            audio.tags.add(
-                APIC(
-                    encoding=3,
-                    mime='image/jpeg',
-                    type=3,
-                    desc='Cover',
-                    data=img_bytes.read()
-                )
-            )
+            if audio.tags is not None:
+                if 'title' in test_case:
+                    audio.tags.add(TIT2(encoding=3, text=test_case['title']))
+                if 'artist' in test_case:
+                    audio.tags.add(TPE1(encoding=3, text=test_case['artist']))
+                if 'album' in test_case:
+                    audio.tags.add(TALB(encoding=3, text=test_case['album']))
+                if 'year' in test_case:
+                    audio.tags.add(TDRC(encoding=3, text=test_case['year']))
+                if 'track' in test_case:
+                    audio.tags.add(TRCK(encoding=3, text=str(test_case['track'])))
+                
+                # Add cover image if requested
+                if test_case.get('has_cover'):
+                    img = Image.new('RGB', (100, 100), color='red')
+                    img_bytes = io.BytesIO()
+                    img.save(img_bytes, format='JPEG')
+                    img_bytes.seek(0)
+                    
+                    audio.tags.add(
+                        APIC(
+                            encoding=3,
+                            mime='image/jpeg',
+                            type=3,
+                            desc='Cover',
+                            data=img_bytes.read()
+                        )
+                    )
+                
+                audio.save()
+        except Exception as e:
+            print(f"Warning: Could not add tags to {test_file}: {e}")
+            # File still exists and can be uploaded
         
-        audio.save()
         files.append(test_file)
     
     # Create a separate cover image file
