@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from mutagen import File as MutagenFile
+from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3
 from mutagen.mp3 import MP3
 from mutagen.oggvorbis import OggVorbis
@@ -194,12 +195,16 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
             if file_path.suffix.lower() in ['.mp3', '.ogg']:
                 # Handle audio files
                 try:
-                    audio = MutagenFile(str(file_path))
+                    # Use EasyID3 for MP3 files to support easy tag access
+                    if file_path.suffix.lower() == '.mp3':
+                        audio = MP3(str(file_path), ID3=EasyID3)
+                    else:
+                        audio = MutagenFile(str(file_path))
                     
                     if audio is None:
                         continue
                     
-                    # Extract album info
+                    # Extract album info (using EasyID3 interface)
                     if not album_data.get('album_title') and 'album' in audio:
                         album_data['album_title'] = str(audio['album'][0])
                         album_data['path'] = cleanup_filename(album_data['album_title'])
@@ -213,19 +218,20 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
                     if not album_data.get('album_year') and 'date' in audio:
                         album_data['album_year'] = str(audio['date'][0])
                     
-                    # Extract cover if present
-                    if not album_data.get('picture_filename'):
-                        if isinstance(audio, MP3) and audio.tags:
-                            for key in audio.tags.keys():
+                    # Extract cover if present (need raw ID3 for APIC)
+                    if not album_data.get('picture_filename') and file_path.suffix.lower() == '.mp3':
+                        mp3_raw = MP3(str(file_path))  # Load with raw ID3 for APIC
+                        if mp3_raw.tags:
+                            for key in mp3_raw.tags.keys():
                                 if key.startswith('APIC'):
-                                    apic = audio.tags[key]
+                                    apic = mp3_raw.tags[key]
                                     picture_data = apic.data
                                     album_data['picture_filename'] = get_cover_filename(
                                         apic.mime, picture_data
                                     )
                                     break
                     
-                    # Extract track info
+                    # Extract track info (using EasyID3 interface)
                     track_info = {
                         'parent_oid': oid,
                         'album': str(audio.get('album', [''])[0]),
