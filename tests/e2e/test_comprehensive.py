@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from mutagen.easyid3 import EasyID3, EasyMP3
+from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from mutagen.id3 import APIC
 from PIL import Image
@@ -61,9 +61,9 @@ def test_audio_files_context():
             test_file = FIXTURES_DIR / test_case['filename']
             shutil.copy(base_mp3, test_file)
             
-            # Add ID3 tags using EasyMP3 for compatibility
+            # Add ID3 tags using EasyID3 for compatibility
             try:
-                audio = EasyMP3(test_file)
+                audio = MP3(test_file, ID3=EasyID3)
                 
                 if 'title' in test_case:
                     audio['title'] = test_case['title']
@@ -78,9 +78,12 @@ def test_audio_files_context():
                 
                 audio.save()
                 
-                # Add cover image if requested (need to use MP3 for APIC)
+                # Add cover image if requested (need to switch to raw ID3 for APIC)
                 if test_case.get('has_cover'):
                     mp3 = MP3(test_file)
+                    if mp3.tags is None:
+                        mp3.add_tags()
+                    
                     img = Image.new('RGB', (100, 100), color='red')
                     img_bytes = io.BytesIO()
                     img.save(img_bytes, format='JPEG')
