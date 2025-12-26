@@ -161,7 +161,7 @@ def index():
 @app.route('/', methods=['POST'])
 def upload_post():
     """Handle file uploads."""
-    global file_count, album_list, file_list
+    global file_count, album_list, file_list, album_count, current_album
     
     if 'qquuid' in request.form:
         if '_method' in request.form:
@@ -204,7 +204,6 @@ def upload_post():
         )
         
         # Reset state
-        global album_count, current_album
         file_count = 0
         album_count = 0
         current_album = make_temp_album_dir(album_count, Path(config['library_path']))
