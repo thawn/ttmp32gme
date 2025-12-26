@@ -128,7 +128,7 @@ def test_audio_files_context():
 def base_config_with_album(driver, ttmp32gme_server, tmp_path):
     """Base configuration with one album uploaded - saves and restores state."""
     # Save current state if it exists
-    db_path = Path.home() / '.ttmp32gme' / 'ttmp32gme.db'
+    db_path = Path.home() / '.ttmp32gme' / 'config.sqlite'
     library_path = Path.home() / '.ttmp32gme' / 'library'
     
     backup_db = tmp_path / 'backup.db'
@@ -265,7 +265,7 @@ def _upload_album_files(driver, server_url, test_audio_files):
 
 def _get_database_value(query, params=()):
     """Helper to query database directly."""
-    db_path = Path.home() / '.ttmp32gme' / 'ttmp32gme.db'
+    db_path = Path.home() / '.ttmp32gme' / 'config.sqlite'
     if not db_path.exists():
         return None
     
