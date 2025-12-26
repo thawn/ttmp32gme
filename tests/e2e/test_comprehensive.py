@@ -140,7 +140,7 @@ class TestRealFileUpload:
                 select_button.click()
                 time.sleep(0.5)
                 file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-            except:
+            except Exception:
                 pass
         
         if len(file_inputs) > 0:
@@ -157,7 +157,7 @@ class TestRealFileUpload:
                 try:
                     upload_list = driver.find_element(By.CSS_SELECTOR, ".qq-upload-list")
                     assert upload_list is not None, "Upload list not found"
-                except:
+                except Exception:
                     # If we can't verify upload list, at least check page still works
                     body_text = driver.find_element(By.TAG_NAME, "body").text
                     assert "ttmp32gme" in body_text
