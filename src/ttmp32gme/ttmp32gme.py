@@ -469,7 +469,7 @@ def main():
     
     parser = argparse.ArgumentParser(description='ttmp32gme - TipToi MP3 to GME converter')
     parser.add_argument('--port', '-p', type=int, help='Server port')
-    parser.add_argument('--host', '-h', default='127.0.0.1', help='Server host')
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='Server host')
     parser.add_argument('--debug', '-d', action='store_true', help='Enable debug mode')
     parser.add_argument('--version', '-v', action='store_true', help='Show version')
     

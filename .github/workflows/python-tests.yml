@@ -80,8 +80,18 @@ jobs:
     - name: Start ttmp32gme Python server
       run: |
         python -m ttmp32gme.ttmp32gme --port 10020 &
-        echo $! > /tmp/ttmp32gme.pid
+        SERVER_PID=$!
+        echo $SERVER_PID > /tmp/ttmp32gme.pid
+        
+        # Wait for server to start and verify it's running
         sleep 5
+        if ! kill -0 $SERVER_PID 2>/dev/null; then
+          echo "Error: Server failed to start"
+          exit 1
+        fi
+        
+        # Check if server is responding
+        curl -f http://localhost:10020/ || (echo "Error: Server not responding" && kill $SERVER_PID && exit 1)
     
     - name: Run integration tests with pytest
       run: |
