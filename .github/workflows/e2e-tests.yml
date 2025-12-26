@@ -113,10 +113,16 @@ jobs:
     - name: Download and prepare test audio files
       run: |
         mkdir -p tests/fixtures
-        # Download a small public domain MP3 file (very short, for testing only)
-        wget -q -O tests/fixtures/test_audio.mp3 "https://file-examples.com/storage/fe27a26580566fc2afcde57/2017/11/file_example_MP3_700KB.mp3" || \
-        wget -q -O tests/fixtures/test_audio.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" || \
-        echo "Warning: Could not download test MP3 file"
+        
+        # Use bundled minimal test file if available, otherwise download
+        if [ ! -f tests/fixtures/minimal_test.mp3 ]; then
+          # Download a small public domain MP3 file (fallback)
+          wget -q -O tests/fixtures/test_audio.mp3 "https://file-examples.com/storage/fe27a26580566fc2afcde57/2017/11/file_example_MP3_700KB.mp3" || \
+          wget -q -O tests/fixtures/test_audio.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" || \
+          echo "Warning: Could not download test MP3 file, using bundled file"
+        else
+          cp tests/fixtures/minimal_test.mp3 tests/fixtures/test_audio.mp3
+        fi
         
         # Create a small test image
         python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"

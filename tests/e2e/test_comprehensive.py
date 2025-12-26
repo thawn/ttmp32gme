@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from mutagen.mp3 import MP3
-from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, APIC
+from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, APIC, TRCK
 from PIL import Image
 import io
 
@@ -60,7 +60,8 @@ def test_audio_files():
         try:
             audio = MP3(test_file, ID3=ID3)
             audio.add_tags()
-        except:
+        except Exception:
+            # Tags may already exist
             pass
         
         audio = MP3(test_file)
@@ -74,7 +75,6 @@ def test_audio_files():
         if 'year' in test_case:
             audio.tags.add(TDRC(encoding=3, text=test_case['year']))
         if 'track' in test_case:
-            from mutagen.id3 import TRCK
             audio.tags.add(TRCK(encoding=3, text=str(test_case['track'])))
         
         # Add cover image if requested

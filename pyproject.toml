@@ -44,8 +44,4 @@ markers = [
 addopts = "-v --strict-markers"
 
 [tool.uv]
-dev-dependencies = [
-    "pytest>=7.4.0",
-    "pytest-html>=4.0.0",
-    "selenium>=4.15.0",
-]
+# Using same dependencies as project.optional-dependencies.test
