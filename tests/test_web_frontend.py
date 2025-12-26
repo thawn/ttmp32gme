@@ -18,12 +18,12 @@ class TestWebPages:
         return os.environ.get('TTMP32GME_URL', 'http://localhost:10020')
     
     def test_library_page_exists(self, base_url):
-        """Test that library.html page exists and returns 200"""
+        """Test that library page exists and returns 200"""
         # This is a basic test that would run when the server is up
         # In a real scenario, the server should be started before running tests
         # For now, we'll structure the test properly
         try:
-            response = requests.get(f"{base_url}/library.html", timeout=5)
+            response = requests.get(f"{base_url}/library", timeout=5)
             # If server is running, should return 200 or redirect
             assert response.status_code in [200, 302, 303], \
                 f"Expected status 200/302/303, got {response.status_code}"
@@ -31,27 +31,27 @@ class TestWebPages:
             pytest.skip("Server not running - skipping integration test")
     
     def test_upload_page_exists(self, base_url):
-        """Test that upload.html page exists"""
+        """Test that upload (root) page exists"""
         try:
-            response = requests.get(f"{base_url}/upload.html", timeout=5)
+            response = requests.get(f"{base_url}/", timeout=5)
             assert response.status_code in [200, 302, 303], \
                 f"Expected status 200/302/303, got {response.status_code}"
         except requests.exceptions.ConnectionError:
             pytest.skip("Server not running - skipping integration test")
     
     def test_config_page_exists(self, base_url):
-        """Test that config.html page exists"""
+        """Test that config page exists"""
         try:
-            response = requests.get(f"{base_url}/config.html", timeout=5)
+            response = requests.get(f"{base_url}/config", timeout=5)
             assert response.status_code in [200, 302, 303], \
                 f"Expected status 200/302/303, got {response.status_code}"
         except requests.exceptions.ConnectionError:
             pytest.skip("Server not running - skipping integration test")
     
     def test_help_page_exists(self, base_url):
-        """Test that help.html page exists"""
+        """Test that help page exists"""
         try:
-            response = requests.get(f"{base_url}/help.html", timeout=5)
+            response = requests.get(f"{base_url}/help", timeout=5)
             assert response.status_code in [200, 302, 303], \
                 f"Expected status 200/302/303, got {response.status_code}"
         except requests.exceptions.ConnectionError:
