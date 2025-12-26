@@ -185,7 +185,62 @@ pp
 * [TipToi Fahrzeugerkundung der Kinderfeuerwehr](https://www.ffrh.de/tiptoi-projekt/)
 
 
-## ToDo
+## Testing
+
+ttmp32gme includes tests for the web frontend to ensure code quality and reliability.
+
+### Running JavaScript Tests
+
+JavaScript tests are written using Jest and test the utility functions in `print.js`.
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+```
+
+### Running Python Tests
+
+Python integration tests verify that the web pages and assets load correctly.
+
+```bash
+# Install test dependencies
+pip install -r requirements-test.txt
+
+# Run tests
+pytest tests/ -v
+
+# Run tests with HTML report
+pytest tests/ -v --html=report.html --self-contained-html
+```
+
+**Note:** Python integration tests will skip if the ttmp32gme server is not running. To run the full integration test suite, start the server first:
+
+```bash
+# In one terminal
+cd src
+perl ttmp32gme.pl
+
+# In another terminal
+pytest tests/ -v
+```
+
+### Continuous Integration
+
+All tests run automatically on GitHub Actions for pull requests and pushes to main branches:
+- **JavaScript tests**: Run on Node.js 18.x and 20.x
+- **Python tests**: Run on Python 3.9, 3.10, 3.11, and 3.12
+
+
+## Web Links
 * integrate wkhtml2pdf into docker image for linux
 * save last selected albums in the browsers local storage
 * import/migrate library from one computer to another
