@@ -13,36 +13,16 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write  # Needed for posting comments on PRs
     
-# Only run when 'run-e2e-tests' label is added or workflow is manually dispatched
 jobs:
-  check-label:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      should-run: ${{ steps.check.outputs.result }}
-    steps:
-      - id: check
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "result=true" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.event.label.name }}" == "run-e2e-tests" ]]; then
-            echo "result=true" >> $GITHUB_OUTPUT
-          else
-            echo "result=false" >> $GITHUB_OUTPUT
-          fi
-
   e2e-tests:
     name: End-to-End Tests with Selenium
     runs-on: ubuntu-latest
-    needs: check-label
-    if: needs.check-label.outputs.should-run == 'true'
+    # Only run when 'run-e2e-tests' label is added or workflow is manually dispatched
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'run-e2e-tests'
     
     permissions:
       contents: read
-      pull-requests: write  # Needed for posting comments
     
     steps:
     - uses: actions/checkout@v4
@@ -121,26 +101,23 @@ jobs:
       run: |
         uv pip install --system -e ".[test]"
     
-    - name: Download and prepare test audio files
+    - name: Prepare test fixtures
       run: |
-        mkdir -p tests/fixtures
+        # Bundled test audio file already exists in repo
+        ls -lh tests/fixtures/test_audio.mp3
         
-        # Use bundled minimal test file if available, otherwise download
-        if [ ! -f tests/fixtures/minimal_test.mp3 ]; then
-          # Download a small public domain MP3 file (fallback)
-          wget -q -O tests/fixtures/test_audio.mp3 "https://file-examples.com/storage/fe27a26580566fc2afcde57/2017/11/file_example_MP3_700KB.mp3" || \
-          wget -q -O tests/fixtures/test_audio.mp3 "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" || \
-          echo "Warning: Could not download test MP3 file, using bundled file"
-        else
-          cp tests/fixtures/minimal_test.mp3 tests/fixtures/test_audio.mp3
+        # Create test cover image if needed
+        if [ ! -f tests/fixtures/test_cover.jpg ]; then
+          python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"
         fi
-        
-        # Create a small test image
-        python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"
         
         # Verify files exist
         ls -lh tests/fixtures/
         
+    - name: Run tttool unit tests (tttool is installed for E2E)
+      run: |
+        pytest tests/unit/test_tttool_handler.py -v --tb=short
+    
     - name: Run E2E tests with pytest
       run: |
         pytest tests/e2e/ -v --tb=short -m "e2e" --html=e2e-report.html --self-contained-html
@@ -152,16 +129,3 @@ jobs:
         name: e2e-test-report
         path: e2e-report.html
       if: always()
-    
-    - name: Comment PR with results
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: '✅ End-to-end tests completed! Check the artifacts for the detailed report.'
-          });

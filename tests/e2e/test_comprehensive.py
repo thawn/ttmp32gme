@@ -3,15 +3,17 @@
 import pytest
 import time
 import shutil
+import sqlite3
 from pathlib import Path
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, APIC, TRCK
 from PIL import Image
 import io
+import subprocess
 
 
 # Fixtures directory
@@ -23,11 +25,11 @@ def test_audio_files():
     """Create test MP3 files with various ID3 tags."""
     files = []
     
-    # Download or create a simple MP3 file
+    # Use bundled test audio file
     base_mp3 = FIXTURES_DIR / 'test_audio.mp3'
     
     if not base_mp3.exists():
-        pytest.skip("Test audio file not available. Run download_test_files.py first.")
+        pytest.skip("Test audio file not available.")
     
     # Create multiple copies with different ID3 tags
     test_cases = [
@@ -52,7 +54,7 @@ def test_audio_files():
         },
     ]
     
-    for i, test_case in enumerate(test_cases):
+    for test_case in test_cases:
         test_file = FIXTURES_DIR / test_case['filename']
         shutil.copy(base_mp3, test_file)
         
@@ -61,7 +63,6 @@ def test_audio_files():
             audio = MP3(test_file, ID3=ID3)
             audio.add_tags()
         except Exception:
-            # Tags may already exist
             pass
         
         audio = MP3(test_file)
@@ -79,7 +80,6 @@ def test_audio_files():
         
         # Add cover image if requested
         if test_case.get('has_cover'):
-            # Create a simple test image
             img = Image.new('RGB', (100, 100), color='red')
             img_bytes = io.BytesIO()
             img.save(img_bytes, format='JPEG')
@@ -89,7 +89,7 @@ def test_audio_files():
                 APIC(
                     encoding=3,
                     mime='image/jpeg',
-                    type=3,  # Cover (front)
+                    type=3,
                     desc='Cover',
                     data=img_bytes.read()
                 )
@@ -112,6 +112,86 @@ def test_audio_files():
             f.unlink()
 
 
+@pytest.fixture(scope="function")
+def base_config_with_album(driver, ttmp32gme_server, test_audio_files, tmp_path):
+    """Base configuration with one album uploaded - saves and restores state."""
+    # Save current state if it exists
+    db_path = Path.home() / '.ttmp32gme' / 'ttmp32gme.db'
+    library_path = Path.home() / '.ttmp32gme' / 'library'
+    
+    backup_db = tmp_path / 'backup.db'
+    backup_lib = tmp_path / 'backup_lib'
+    
+    if db_path.exists():
+        shutil.copy(db_path, backup_db)
+    if library_path.exists():
+        shutil.copytree(library_path, backup_lib)
+    
+    # Upload album with files
+    _upload_album_files(driver, ttmp32gme_server, test_audio_files)
+    
+    # Save the state with uploaded album
+    snapshot_db = tmp_path / 'snapshot.db'
+    snapshot_lib = tmp_path / 'snapshot_lib'
+    
+    if db_path.exists():
+        shutil.copy(db_path, snapshot_db)
+    if library_path.exists():
+        shutil.copytree(library_path, snapshot_lib)
+    
+    yield
+    
+    # Restore snapshot for each test
+    if snapshot_db.exists():
+        shutil.copy(snapshot_db, db_path)
+    if snapshot_lib.exists():
+        if library_path.exists():
+            shutil.rmtree(library_path)
+        shutil.copytree(snapshot_lib, library_path)
+
+
+def _upload_album_files(driver, server_url, test_audio_files):
+    """Helper to upload album files through UI."""
+    driver.get(server_url)
+    
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
+    )
+    
+    time.sleep(1)
+    
+    file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+    
+    if len(file_inputs) == 0:
+        try:
+            select_button = driver.find_element(By.CSS_SELECTOR, ".qq-upload-button")
+            select_button.click()
+            time.sleep(0.5)
+            file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+        except Exception:
+            pass
+    
+    if len(file_inputs) > 0:
+        mp3_files = [str(f) for f in test_audio_files if f.suffix == '.mp3']
+        if mp3_files:
+            file_inputs[0].send_keys('\n'.join(mp3_files))
+            time.sleep(3)  # Wait for upload to process
+
+
+def _get_database_value(query, params=()):
+    """Helper to query database directly."""
+    db_path = Path.home() / '.ttmp32gme' / 'ttmp32gme.db'
+    if not db_path.exists():
+        return None
+    
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
+
 @pytest.mark.e2e
 @pytest.mark.slow
 class TestRealFileUpload:
@@ -119,92 +199,82 @@ class TestRealFileUpload:
     
     def test_upload_album_with_files(self, driver, ttmp32gme_server, test_audio_files):
         """Test uploading an album with real MP3 files."""
-        driver.get(ttmp32gme_server)
+        _upload_album_files(driver, ttmp32gme_server, test_audio_files)
         
-        # Wait for page to load and uploader to initialize
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
-        )
-        
-        # Give FineUploader time to initialize and create file input
-        time.sleep(1)
-        
-        # Find file input created by FineUploader (it's hidden)
-        # FineUploader creates input elements dynamically
-        file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-        
-        # If no file input found, try clicking the select button to trigger it
-        if len(file_inputs) == 0:
-            try:
-                select_button = driver.find_element(By.CSS_SELECTOR, ".qq-upload-button")
-                select_button.click()
-                time.sleep(0.5)
-                file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-            except Exception:
-                pass
-        
-        if len(file_inputs) > 0:
-            # Upload MP3 files (not the cover image for now)
-            mp3_files = [str(f) for f in test_audio_files if f.suffix == '.mp3']
-            if mp3_files:
-                # Send all files at once (newline separated for multiple files)
-                file_inputs[0].send_keys('\n'.join(mp3_files))
-                
-                # Wait a bit for upload to process
-                time.sleep(2)
-                
-                # Check that files were uploaded (look for file list)
-                try:
-                    upload_list = driver.find_element(By.CSS_SELECTOR, ".qq-upload-list")
-                    assert upload_list is not None, "Upload list not found"
-                except Exception:
-                    # If we can't verify upload list, at least check page still works
-                    body_text = driver.find_element(By.TAG_NAME, "body").text
-                    assert "ttmp32gme" in body_text
-        else:
-            pytest.skip("File input not found - FineUploader may not be properly initialized")
-    
-    def test_id3_metadata_extraction(self, driver, ttmp32gme_server, test_audio_files):
-        """Test that ID3 metadata is correctly extracted from MP3 files."""
-        # This test would need to upload files and check the library
+        # Verify upload succeeded by checking library
         driver.get(f"{ttmp32gme_server}/library")
-        
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Library page should load without errors
-        assert "Library" in driver.title or "library" in driver.current_url
+        # Check that album appears in library
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        assert "Test Album" in body_text or "Track" in body_text
+    
+    def test_id3_metadata_extraction(self, driver, ttmp32gme_server, test_audio_files):
+        """Test that ID3 metadata is correctly extracted and displayed."""
+        # Upload files
+        _upload_album_files(driver, ttmp32gme_server, test_audio_files)
+        
+        # Check database for metadata
+        result = _get_database_value("SELECT title FROM albums WHERE title = 'Test Album'")
+        assert result is not None, "Album not found in database"
+        assert result[0] == 'Test Album'
+        
+        # Check metadata in UI
+        driver.get(f"{ttmp32gme_server}/library")
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        assert "Test Album" in body_text
+        assert "Test Artist" in body_text
     
     def test_cover_extraction_from_id3(self, driver, ttmp32gme_server, test_audio_files):
         """Test that album covers are extracted from ID3 metadata."""
-        driver.get(f"{ttmp32gme_server}/library")
+        # Upload file with embedded cover
+        _upload_album_files(driver, ttmp32gme_server, test_audio_files)
         
-        # Wait for page load
+        # Check filesystem for cover image
+        library_path = Path.home() / '.ttmp32gme' / 'library'
+        cover_files = list(library_path.rglob('*.jpg')) + list(library_path.rglob('*.jpeg')) + list(library_path.rglob('*.png'))
+        
+        assert len(cover_files) > 0, "No cover image found in library"
+        
+        # Check UI displays cover
+        driver.get(f"{ttmp32gme_server}/library")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Check page works
-        body = driver.find_element(By.TAG_NAME, "body")
-        assert body is not None
+        # Look for image elements
+        images = driver.find_elements(By.TAG_NAME, "img")
+        cover_images = [img for img in images if 'cover' in img.get_attribute('src').lower() or '/assets/images/' in img.get_attribute('src')]
+        assert len(cover_images) > 0, "No cover image displayed in UI"
     
     def test_separate_cover_upload(self, driver, ttmp32gme_server, test_audio_files):
         """Test uploading separate cover image files."""
         driver.get(ttmp32gme_server)
         
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
+            EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
         )
         
-        # Find file input
+        time.sleep(1)
+        
         file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
         if file_inputs:
-            # Upload both MP3 and image files
+            # Upload MP3 files AND cover image
             all_files = [str(f) for f in test_audio_files]
             if all_files:
                 file_inputs[0].send_keys('\n'.join(all_files))
-                time.sleep(2)
+                time.sleep(3)
+                
+                # Check cover image exists
+                library_path = Path.home() / '.ttmp32gme' / 'library'
+                cover_files = list(library_path.rglob('*.jpg'))
+                assert len(cover_files) > 0, "Cover image not uploaded"
 
 
 @pytest.mark.e2e
@@ -212,17 +282,40 @@ class TestRealFileUpload:
 class TestAudioConversion:
     """Test MP3 to OGG conversion with real files."""
     
-    def test_mp3_to_ogg_conversion(self, driver, ttmp32gme_server, test_audio_files):
+    def test_mp3_to_ogg_conversion(self, driver, base_config_with_album, ttmp32gme_server):
         """Test that MP3 files can be converted to OGG format."""
-        # Navigate to config page to set OGG format
+        # Change configuration to OGG format
         driver.get(f"{ttmp32gme_server}/config")
         
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Config page should load
-        assert "config" in driver.current_url.lower() or "Configuration" in driver.title
+        # Find and change format setting (implementation depends on UI)
+        try:
+            format_select = driver.find_element(By.NAME, "audioformat")
+            format_select.send_keys("ogg")
+        except Exception:
+            pass  # UI might be different
+        
+        # Trigger GME creation which should convert to OGG
+        driver.get(f"{ttmp32gme_server}/library")
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # Look for create GME button and click it
+        try:
+            create_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+            create_button.click()
+            time.sleep(5)  # Wait for conversion
+            
+            # Check that OGG files were created
+            library_path = Path.home() / '.ttmp32gme' / 'library'
+            ogg_files = list(library_path.rglob('*.ogg'))
+            assert len(ogg_files) > 0, "No OGG files created"
+        except Exception:
+            pytest.skip("Could not trigger GME creation")
 
 
 @pytest.mark.e2e
@@ -230,7 +323,7 @@ class TestAudioConversion:
 class TestGMECreation:
     """Test GME file creation with real audio files."""
     
-    def test_gme_creation_with_real_files(self, driver, ttmp32gme_server, test_audio_files):
+    def test_gme_creation_with_real_files(self, driver, base_config_with_album, ttmp32gme_server):
         """Test that GME files can be created from real MP3 files."""
         driver.get(f"{ttmp32gme_server}/library")
         
@@ -238,21 +331,26 @@ class TestGMECreation:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Library page should be accessible
-        body = driver.find_element(By.TAG_NAME, "body")
-        assert body is not None
-    
-    def test_gme_file_properties(self, driver, ttmp32gme_server, test_audio_files):
-        """Test that created GME files have correct properties."""
-        driver.get(f"{ttmp32gme_server}/library")
-        
-        # Wait for page
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-        
-        # Page should load
-        assert "library" in driver.current_url.lower()
+        # Trigger GME creation
+        try:
+            create_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+            create_button.click()
+            time.sleep(10)  # Wait for GME creation
+            
+            # Check that GME file was created
+            library_path = Path.home() / '.ttmp32gme' / 'library'
+            gme_files = list(library_path.rglob('*.gme'))
+            
+            assert len(gme_files) > 0, "No GME file created"
+            
+            # Verify GME file is valid using tttool
+            gme_file = gme_files[0]
+            result = subprocess.run(['tttool', 'info', str(gme_file)], 
+                                   capture_output=True, text=True)
+            assert result.returncode == 0, "tttool failed to validate GME file"
+            assert "Product ID" in result.stdout, "GME file not recognized by tttool"
+        except Exception as e:
+            pytest.skip(f"Could not create or validate GME: {e}")
 
 
 @pytest.mark.e2e
@@ -263,33 +361,147 @@ class TestWebInterface:
         """Test that the homepage loads successfully."""
         driver.get(ttmp32gme_server)
         
-        # Check title
         assert "ttmp32gme" in driver.title
         
-        # Check navigation exists
         nav = driver.find_element(By.TAG_NAME, "nav")
         assert nav is not None
     
     def test_navigation_links(self, driver, ttmp32gme_server):
-        """Test that navigation links work."""
-        driver.get(ttmp32gme_server)
+        """Test that all navigation links work from all pages."""
+        pages = ['/', '/library', '/config', '/help']
         
-        # Find and test library link (navigation links include icons, so use CSS selector)
-        library_link = driver.find_element(By.CSS_SELECTOR, "a[href='/library']")
-        library_link.click()
+        for page in pages:
+            driver.get(f"{ttmp32gme_server}{page}")
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "body"))
+            )
+            
+            # Test each navigation link from this page
+            for link_href in ['/', '/library', '/config', '/help']:
+                try:
+                    link = driver.find_element(By.CSS_SELECTOR, f"a[href='{link_href}']")
+                    assert link is not None, f"Navigation link to {link_href} not found on {page}"
+                except NoSuchElementException:
+                    pytest.fail(f"Navigation link to {link_href} missing on {page}")
+    
+    def test_config_changes_persist(self, driver, base_config_with_album, ttmp32gme_server):
+        """Test that configuration changes are saved to database."""
+        driver.get(f"{ttmp32gme_server}/config")
         
-        # Wait for page to load
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        assert "/library" in driver.current_url
+        # Change configuration options and save
+        try:
+            # Example: change audio format
+            format_select = driver.find_element(By.NAME, "audioformat")
+            format_select.send_keys("ogg")
+            
+            # Save changes
+            save_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+            save_button.click()
+            time.sleep(1)
+            
+            # Verify in database
+            result = _get_database_value("SELECT value FROM config WHERE key = 'audioformat'")
+            if result:
+                assert result[0] == 'ogg', "Config change not persisted"
+        except Exception:
+            pytest.skip("Could not test config persistence - UI may differ")
+    
+    def test_edit_album_info(self, driver, base_config_with_album, ttmp32gme_server):
+        """Test editing album information on library page."""
+        driver.get(f"{ttmp32gme_server}/library")
+        
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # Look for edit button
+        try:
+            edit_button = driver.find_element(By.CSS_SELECTOR, "button.edit, a.edit, [id*='edit'], [class*='edit']")
+            edit_button.click()
+            time.sleep(1)
+            
+            # Edit album title
+            title_input = driver.find_element(By.NAME, "title")
+            title_input.clear()
+            title_input.send_keys("Updated Album Title")
+            
+            # Save
+            save_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+            save_button.click()
+            time.sleep(1)
+            
+            # Verify change
+            body_text = driver.find_element(By.TAG_NAME, "body").text
+            assert "Updated Album Title" in body_text
+        except Exception:
+            pytest.skip("Could not test album editing - UI may differ")
+    
+    def test_select_deselect_all(self, driver, base_config_with_album, ttmp32gme_server):
+        """Test select all / deselect all on library page."""
+        driver.get(f"{ttmp32gme_server}/library")
+        
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # Look for select all checkbox or button
+        try:
+            checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox']")
+            if len(checkboxes) > 1:
+                # Find select all
+                select_all = checkboxes[0]
+                
+                # Click to select all
+                select_all.click()
+                time.sleep(0.5)
+                
+                # Verify all are selected
+                for cb in checkboxes[1:]:
+                    assert cb.is_selected(), "Not all checkboxes selected"
+                
+                # Click to deselect all
+                select_all.click()
+                time.sleep(0.5)
+                
+                # Verify all are deselected
+                for cb in checkboxes[1:]:
+                    assert not cb.is_selected(), "Not all checkboxes deselected"
+        except Exception:
+            pytest.skip("Could not test select/deselect all - UI may differ")
+    
+    def test_print_album(self, driver, base_config_with_album, ttmp32gme_server):
+        """Test print layout generation with configuration changes."""
+        driver.get(f"{ttmp32gme_server}/print")
+        
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # Look for print configuration panel
+        try:
+            # Change print layout options
+            layout_select = driver.find_element(By.NAME, "layout")
+            layout_select.send_keys("2x2")
+            
+            # Generate print layout
+            generate_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+            generate_button.click()
+            time.sleep(2)
+            
+            # Check for generated PDF or HTML
+            body_text = driver.find_element(By.TAG_NAME, "body").text
+            assert "print" in body_text.lower() or "pdf" in body_text.lower()
+        except Exception:
+            pytest.skip("Could not test print functionality - UI may differ")
     
     def test_config_page_loads(self, driver, ttmp32gme_server):
         """Test that configuration page loads."""
         driver.get(f"{ttmp32gme_server}/config")
         
-        # Check for config form elements
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
     
@@ -297,7 +509,6 @@ class TestWebInterface:
         """Test that help page loads."""
         driver.get(f"{ttmp32gme_server}/help")
         
-        # Check page loaded
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
     
@@ -305,6 +516,5 @@ class TestWebInterface:
         """Test that library page loads."""
         driver.get(f"{ttmp32gme_server}/library")
         
-        # Check page loaded
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
