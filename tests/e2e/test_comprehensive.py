@@ -202,16 +202,50 @@ def _upload_album_files(driver, server_url, test_audio_files):
                 print("DEBUG: Clicking 'Add Album to Library' button")
                 upload_button.click()
                 
-                # Wait for redirect to library page after upload completes
+                # Wait for uploads to complete - check for success indicators
+                print("DEBUG: Waiting for uploads to complete...")
+                try:
+                    # Wait for all items to have success class or for upload list to disappear
+                    WebDriverWait(driver, 30).until(
+                        lambda d: len(d.find_elements(By.CSS_SELECTOR, ".qq-upload-list li")) == 0 or
+                                 all(
+                                     'qq-upload-success' in item.get_attribute('class') or 
+                                     'qq-upload-fail' in item.get_attribute('class')
+                                     for item in d.find_elements(By.CSS_SELECTOR, ".qq-upload-list li")
+                                 )
+                    )
+                    print("DEBUG: All uploads processed")
+                    
+                    # Check for any failed uploads
+                    failed_items = driver.find_elements(By.CSS_SELECTOR, ".qq-upload-list li.qq-upload-fail")
+                    if failed_items:
+                        print(f"DEBUG: {len(failed_items)} uploads failed")
+                        for item in failed_items:
+                            print(f"DEBUG: Failed item: {item.text}")
+                    
+                    # Give a moment for the success/failure state to settle
+                    time.sleep(1)
+                    
+                except TimeoutException:
+                    print("DEBUG: Timeout waiting for upload completion status")
+                
+                # Now wait for redirect to library page after upload completes
                 print("DEBUG: Waiting for redirect to /library...")
-                WebDriverWait(driver, 30).until(
-                    lambda d: '/library' in d.current_url
-                )
-                print(f"DEBUG: Redirected to {driver.current_url}")
-            except TimeoutException:
-                print(f"DEBUG: Timeout waiting for redirect. Current URL: {driver.current_url}")
-                # If redirect doesn't happen, that's okay for some tests
-                pass
+                try:
+                    WebDriverWait(driver, 10).until(
+                        lambda d: '/library' in d.current_url
+                    )
+                    print(f"DEBUG: Redirected to {driver.current_url}")
+                except TimeoutException:
+                    print(f"DEBUG: Timeout waiting for redirect. Current URL: {driver.current_url}")
+                    # Check page source to understand why redirect didn't happen
+                    page_text = driver.find_element(By.TAG_NAME, "body").text
+                    print(f"DEBUG: Page text (first 300 chars): {page_text[:300]}")
+                    # If redirect doesn't happen, that's okay for some tests
+                    pass
+            except Exception as e:
+                print(f"DEBUG: Error during upload process: {e}")
+                raise
     else:
         print("DEBUG: No file inputs found, cannot upload files")
 

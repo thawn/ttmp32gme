@@ -85,18 +85,29 @@ cd "$REPO_ROOT"
 if [ "$SKIP_SETUP" = true ]; then
     print_step "Skipping dependency installation (--skip-setup flag)"
 else
+    INSTALL_LOG="/tmp/e2e_installation.log"
+    echo "Installation output will be written to: $INSTALL_LOG"
+    echo "=====================================================================" > "$INSTALL_LOG"
+    echo "E2E Test Environment Installation Log" >> "$INSTALL_LOG"
+    echo "Started: $(date)" >> "$INSTALL_LOG"
+    echo "=====================================================================" >> "$INSTALL_LOG"
+    echo "" >> "$INSTALL_LOG"
+    
     print_step "Step 1: Installing system dependencies"
 if ! command -v wget &> /dev/null || ! command -v jq &> /dev/null; then
     echo "Installing required tools (wget, unzip, jq)..."
-    sudo apt-get update && sudo apt-get install -y wget unzip jq
+    echo "=> Installing wget, unzip, jq..." >> "$INSTALL_LOG"
+    sudo apt-get update >> "$INSTALL_LOG" 2>&1 && sudo apt-get install -y wget unzip jq >> "$INSTALL_LOG" 2>&1
 fi
 print_success "System dependencies installed"
 
 print_step "Step 2: Installing Chrome and ChromeDriver"
 if ! command -v google-chrome &> /dev/null; then
     echo "Installing Chrome..."
+    echo "=> Downloading Chrome..." >> "$INSTALL_LOG"
     wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    sudo apt install -y ./google-chrome-stable_current_amd64.deb
+    echo "=> Installing Chrome package..." >> "$INSTALL_LOG"
+    sudo apt install -y ./google-chrome-stable_current_amd64.deb >> "$INSTALL_LOG" 2>&1
     rm google-chrome-stable_current_amd64.deb
 fi
 google-chrome --version
@@ -105,8 +116,10 @@ print_success "Chrome installed"
 # Install ChromeDriver - use system package for simplicity and reliability
 echo "Installing ChromeDriver..."
 if ! command -v chromedriver &> /dev/null; then
-    sudo apt-get install -y chromium-chromedriver || {
+    echo "=> Installing chromium-chromedriver..." >> "$INSTALL_LOG"
+    sudo apt-get install -y chromium-chromedriver >> "$INSTALL_LOG" 2>&1 || {
         print_error "Failed to install ChromeDriver"
+        echo "Failed to install ChromeDriver. Check $INSTALL_LOG for details." >> "$INSTALL_LOG"
         exit 1
     }
 fi
@@ -116,21 +129,24 @@ print_success "ChromeDriver installed"
 print_step "Step 3: Installing tttool"
 TTTOOL_VERSION="1.8.1"
 echo "Installing tttool version $TTTOOL_VERSION"
+echo "=> Downloading tttool ${TTTOOL_VERSION}..." >> "$INSTALL_LOG"
 
 # Download tttool
 wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
 
 # Create temporary directory
 TEMP_DIR=$(mktemp -d)
-echo "Using temporary directory: $TEMP_DIR"
+echo "Using temporary directory: $TEMP_DIR" >> "$INSTALL_LOG"
 
 # Extract to temp directory
 cd "$TEMP_DIR"
-unzip -q "$REPO_ROOT/tttool-${TTTOOL_VERSION}.zip"
+echo "=> Extracting tttool..." >> "$INSTALL_LOG"
+unzip -q "$REPO_ROOT/tttool-${TTTOOL_VERSION}.zip" >> "$INSTALL_LOG" 2>&1
 
 # Move binary to system path
-sudo mv tttool /usr/local/bin/
-sudo chmod +x /usr/local/bin/tttool
+echo "=> Installing tttool to /usr/local/bin/..." >> "$INSTALL_LOG"
+sudo mv tttool /usr/local/bin/ >> "$INSTALL_LOG" 2>&1
+sudo chmod +x /usr/local/bin/tttool >> "$INSTALL_LOG" 2>&1
 
 # Clean up
 cd "$REPO_ROOT"
@@ -141,13 +157,15 @@ rm "tttool-${TTTOOL_VERSION}.zip"
 # Verify installation
 if ! tttool --help > /dev/null 2>&1; then
     print_error "tttool installation failed"
+    echo "tttool verification failed" >> "$INSTALL_LOG"
     exit 1
 fi
 print_success "tttool installed successfully"
 
 print_step "Step 4: Installing ffmpeg"
 if ! command -v ffmpeg &> /dev/null; then
-    sudo apt-get install -y ffmpeg
+    echo "=> Installing ffmpeg..." >> "$INSTALL_LOG"
+    sudo apt-get install -y ffmpeg >> "$INSTALL_LOG" 2>&1
 fi
 ffmpeg -version | head -n1
 print_success "ffmpeg installed"
@@ -205,6 +223,22 @@ else
 fi
 
 print_step "Step 7: Starting Flask server in background"
+
+# Check if server is already running from previous run and kill it
+if lsof -i:10020 > /dev/null 2>&1; then
+    echo "Port 10020 is already in use. Killing existing processes..."
+    OLD_PID=$(lsof -t -i:10020)
+    if [ -n "$OLD_PID" ]; then
+        kill $OLD_PID 2>/dev/null || true
+        sleep 2
+        # Force kill if still running
+        if kill -0 $OLD_PID 2>/dev/null; then
+            kill -9 $OLD_PID 2>/dev/null || true
+        fi
+        print_success "Killed existing server (PID: $OLD_PID)"
+    fi
+fi
+
 python -m ttmp32gme.ttmp32gme --port 10020 > /tmp/ttmp32gme_server.log 2>&1 &
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
