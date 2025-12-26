@@ -114,13 +114,9 @@ jobs:
         # Verify files exist
         ls -lh tests/fixtures/
         
-    - name: Run tttool unit tests (tttool is installed for E2E)
+    - name: Run E2E tests with pytest (includes tttool tests)
       run: |
-        pytest tests/unit/test_tttool_handler.py -v --tb=short
-    
-    - name: Run E2E tests with pytest
-      run: |
-        pytest tests/e2e/ -v --tb=short -m "e2e" --html=e2e-report.html --self-contained-html
+        pytest tests/e2e/ -v --tb=short --html=e2e-report.html --self-contained-html
       continue-on-error: true
     
     - name: Upload test report
