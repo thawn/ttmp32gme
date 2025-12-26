@@ -179,11 +179,16 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
     Returns:
         True if successful
     """
-    for album in album_list:
+    logger.info(f"create_library_entry: Processing {len(album_list)} albums")
+    for i, album in enumerate(album_list):
+        logger.info(f"Processing album {i}: {album}")
         if not album:
+            logger.info(f"Album {i} is empty, skipping")
             continue
         
+        logger.info(f"Album {i} has {len(album)} files")
         oid = new_oid(connection)
+        logger.info(f"Generated OID {oid} for album {i}")
         album_data = {}
         track_data = []
         picture_data = None
@@ -267,6 +272,8 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
         album_data['oid'] = oid
         album_data['num_tracks'] = len(track_data)
         
+        logger.info(f"Album {i}: Extracted data - title: {album_data.get('album_title', 'NONE')}, tracks: {len(track_data)}")
+        
         if not album_data.get('album_title'):
             album_data['path'] = 'unknown'
             album_data['album_title'] = 'unknown'
@@ -286,10 +293,13 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
             track['track'] = i
         
         # Write to database
+        logger.info(f"Album {i}: Writing to database - {album_data['album_title']} with {len(track_data)} tracks")
         write_to_database('gme_library', album_data, connection)
         for track in track_data:
             write_to_database('tracks', track, connection)
+        logger.info(f"Album {i}: Successfully written to database")
     
+    logger.info(f"create_library_entry: Completed processing all albums")
     return True
 
 

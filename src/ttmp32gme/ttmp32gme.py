@@ -197,7 +197,8 @@ def upload_post():
     
     elif 'action' in request.form:
         # Copy albums to library
-        logger.info("Copying albums to library")
+        logger.info(f"Copying albums to library. Album list has {len(album_list)} albums")
+        logger.info(f"Album list contents: {album_list}")
         create_library_entry(
             album_list,
             get_db(),
