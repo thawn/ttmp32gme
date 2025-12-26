@@ -5,6 +5,7 @@ import time
 import shutil
 import sqlite3
 from pathlib import Path
+from contextlib import contextmanager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -20,110 +21,115 @@ import subprocess
 FIXTURES_DIR = Path(__file__).parent.parent / 'fixtures'
 
 
-@pytest.fixture(scope="module")
-def test_audio_files():
-    """Create test MP3 files with various ID3 tags."""
+@contextmanager
+def test_audio_files_context():
+    """Context manager to create and cleanup test MP3 files with various ID3 tags."""
     files = []
     
     # Use bundled test audio file
     base_mp3 = FIXTURES_DIR / 'test_audio.mp3'
     
     if not base_mp3.exists():
-        pytest.skip("Test audio file not available.")
+        raise FileNotFoundError("Test audio file not available.")
     
-    # Create multiple copies with different ID3 tags
-    test_cases = [
-        {
-            'filename': 'track1_full_tags.mp3',
-            'title': 'Test Track 1',
-            'artist': 'Test Artist',
-            'album': 'Test Album',
-            'year': '2024',
-            'track': 1,
-            'has_cover': True
-        },
-        {
-            'filename': 'track2_minimal_tags.mp3',
-            'title': 'Test Track 2',
-            'track': 2,
-            'has_cover': False
-        },
-        {
-            'filename': 'track3_no_tags.mp3',
-            'has_cover': False
-        },
-    ]
-    
-    for test_case in test_cases:
-        test_file = FIXTURES_DIR / test_case['filename']
-        shutil.copy(base_mp3, test_file)
+    try:
+        # Create multiple copies with different ID3 tags
+        test_cases = [
+            {
+                'filename': 'track1_full_tags.mp3',
+                'title': 'Test Track 1',
+                'artist': 'Test Artist',
+                'album': 'Test Album',
+                'year': '2024',
+                'track': 1,
+                'has_cover': True
+            },
+            {
+                'filename': 'track2_minimal_tags.mp3',
+                'title': 'Test Track 2',
+                'track': 2,
+                'has_cover': False
+            },
+            {
+                'filename': 'track3_no_tags.mp3',
+                'has_cover': False
+            },
+        ]
         
-        # Add ID3 tags
-        try:
-            audio = MP3(test_file, ID3=ID3)
-            # Try to add tags if they don't exist
-            if audio.tags is None:
-                audio.add_tags()
-        except Exception as e:
-            print(f"Warning: Could not initialize tags for {test_file}: {e}")
-            # Continue anyway - file exists even without tags
-        
-        # Reload audio to ensure clean state
-        try:
-            audio = MP3(test_file)
+        for test_case in test_cases:
+            test_file = FIXTURES_DIR / test_case['filename']
+            shutil.copy(base_mp3, test_file)
             
-            if audio.tags is not None:
-                if 'title' in test_case:
-                    audio.tags.add(TIT2(encoding=3, text=test_case['title']))
-                if 'artist' in test_case:
-                    audio.tags.add(TPE1(encoding=3, text=test_case['artist']))
-                if 'album' in test_case:
-                    audio.tags.add(TALB(encoding=3, text=test_case['album']))
-                if 'year' in test_case:
-                    audio.tags.add(TDRC(encoding=3, text=test_case['year']))
-                if 'track' in test_case:
-                    audio.tags.add(TRCK(encoding=3, text=str(test_case['track'])))
+            # Add ID3 tags
+            try:
+                audio = MP3(test_file, ID3=ID3)
+                # Try to add tags if they don't exist
+                if audio.tags is None:
+                    audio.add_tags()
+            except Exception as e:
+                print(f"Warning: Could not initialize tags for {test_file}: {e}")
+                # Continue anyway - file exists even without tags
+            
+            # Reload audio to ensure clean state
+            try:
+                audio = MP3(test_file)
                 
-                # Add cover image if requested
-                if test_case.get('has_cover'):
-                    img = Image.new('RGB', (100, 100), color='red')
-                    img_bytes = io.BytesIO()
-                    img.save(img_bytes, format='JPEG')
-                    img_bytes.seek(0)
+                if audio.tags is not None:
+                    if 'title' in test_case:
+                        audio.tags.add(TIT2(encoding=3, text=test_case['title']))
+                    if 'artist' in test_case:
+                        audio.tags.add(TPE1(encoding=3, text=test_case['artist']))
+                    if 'album' in test_case:
+                        audio.tags.add(TALB(encoding=3, text=test_case['album']))
+                    if 'year' in test_case:
+                        audio.tags.add(TDRC(encoding=3, text=test_case['year']))
+                    if 'track' in test_case:
+                        audio.tags.add(TRCK(encoding=3, text=str(test_case['track'])))
                     
-                    audio.tags.add(
-                        APIC(
-                            encoding=3,
-                            mime='image/jpeg',
-                            type=3,
-                            desc='Cover',
-                            data=img_bytes.read()
+                    # Add cover image if requested
+                    if test_case.get('has_cover'):
+                        img = Image.new('RGB', (100, 100), color='red')
+                        img_bytes = io.BytesIO()
+                        img.save(img_bytes, format='JPEG')
+                        img_bytes.seek(0)
+                        
+                        audio.tags.add(
+                            APIC(
+                                encoding=3,
+                                mime='image/jpeg',
+                                type=3,
+                                desc='Cover',
+                                data=img_bytes.read()
+                            )
                         )
-                    )
-                
-                audio.save()
-        except Exception as e:
-            print(f"Warning: Could not add tags to {test_file}: {e}")
-            # File still exists and can be uploaded
+                    
+                    audio.save()
+            except Exception as e:
+                print(f"Warning: Could not add tags to {test_file}: {e}")
+                # File still exists and can be uploaded
+            
+            files.append(test_file)
         
-        files.append(test_file)
-    
-    # Create a separate cover image file
-    cover_img = FIXTURES_DIR / 'separate_cover.jpg'
-    img = Image.new('RGB', (200, 200), color='blue')
-    img.save(cover_img, 'JPEG')
-    files.append(cover_img)
-    
-    yield files
-    
-    # Cleanup
-    for f in files:
-        if f.exists():
-            f.unlink()
+        # Create a separate cover image file
+        cover_img = FIXTURES_DIR / 'separate_cover.jpg'
+        img = Image.new('RGB', (200, 200), color='blue')
+        img.save(cover_img, 'JPEG')
+        files.append(cover_img)
+        
+        yield files
+        
+    finally:
+        # Cleanup
+        for f in files:
+            if f.exists():
+                try:
+                    f.unlink()
+                except Exception as e:
+                    print(f"Warning: Could not remove {f}: {e}")
 
 
 @pytest.fixture(scope="function")
-def base_config_with_album(driver, ttmp32gme_server, test_audio_files, tmp_path):
+def base_config_with_album(driver, ttmp32gme_server, tmp_path):
     """Base configuration with one album uploaded - saves and restores state."""
     # Save current state if it exists
     db_path = Path.home() / '.ttmp32gme' / 'ttmp32gme.db'
@@ -137,8 +143,9 @@ def base_config_with_album(driver, ttmp32gme_server, test_audio_files, tmp_path)
     if library_path.exists():
         shutil.copytree(library_path, backup_lib)
     
-    # Upload album with files
-    _upload_album_files(driver, ttmp32gme_server, test_audio_files)
+    # Upload album with files using context manager
+    with test_audio_files_context() as test_files:
+        _upload_album_files(driver, ttmp32gme_server, test_files)
     
     # Save the state with uploaded album
     snapshot_db = tmp_path / 'snapshot.db'
@@ -279,9 +286,10 @@ def _get_database_value(query, params=()):
 class TestRealFileUpload:
     """Test file upload functionality with real MP3 and image files."""
     
-    def test_upload_album_with_files(self, driver, ttmp32gme_server, test_audio_files):
+    def test_upload_album_with_files(self, driver, ttmp32gme_server):
         """Test uploading an album with real MP3 files."""
-        _upload_album_files(driver, ttmp32gme_server, test_audio_files)
+        with test_audio_files_context() as test_files:
+            _upload_album_files(driver, ttmp32gme_server, test_files)
         
         # Should be redirected to library after upload
         # If not, navigate there
@@ -301,10 +309,11 @@ class TestRealFileUpload:
         # Check that album appears in library
         assert "Test Album" in body_text or "Test Track" in body_text, f"Album not found in library. Page text: {body_text[:200]}"
     
-    def test_id3_metadata_extraction(self, driver, ttmp32gme_server, test_audio_files):
+    def test_id3_metadata_extraction(self, driver, ttmp32gme_server):
         """Test that ID3 metadata is correctly extracted and displayed."""
         # Upload files
-        _upload_album_files(driver, ttmp32gme_server, test_audio_files)
+        with test_audio_files_context() as test_files:
+            _upload_album_files(driver, ttmp32gme_server, test_files)
         
         # Check database for metadata
         result = _get_database_value("SELECT title FROM albums WHERE title = 'Test Album'")
@@ -321,10 +330,11 @@ class TestRealFileUpload:
         assert "Test Album" in body_text
         assert "Test Artist" in body_text
     
-    def test_cover_extraction_from_id3(self, driver, ttmp32gme_server, test_audio_files):
+    def test_cover_extraction_from_id3(self, driver, ttmp32gme_server):
         """Test that album covers are extracted from ID3 metadata."""
         # Upload file with embedded cover
-        _upload_album_files(driver, ttmp32gme_server, test_audio_files)
+        with test_audio_files_context() as test_files:
+            _upload_album_files(driver, ttmp32gme_server, test_files)
         
         # Check filesystem for cover image
         library_path = Path.home() / '.ttmp32gme' / 'library'
@@ -343,28 +353,29 @@ class TestRealFileUpload:
         cover_images = [img for img in images if 'cover' in img.get_attribute('src').lower() or '/assets/images/' in img.get_attribute('src')]
         assert len(cover_images) > 0, "No cover image displayed in UI"
     
-    def test_separate_cover_upload(self, driver, ttmp32gme_server, test_audio_files):
+    def test_separate_cover_upload(self, driver, ttmp32gme_server):
         """Test uploading separate cover image files."""
-        driver.get(ttmp32gme_server)
-        
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
-        )
-        
-        time.sleep(1)
-        
-        file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-        if file_inputs:
-            # Upload MP3 files AND cover image
-            all_files = [str(f) for f in test_audio_files]
-            if all_files:
-                file_inputs[0].send_keys('\n'.join(all_files))
-                time.sleep(3)
-                
-                # Check cover image exists
-                library_path = Path.home() / '.ttmp32gme' / 'library'
-                cover_files = list(library_path.rglob('*.jpg'))
-                assert len(cover_files) > 0, "Cover image not uploaded"
+        with test_audio_files_context() as test_files:
+            driver.get(ttmp32gme_server)
+            
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
+            )
+            
+            time.sleep(1)
+            
+            file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+            if file_inputs:
+                # Upload MP3 files AND cover image
+                all_files = [str(f) for f in test_files]
+                if all_files:
+                    file_inputs[0].send_keys('\n'.join(all_files))
+                    time.sleep(3)
+                    
+                    # Check cover image exists
+                    library_path = Path.home() / '.ttmp32gme' / 'library'
+                    cover_files = list(library_path.rglob('*.jpg'))
+                    assert len(cover_files) > 0, "Cover image not uploaded"
 
 
 @pytest.mark.e2e
