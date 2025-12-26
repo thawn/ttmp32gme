@@ -32,6 +32,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 version_file = "src/ttmp32gme/_version.py"
 
+[tool.setuptools.package-data]
+ttmp32gme = ["config.sqlite"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
