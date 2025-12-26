@@ -185,7 +185,8 @@ def upload_post():
             file_path = current_album / filename
             file.save(str(file_path))
             
-            if album_count >= len(album_list):
+            # Ensure album_list has enough elements
+            while len(album_list) <= album_count:
                 album_list.append({})
             
             album_list[album_count][file_uuid] = str(file_path)
