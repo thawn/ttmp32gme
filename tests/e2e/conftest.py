@@ -8,22 +8,10 @@ from pathlib import Path
 
 @pytest.fixture(scope="session")
 def ttmp32gme_server():
-    """Start ttmp32gme server for testing."""
-    # Start server in background
-    server_process = subprocess.Popen(
-        ["python", "-m", "ttmp32gme.ttmp32gme", "--port", "10021"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    
-    # Wait for server to start
-    time.sleep(3)
-    
-    yield "http://localhost:10021"
-    
-    # Cleanup
-    server_process.terminate()
-    server_process.wait(timeout=5)
+    """Return server URL (assumes server is already running from script)."""
+    # When run via run_e2e_tests_locally.sh, server is already started
+    # Just return the URL
+    return "http://localhost:10020"
 
 
 @pytest.fixture
