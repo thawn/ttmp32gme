@@ -293,16 +293,22 @@ class TestRealFileUpload:
             print(f"DEBUG: Not redirected to library, manually navigating")
             driver.get(f"{ttmp32gme_server}/library")
         
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-        
-        # Debug: print page source if test fails
-        body_text = driver.find_element(By.TAG_NAME, "body").text
-        if "Test Album" not in body_text and "Test Track" not in body_text:
-            print(f"DEBUG: Library page text: {body_text[:500]}")
+        # Wait for library page to load and albums to be populated via AJAX
+        # The library page loads albums dynamically, so we need to wait for content
+        try:
+            # Wait for album title to appear (populated by AJAX)
+            WebDriverWait(driver, 20).until(
+                lambda d: "Test Album" in d.find_element(By.TAG_NAME, "body").text
+            )
+            print("DEBUG: Album found in library page")
+        except:
+            # If timeout, print debug info
+            body_text = driver.find_element(By.TAG_NAME, "body").text
+            print(f"DEBUG: Timeout waiting for album. Library page text: {body_text[:500]}")
+            raise
             
-        # Check that album appears in library
+        # Verify album appears in library
+        body_text = driver.find_element(By.TAG_NAME, "body").text
         assert "Test Album" in body_text or "Test Track" in body_text, f"Album not found in library. Page text: {body_text[:200]}"
     
     def test_id3_metadata_extraction(self, driver, ttmp32gme_server):
