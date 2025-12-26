@@ -14,7 +14,14 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 ## Installation
 * Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer).
 * linux: 
-  * docker (recommended):
+  * **Python (Recommended)**:
+     * Install Python 3.11 or higher
+     * Clone this repository: `git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme`
+     * Install dependencies: `pip install -e .`
+     * Install [tttool](https://github.com/entropia/tip-toi-reveng#installation)
+     * Run: `ttmp32gme` or `python -m ttmp32gme.ttmp32gme`
+     * Open http://localhost:10020 in your browser
+  * docker (also recommended):
      * Using the provided installer: download (right click and save as...) [install.sh](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/install.sh) and [ttmp32gme](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/ttmp32gme) into the same directory on our computer. 
        Run `sudo bash install.sh` in a terminal in the same directory where you saved the files. 
        Afterwards, you can start ttmp32gme with `ttmp32gme start` and stop it with `ttmp32gme stop`. 
@@ -27,7 +34,7 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
        A complete docker run command could look like this: `docker run -d --rm --publish 8080:8080 --volume ~/.ttmp32gme:/var/lib/ttmp32gme --volume /media/${USER}/tiptoi:/mnt/tiptoi --name ttmp32gme thawn/ttmp32gme:latest`
     
        Alternatively you can use [docker compose](https://docs.docker.com/compose/) and startup ttmp32gme with `docker-compse up` using the [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml).
-  * native: run the perl sources (see [instructions](#required-libraries-and-perl-modules-for-running-ttmp32gme-from-source) below)
+  * Perl (legacy): run the perl sources (see [instructions](#perl-backend-legacy) below)
 
 ## Usage
 ### 1. Add mp3 files
@@ -116,7 +123,67 @@ disconnect the pen from the computer.
 
 ## Required libraries and perl modules (for running ttmp32gme from source)
 
-### Required libraries
+### Python Backend (Recommended)
+
+ttmp32gme now includes a Python backend as an alternative to the Perl implementation.
+
+#### Requirements
+
+- Python 3.11 or higher
+- tttool (see installation instructions below)
+- Optional: ffmpeg (for OGG format support)
+- Optional: wkhtmltopdf 0.13.x (for PDF generation on Linux)
+
+#### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/thawn/ttmp32gme.git
+   cd ttmp32gme
+   ```
+
+2. Install Python dependencies:
+   ```bash
+   pip install -e .
+   ```
+
+3. Install tttool following the [tttool installation instructions](https://github.com/entropia/tip-toi-reveng#installation)
+
+4. Optional: Install ffmpeg for OGG support:
+   ```bash
+   # On Ubuntu/Debian
+   sudo apt-get install ffmpeg
+   
+   # On macOS
+   brew install ffmpeg
+   ```
+
+#### Running ttmp32gme (Python)
+
+```bash
+# Run with default settings (localhost:10020)
+python -m ttmp32gme.ttmp32gme
+
+# Or use the entry point
+ttmp32gme
+
+# Run with custom port
+ttmp32gme --port 8080
+
+# Run with custom host
+ttmp32gme --host 0.0.0.0 --port 8080
+
+# Show help
+ttmp32gme --help
+```
+
+Now you should be able to access the ttmp32gme user interface at http://localhost:10020 using your web browser.
+
+### Perl Backend (Legacy)
+
+The original Perl backend is still available for those who prefer it.
+
+#### Required libraries
 ttmp32gme requires the following libraries to run"
 `libc6`, `libxml2`, `zlib`
 on a debian (-based) system (including Ubuntu), you can install these by running:
@@ -225,7 +292,10 @@ pytest tests/ -v --html=report.html --self-contained-html
 **Note:** Python integration tests will skip if the ttmp32gme server is not running. To run the full integration test suite, start the server first:
 
 ```bash
-# In one terminal
+# In one terminal - using Python backend
+ttmp32gme
+
+# Or using Perl backend
 cd src
 perl ttmp32gme.pl
 
