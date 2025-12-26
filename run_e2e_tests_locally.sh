@@ -47,22 +47,14 @@ fi
 google-chrome --version
 print_success "Chrome installed"
 
-# Install ChromeDriver using Chrome for Testing API
-CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1)
-echo "Installing ChromeDriver for Chrome $CHROME_VERSION..."
-CHROMEDRIVER_URL="https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json"
-CHROMEDRIVER_VERSION=$(curl -s "$CHROMEDRIVER_URL" | jq -r ".builds.\"$CHROME_VERSION\".version")
-
-if [ -z "$CHROMEDRIVER_VERSION" ] || [ "$CHROMEDRIVER_VERSION" = "null" ]; then
-    echo "Could not find ChromeDriver for Chrome version $CHROME_VERSION, using latest stable"
-    CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE")
+# Install ChromeDriver - use system package for simplicity and reliability
+echo "Installing ChromeDriver..."
+if ! command -v chromedriver &> /dev/null; then
+    sudo apt-get install -y chromium-chromedriver || {
+        print_error "Failed to install ChromeDriver"
+        exit 1
+    }
 fi
-
-wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip"
-unzip -q chromedriver-linux64.zip
-sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
-sudo chmod +x /usr/local/bin/chromedriver
-rm -rf chromedriver-linux64 chromedriver-linux64.zip
 chromedriver --version
 print_success "ChromeDriver installed"
 
@@ -106,13 +98,27 @@ ffmpeg -version | head -n1
 print_success "ffmpeg installed"
 
 print_step "Step 5: Installing Python dependencies"
-if ! command -v uv &> /dev/null; then
-    echo "Installing uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    export PATH="$HOME/.cargo/bin:$PATH"
+if command -v uv &> /dev/null; then
+    echo "Using uv for package installation..."
+    uv pip install --system -e ".[test]"
+else
+    echo "uv not available, trying to install..."
+    if curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh; then
+        # Add uv to PATH
+        export PATH="$HOME/.cargo/bin:$PATH"
+        export PATH="$HOME/.local/bin:$PATH"
+        # Try to find uv
+        if command -v uv &> /dev/null; then
+            uv pip install --system -e ".[test]"
+        else
+            echo "uv installed but not found in PATH, falling back to pip..."
+            pip install -e ".[test]"
+        fi
+    else
+        echo "uv installation failed, falling back to pip..."
+        pip install -e ".[test]"
+    fi
 fi
-
-uv pip install --system -e ".[test]"
 print_success "Python dependencies installed"
 
 print_step "Step 6: Running unit tests (including tttool tests)"
