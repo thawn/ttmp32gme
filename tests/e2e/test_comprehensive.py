@@ -152,15 +152,19 @@ def base_config_with_album(driver, ttmp32gme_server, test_audio_files, tmp_path)
 
 def _upload_album_files(driver, server_url, test_audio_files):
     """Helper to upload album files through UI."""
+    print(f"DEBUG: Navigating to {server_url}")
     driver.get(server_url)
     
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
     )
+    print("DEBUG: FineUploader container found")
     
     time.sleep(1)
     
+    # Find file input (may be hidden by FineUploader)
     file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+    print(f"DEBUG: Found {len(file_inputs)} file inputs initially")
     
     if len(file_inputs) == 0:
         try:
@@ -168,14 +172,48 @@ def _upload_album_files(driver, server_url, test_audio_files):
             select_button.click()
             time.sleep(0.5)
             file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-        except Exception:
+            print(f"DEBUG: After clicking select button, found {len(file_inputs)} file inputs")
+        except Exception as e:
+            print(f"DEBUG: Error clicking select button: {e}")
             pass
     
     if len(file_inputs) > 0:
         mp3_files = [str(f) for f in test_audio_files if f.suffix == '.mp3']
+        print(f"DEBUG: Uploading {len(mp3_files)} MP3 files: {mp3_files}")
         if mp3_files:
+            # Send files to input
             file_inputs[0].send_keys('\n'.join(mp3_files))
-            time.sleep(3)  # Wait for upload to process
+            time.sleep(2)  # Wait for FineUploader to process file selection
+            print("DEBUG: Files sent to input, waiting for FineUploader to process")
+            
+            # Check if files were added to the upload list
+            try:
+                upload_list = driver.find_element(By.CSS_SELECTOR, ".qq-upload-list")
+                list_items = upload_list.find_elements(By.TAG_NAME, "li")
+                print(f"DEBUG: Upload list has {len(list_items)} items")
+            except Exception as e:
+                print(f"DEBUG: Could not check upload list: {e}")
+            
+            # Click "Add Album to Library" button to trigger upload
+            try:
+                upload_button = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.ID, "trigger-upload"))
+                )
+                print("DEBUG: Clicking 'Add Album to Library' button")
+                upload_button.click()
+                
+                # Wait for redirect to library page after upload completes
+                print("DEBUG: Waiting for redirect to /library...")
+                WebDriverWait(driver, 30).until(
+                    lambda d: '/library' in d.current_url
+                )
+                print(f"DEBUG: Redirected to {driver.current_url}")
+            except TimeoutException:
+                print(f"DEBUG: Timeout waiting for redirect. Current URL: {driver.current_url}")
+                # If redirect doesn't happen, that's okay for some tests
+                pass
+    else:
+        print("DEBUG: No file inputs found, cannot upload files")
 
 
 def _get_database_value(query, params=()):
@@ -201,15 +239,23 @@ class TestRealFileUpload:
         """Test uploading an album with real MP3 files."""
         _upload_album_files(driver, ttmp32gme_server, test_audio_files)
         
-        # Verify upload succeeded by checking library
-        driver.get(f"{ttmp32gme_server}/library")
+        # Should be redirected to library after upload
+        # If not, navigate there
+        if '/library' not in driver.current_url:
+            print(f"DEBUG: Not redirected to library, manually navigating")
+            driver.get(f"{ttmp32gme_server}/library")
+        
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
-        # Check that album appears in library
+        # Debug: print page source if test fails
         body_text = driver.find_element(By.TAG_NAME, "body").text
-        assert "Test Album" in body_text or "Track" in body_text
+        if "Test Album" not in body_text and "Test Track" not in body_text:
+            print(f"DEBUG: Library page text: {body_text[:500]}")
+            
+        # Check that album appears in library
+        assert "Test Album" in body_text or "Test Track" in body_text, f"Album not found in library. Page text: {body_text[:200]}"
     
     def test_id3_metadata_extraction(self, driver, ttmp32gme_server, test_audio_files):
         """Test that ID3 metadata is correctly extracted and displayed."""
