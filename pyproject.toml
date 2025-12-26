@@ -19,6 +19,7 @@ dependencies = [
 test = [
     "pytest>=7.4.0",
     "pytest-html>=4.0.0",
+    "selenium>=4.15.0",
 ]
 
 [project.scripts]
@@ -30,3 +31,14 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 version_file = "src/ttmp32gme/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "e2e: End-to-end tests using Selenium (deselect with '-m \"not e2e\"')",
+    "slow: Slow tests (deselect with '-m \"not slow\"')",
+]
+addopts = "-v --strict-markers"
