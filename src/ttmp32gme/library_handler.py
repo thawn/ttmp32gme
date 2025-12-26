@@ -462,7 +462,7 @@ def get_album_online(oid: int, httpd, connection) -> Dict[str, Any]:
     
     Args:
         oid: Album OID
-        httpd: HTTP server instance
+        httpd: HTTP server instance (not used in Flask - routes handle this)
         connection: Database connection
         
     Returns:
@@ -472,8 +472,9 @@ def get_album_online(oid: int, httpd, connection) -> Dict[str, Any]:
     if not album:
         return {}
     
-    # TODO: Register album files with HTTP server
-    # This would involve adding routes for cover images and other assets
+    # Files are served automatically via Flask routes in ttmp32gme.py
+    # /assets/images/<oid>/<filename> for covers
+    # /assets/images/<oid_file> for OID codes
     
     return album
 
@@ -484,11 +485,12 @@ def put_file_online(file_path: Path, online_path: str, httpd) -> bool:
     Args:
         file_path: Local file path
         online_path: URL path
-        httpd: HTTP server instance
+        httpd: HTTP server instance (not used in Flask - routes handle this)
         
     Returns:
         True if successful
     """
-    # TODO: Implement HTTP route registration
-    # This depends on the web framework being used (Flask, etc.)
+    # Files are served automatically via Flask routes in ttmp32gme.py
+    # No dynamic route registration needed - the serve_dynamic_image route
+    # handles all /assets/images/* requests
     return True

@@ -39,8 +39,7 @@ def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict],
         oid_file = oid_files[0]
         oid_path = f'/assets/images/{oid_file.name}'
         
-        # Register file with HTTP server (TODO: implement)
-        # put_file_online(oid_file, oid_path, httpd)
+        # File is automatically served via Flask route in ttmp32gme.py
         
         content += '<li class="list-group-item">'
         content += f'<table width="100%"><tr><td><div class="img-6mm track-img-container">'
@@ -80,7 +79,7 @@ def format_controls(oid_map: Dict[str, Dict], httpd, connection) -> str:
     content = ""
     for i, (oid_file, oid, icon) in enumerate(zip(oid_files, oids, icons)):
         oid_path = f'/assets/images/{oid_file.name}'
-        # put_file_online(oid_file, oid_path, httpd)
+        # File is automatically served via Flask route in ttmp32gme.py
         content += template.format(oid_path, oid, icon)
     
     return content
@@ -106,7 +105,7 @@ def format_track_control(track_no: int, oid_map: Dict[str, Dict],
     oid_file = oid_files[0]
     oid_path = f'/assets/images/{oid_file.name}'
     
-    # put_file_online(oid_file, oid_path, httpd)
+    # File is automatically served via Flask route in ttmp32gme.py
     
     template = ('<a class="btn btn-default play-control">'
                '<img class="img-24mm play-img" src="{}" alt="oid: {}">{}</a>')
@@ -131,7 +130,7 @@ def format_main_oid(oid: int, oid_map: Dict[str, Dict],
     oid_file = oid_files[0]
     oid_path = f'/assets/images/{oid_file.name}'
     
-    # put_file_online(oid_file, oid_path, httpd)
+    # File is automatically served via Flask route in ttmp32gme.py
     
     return f'<img class="img-24mm play-img" src="{oid_path}" alt="oid: {oid}">'
 
@@ -197,8 +196,7 @@ def create_print_layout(oids: List[int], template, config: Dict[str, Any],
         album['main_oid_image'] = format_main_oid(oid, oid_map, httpd, connection)
         album['formatted_cover'] = format_cover(album)
         
-        # Render template (TODO: implement template rendering)
-        # For now, just add a simple HTML representation
+        # Create HTML for album (templates would be better, but this works for now)
         content += f'<div class="album" data-oid="{oid}">'
         content += f'<h2>{album.get("album_title", "Unknown")}</h2>'
         content += album['formatted_cover']

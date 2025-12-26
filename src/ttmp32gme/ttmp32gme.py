@@ -308,7 +308,7 @@ def print_page():
     data = json.loads(request.args.get('data', '{}'))
     oids = data.get('oids', [])
     
-    # TODO: Load and use actual print template
+    # Create print layout content
     content = create_print_layout(oids, None, config, None, get_db())
     
     return render_template('print.html',
@@ -429,6 +429,38 @@ def help_page():
 def serve_asset(filename):
     """Serve static assets."""
     return send_from_directory(app.static_folder, filename)
+
+
+@app.route('/assets/images/<path:filename>')
+def serve_dynamic_image(filename):
+    """Serve dynamically generated images (OID codes, covers, etc.)."""
+    from .build.file_handler import get_oid_cache, get_default_library_path
+    
+    # Check OID cache first
+    oid_cache = get_oid_cache()
+    image_path = oid_cache / filename
+    if image_path.exists():
+        return send_from_directory(oid_cache, filename)
+    
+    # Check if it's an album cover (format: oid/filename)
+    parts = filename.split('/', 1)
+    if len(parts) == 2:
+        oid_str, cover_filename = parts
+        try:
+            db = get_db()
+            cursor = db.cursor()
+            cursor.execute('SELECT path FROM gme_library WHERE oid=?', (int(oid_str),))
+            row = cursor.fetchone()
+            if row:
+                album_path = Path(row[0])
+                cover_path = album_path / cover_filename
+                if cover_path.exists():
+                    return send_from_directory(album_path, cover_filename)
+        except (ValueError, Exception) as e:
+            logger.error(f"Error serving album cover: {e}")
+    
+    # Return 404 if file not found
+    return "File not found", 404
 
 
 def main():

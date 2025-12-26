@@ -1,6 +1,6 @@
 [project]
 name = "ttmp32gme"
-version = "1.0.1"
+dynamic = ["version"]
 description = "TipToi MP3 to GME converter - Python backend"
 requires-python = ">=3.11"
 readme = "README.md"
@@ -25,5 +25,8 @@ test = [
 ttmp32gme = "ttmp32gme.ttmp32gme:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_file = "src/ttmp32gme/_version.py"
