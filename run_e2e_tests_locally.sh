@@ -104,17 +104,8 @@ if ! command -v wget &> /dev/null || ! command -v jq &> /dev/null; then
 fi
 print_success "System dependencies installed"
 
-print_step "Step 2: Installing Chrome and ChromeDriver"
-if ! command -v google-chrome &> /dev/null; then
-    echo "Installing Chrome..."
-    echo "=> Downloading Chrome..." >> "$INSTALL_LOG"
-    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-    echo "=> Installing Chrome package..." >> "$INSTALL_LOG"
-    sudo apt install -y ./google-chrome-stable_current_amd64.deb >> "$INSTALL_LOG" 2>&1
-    rm google-chrome-stable_current_amd64.deb
-fi
-google-chrome --version
-print_success "Chrome installed"
+print_step "Step 2: Installing Chromium and ChromeDriver"
+
 
 # Install ChromeDriver - use system package for simplicity and reliability
 echo "Installing ChromeDriver..."
