@@ -14,31 +14,31 @@
 <script src="/assets/js/jquery.fine-uploader.min.js"></script>
 <script src="/assets/js/jquery-ui.min.js"></script>
 <script>
-var notify = function($caller, title, message, popover_class, timeout) \{
-	   $caller.attr(\{
+var notify = function($caller, title, message, popover_class, timeout) {
+	   $caller.attr({
 		   'title': title,
 		   'data-content': message
-	   \});
+	   });
 	   $caller.popover('show');
 	   $caller.next('.popover').find('.popover-content').addClass(popover_class);
-	   setTimeout(function() \{
+	   setTimeout(function() {
 		   $caller.popover('destroy');
-		\}, timeout);
-\}
+		}, timeout);
+}
 
-var testCheckBox = function(s)\{
-	if ( $(s).is(':checked') )\{
+var testCheckBox = function(s){
+	if ( $(s).is(':checked') ){
 		return 'TRUE';
-	\} else \{
+	} else {
 		return 'FALSE';
-	\}
-\}
+	}
+}
 
-var toggleShow = function($id) \{
+var toggleShow = function($id) {
 	$id.find('div.edit').toggle();
-\}
+}
 
-var insertElement = function(data) \{
+var insertElement = function(data) {
 	var id = 'el' + elementCount;
 
 	var newElement = document.getElementById('element-template').cloneNode(true);
@@ -54,82 +54,82 @@ var insertElement = function(data) \{
 	$id.slideDown(400)
 
 	return id;
-\}
+}
 
-var addElement = function(callback) \{
+var addElement = function(callback) {
 	var $id = $('#new-element-form');
 	var filterVars = getElementValues($id);
 	$.post(document.baseURI, 'action=add&data=' + encodeURIComponent(JSON.stringify(filterVars)))
-			.done(function(data,textStatus,jqXHR) \{
-				if (data.status === "Success.") \{
+			.done(function(data,textStatus,jqXHR) {
+				if (data.status === "Success.") {
 					insertElement(data.element);
 					notify($('#add'), '', jqXHR.statusText, 'bg-success', 2000);
-				\} else \{
+				} else {
 					notify($('#add'), '', jqXHR.statusText, 'bg-danger', 4000);
-				\}
-			\}).fail(function() \{
+				}
+			}).fail(function() {
 				notify($('#add'), '', 'Connection Error', 'bg-danger', 4000);
-			\}).always( function() \{ if (callback) \{callback();\}\});
-\}
+			}).always( function() { if (callback) {callback();}});
+}
 
-var updateElement = function($id) \{
+var updateElement = function($id) {
 	var elementVars = getElementValues($id);
 	postUpdate($id,elementVars);
-\}
+}
 
-var postUpdate = function($id,elementVars) \{
+var postUpdate = function($id,elementVars) {
 	$.post(
 		document.baseURI, 
 		'action=update&data=' + encodeURIComponent(JSON.stringify(elementVars)),
-		function(data,textStatus,jqXHR) \{
-			if (data.success) \{
+		function(data,textStatus,jqXHR) {
+			if (data.success) {
 				fillInElement($id, data.element);
 				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-success',
 						2000);
-			\} else \{
+			} else {
 				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 						4000);
-			\}
-		\}, 'json').fail(function() \{
+			}
+		}, 'json').fail(function() {
 			notify($id.find('button.edit-button'), '', 'Connection error', 'bg-danger',
 					4000);
-		\});
-\}
+		});
+}
 
-var deleteElement = function($id,uid) \{
-	var filterVars = \{
+var deleteElement = function($id,uid) {
+	var filterVars = {
 		'uid' : uid
-	\};
+	};
 	$.post(
 		document.baseURI,
 		'action=delete&data=' + encodeURIComponent(JSON.stringify(filterVars)),
-		function(data,textStatus,jqXHR) \{
-			if (data.success) \{
+		function(data,textStatus,jqXHR) {
+			if (data.success) {
 				var alert = "<tr id=\"dismiss\"><td colspan=\"3\"><div class=\"alert alert-success\" role=\"alert\">Deleted.</div></td></tr>";
 				$id.replaceWith(alert);
-				setTimeout(function() \{
+				setTimeout(function() {
 					$('#dismiss').remove()
-				\}, 2000);
-			\} else \{
+				}, 2000);
+			} else {
 				notify($id.find('button.edit-button'), '', jqXHR.statusText, 'bg-danger',
 						4000);
-			\}
-		\}, 'json').fail(function() \{
+			}
+		}, 'json').fail(function() {
 			notify($id.find('button.edit-button'), '', 'Connection Error', 'bg-danger', 4000);
-		\});
-\}
+		});
+}
 
 </script>
 <style type="text/css">
-.ui-draggable-handle \{
+.ui-draggable-handle {
 	-ms-touch-action: none;
 	touch-action: none
-\}
+}
 
-.ui-sortable-handle \{
+.ui-sortable-handle {
 	-ms-touch-action: none;
 	touch-action: none
-\}
+}
 </style>
 </head>
 
