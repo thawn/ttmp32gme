@@ -303,6 +303,29 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
     return True
 
 
+def db_row_to_album(columns: list, row: sqlite3.Row, connection) -> Dict[str, Any]:
+    """Convert a database row to an album dictionary.
+    
+    Args:
+        cursor: Database cursor
+        row: Database row
+        
+    Returns:
+        Row as dictionary
+    """
+    album = dict(zip(columns, row))
+    for k, v in album.items():
+        if v == 'null':
+            album[k] = None
+    
+    # Add tracks
+    tracks = get_tracks(album, connection)
+    for track_no, track in tracks.items():
+        album[f'track_{track_no}'] = track
+    
+    return album
+
+
 def get_album(oid: int, connection) -> Optional[Dict[str, Any]]:
     """Get album by OID.
     
@@ -321,12 +344,7 @@ def get_album(oid: int, connection) -> Optional[Dict[str, Any]]:
         return None
     
     columns = [desc[0] for desc in cursor.description]
-    album = dict(zip(columns, row))
-    
-    # Add tracks
-    tracks = get_tracks(album, connection)
-    for track_no, track in tracks.items():
-        album[f'track_{track_no}'] = track
+    album = db_row_to_album(columns, row, connection)
     
     return album
 
@@ -349,7 +367,7 @@ def get_album_list(connection, httpd=None, debug: int = 0) -> List[Dict[str, Any
     albums = []
     
     for row in cursor.fetchall():
-        album = dict(zip(columns, row))
+        album = db_row_to_album(columns, row, connection)
         albums.append(album)
     
     return albums
