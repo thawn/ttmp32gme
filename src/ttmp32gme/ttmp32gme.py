@@ -72,6 +72,18 @@ def fetch_config() -> Dict[str, Any]:
     
     if not temp_config.get('library_path'):
         temp_config['library_path'] = str(get_default_library_path())
+
+    # convert strings to numeric types where appropriate
+    if 'port' in temp_config:
+        temp_config['port'] = int(temp_config['port'])
+    if 'tt_dpi' in temp_config:
+        temp_config['tt_dpi'] = int(temp_config['tt_dpi'])
+    if 'tt_pixel-size' in temp_config:
+        temp_config['tt_pixel-size'] = int(temp_config['tt_pixel-size'])
+    if 'print_num_cols' in temp_config:
+        temp_config['print_num_cols'] = int(temp_config['print_num_cols'])
+    if 'print_max_track_controls' in temp_config:
+        temp_config['print_max_track_controls'] = int(temp_config['print_max_track_controls'])  
     
     logger.debug(f'Fetched config: {temp_config}')
     return temp_config
