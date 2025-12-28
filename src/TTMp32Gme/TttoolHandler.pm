@@ -271,9 +271,9 @@ sub create_oids {
 	foreach my $oid ( @{$oids} ) {
 		my $oid_file = file( $target_path, "$oid-$size-$tt_params->{'dpi'}-$tt_params->{'pixel-size'}.png" );
 		if ( !-f $oid_file ) {
-			run_tttool( $tt_command . $oid, "", $dbh )
+			run_tttool( $tt_command . $oid, $target_path, $dbh )
 				or die "Could not create oid file: $!";
-			file("oid-$oid.png")->move_to($oid_file);
+			file($target_path, "oid-$oid.png")->move_to($oid_file);
 		}
 		push( @files, $oid_file );
 	}
