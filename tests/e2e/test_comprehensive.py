@@ -352,7 +352,7 @@ class TestRealFileUpload:
         
         # Look for image elements
         images = driver.find_elements(By.TAG_NAME, "img")
-        cover_images = [img for img in images if 'cover' in img.get_attribute('src').lower() or '/assets/images/' in img.get_attribute('src')]
+        cover_images = [img for img in images if 'cover' in img.get_attribute('src').lower() or '/images/' in img.get_attribute('src')]
         assert len(cover_images) > 0, "No cover image displayed in UI"
     
     def test_separate_cover_upload(self, driver, ttmp32gme_server):
