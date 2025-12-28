@@ -37,7 +37,7 @@ def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict],
         # Create OID image
         oid_files = create_oids([oid_code], 24, connection)
         oid_file = oid_files[0]
-        oid_path = f'/assets/images/{oid_file.name}'
+        oid_path = f'/images/{oid_file.name}'
         
         # File is automatically served via Flask route in ttmp32gme.py
         
@@ -78,7 +78,7 @@ def format_controls(oid_map: Dict[str, Dict], httpd, connection) -> str:
     
     content = ""
     for i, (oid_file, oid, icon) in enumerate(zip(oid_files, oids, icons)):
-        oid_path = f'/assets/images/{oid_file.name}'
+        oid_path = f'/images/{oid_file.name}'
         # File is automatically served via Flask route in ttmp32gme.py
         content += template.format(oid_path, oid, icon)
     
@@ -103,7 +103,7 @@ def format_track_control(track_no: int, oid_map: Dict[str, Dict],
     
     oid_files = create_oids([oid], 24, connection)
     oid_file = oid_files[0]
-    oid_path = f'/assets/images/{oid_file.name}'
+    oid_path = f'/images/{oid_file.name}'
     
     # File is automatically served via Flask route in ttmp32gme.py
     
@@ -146,7 +146,7 @@ def format_cover(album: Dict[str, Any]) -> str:
     """
     if album.get('picture_filename'):
         return (f'<img class="img-responsive cover-img" '
-               f'src="/assets/images/{album["oid"]}/{album["picture_filename"]}" '
+               f'src="/images/{album["oid"]}/{album["picture_filename"]}" '
                f'alt="cover">')
     return ''
 

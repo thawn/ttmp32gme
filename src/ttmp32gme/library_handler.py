@@ -489,8 +489,8 @@ def get_album_online(oid: int, httpd, connection) -> Dict[str, Any]:
         return {}
     
     # Files are served automatically via Flask routes in ttmp32gme.py
-    # /assets/images/<oid>/<filename> for covers
-    # /assets/images/<oid_file> for OID codes
+    # /images/<oid>/<filename> for covers
+    # /images/<oid_file> for OID codes
     
     return album
 
@@ -508,5 +508,5 @@ def put_file_online(file_path: Path, online_path: str, httpd) -> bool:
     """
     # Files are served automatically via Flask routes in ttmp32gme.py
     # No dynamic route registration needed - the serve_dynamic_image route
-    # handles all /assets/images/* requests
+    # handles all /images/* requests
     return True

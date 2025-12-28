@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 # Create Flask app
 app = Flask(__name__,
            static_folder='../assets',
+           static_url_path='/assets/',
            template_folder='../templates')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max upload
 
@@ -427,13 +428,7 @@ def help_page():
                          content=content)
 
 
-@app.route('/assets/<path:filename>')
-def serve_asset(filename):
-    """Serve static assets."""
-    return send_from_directory(app.static_folder, filename)
-
-
-@app.route('/assets/images/<path:filename>')
+@app.route('/images/<path:filename>')
 def serve_dynamic_image(filename):
     """Serve dynamically generated images (OID codes, covers, etc.)."""
     from .build.file_handler import get_oid_cache, get_default_library_path
