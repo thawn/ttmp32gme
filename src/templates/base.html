@@ -69,7 +69,7 @@ var addElement = function(callback) {
 				}
 			}).fail(function() {
 				notify($('#add'), '', 'Connection Error', 'bg-danger', 4000);
-			}).always( function() { if (callback) {callback();}});
+			}).always( function() { if (callback) {callback();} });
 }
 
 var updateElement = function($id) {

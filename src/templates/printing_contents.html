@@ -1,37 +1,36 @@
-<div id="oid_{ $oid }" class="row">
+<div id="oid_{{ oid }}" class="row">
 	<div class="panel panel-default album">
 		<div class="panel-heading">
-			<h4 class="panel-title">{ $album_title }</h4>
+			<h4 class="panel-title">{{ album_title }}</h4>
 		</div>
 		<div class="panel-body">
 			<div class="row">
 				<div class="col-xs-4 cover">
-					{$formatted_cover}
+					{{ formatted_cover }}
 					<div class="power-on">
 						<img class="play-img img-24mm" src="/assets/images/white.png"> <span
-							class="glyphicon glyphicon-off" style=""></span>{ $main_oid_image }
+							class="glyphicon glyphicon-off" style=""></span>{{ main_oid_image }}
 					</div>
 				</div>
 				<div class="col-xs-4 album-info">
 					<ol class="list-group">
 						<li class="list-group-item">
 							<h5 class="list-group-item-heading">Album title:</h5>
-							<p class="list-group-item-text">{ $album_title }</p>
+							<p class="list-group-item-text">{{ album_title }}</p>
 						</li>
 						<li class="list-group-item">
 							<h5 class="list-group-item-heading">Album artist:</h5>
-							<p class="list-group-item-text">{ $album_artist }</p>
+							<p class="list-group-item-text">{{ album_artist }}</p>
 						</li>
 						<li class="list-group-item">
 							<h5 class="list-group-item-heading">Album year:</h5>
-							<p class="list-group-item-text">{ $album_year }</p>
+							<p class="list-group-item-text">{{ album_year }}</p>
 						</li>
 					</ol>
-					<div class="btn-group btn-group-lg btn-group-justified album-controls">{
-						$play_controls }</div>
+					<div class="btn-group btn-group-lg btn-group-justified album-controls">{{ play_controls }}</div>
 				</div>
 				<div class="col-xs-4 tracks">
-					<ul class="list-group track-list">{ $track_list }
+					<ul class="list-group track-list">{{ track_list }}
 					</ul>
 				</div>
 			</div>
