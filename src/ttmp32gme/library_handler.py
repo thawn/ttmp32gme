@@ -314,9 +314,6 @@ def db_row_to_album(columns: list, row: sqlite3.Row, connection) -> Dict[str, An
         Row as dictionary
     """
     album = dict(zip(columns, row))
-    for k, v in album.items():
-        if v == 'null':
-            album[k] = None
     
     # Add tracks
     tracks = get_tracks(album, connection)
