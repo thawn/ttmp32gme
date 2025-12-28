@@ -4,6 +4,7 @@ import subprocess
 import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
+from flask import render_template
 
 from .build.file_handler import get_executable_path, get_default_library_path
 from .library_handler import get_album, get_album_online
@@ -128,7 +129,7 @@ def format_main_oid(oid: int, oid_map: Dict[str, Dict],
     """
     oid_files = create_oids([oid], 24, connection)
     oid_file = oid_files[0]
-    oid_path = f'/assets/images/{oid_file.name}'
+    oid_path = f'/images/{oid_file.name}'
     
     # File is automatically served via Flask route in ttmp32gme.py
     
@@ -196,14 +197,8 @@ def create_print_layout(oids: List[int], template, config: Dict[str, Any],
         album['main_oid_image'] = format_main_oid(oid, oid_map, httpd, connection)
         album['formatted_cover'] = format_cover(album)
         
-        # Create HTML for album (templates would be better, but this works for now)
-        content += f'<div class="album" data-oid="{oid}">'
-        content += f'<h2>{album.get("album_title", "Unknown")}</h2>'
-        content += album['formatted_cover']
-        content += album['main_oid_image']
-        content += album['play_controls']
-        content += f'<ul class="track-list">{album["track_list"]}</ul>'
-        content += '</div>'
+        # Create HTML for album
+        content += render_template('printing_contents.html', **album)
     
     # Add general controls
     content += '<div id="general-controls" class="row general-controls">'
