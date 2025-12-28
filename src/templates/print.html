@@ -37,7 +37,7 @@
 
 		<!-- Collect the nav links, forms, and other content for toggling -->
 		<div class="collapse navbar-collapse" id="main-nav">
-			<ul class="nav navbar-nav">{{ navigation }}
+			<ul class="nav navbar-nav">{{ navigation | safe }}
 			</ul>
 		</div>
 	</nav>
@@ -172,13 +172,13 @@
 		<div class="row">
 			<div class="col-sm-12" style="margin-top: 15px;">
 				<p>
-					{{ print_button }}
+					{{ print_button | safe }}
 				</p>
 			</div>
 		</div>
 	</div>
 	<div class="container">
-		<div id="wrap-all-print">{{ content }}</div>
+		<div id="wrap-all-print">{{ content | safe }}</div>
 	</div>
 
 	<script src="/assets/js/bootstrap.min.js"></script>

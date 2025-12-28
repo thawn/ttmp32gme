@@ -6,10 +6,10 @@
 		<div class="panel-body">
 			<div class="row">
 				<div class="col-xs-4 cover">
-					{{ formatted_cover }}
+					{{ formatted_cover  | safe}}
 					<div class="power-on">
 						<img class="play-img img-24mm" src="/assets/images/white.png"> <span
-							class="glyphicon glyphicon-off" style=""></span>{{ main_oid_image }}
+							class="glyphicon glyphicon-off" style=""></span>{{ main_oid_image | safe }}
 					</div>
 				</div>
 				<div class="col-xs-4 album-info">
@@ -27,10 +27,10 @@
 							<p class="list-group-item-text">{{ album_year }}</p>
 						</li>
 					</ol>
-					<div class="btn-group btn-group-lg btn-group-justified album-controls">{{ play_controls }}</div>
+					<div class="btn-group btn-group-lg btn-group-justified album-controls">{{ play_controls | safe }}</div>
 				</div>
 				<div class="col-xs-4 tracks">
-					<ul class="list-group track-list">{{ track_list }}
+					<ul class="list-group track-list">{{ track_list | safe }}
 					</ul>
 				</div>
 			</div>
