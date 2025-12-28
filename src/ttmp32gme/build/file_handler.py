@@ -1,7 +1,7 @@
 """Build and file handling utilities for ttmp32gme."""
 
 import os
-import sys
+import re
 import platform
 import shutil
 import subprocess
@@ -195,10 +195,7 @@ def cleanup_filename(filename: str) -> str:
         Cleaned filename
     """
     # Remove or replace invalid filename characters
-    invalid_chars = '<>:"|?*'
-    for char in invalid_chars:
-        filename = filename.replace(char, "_")
-    return filename
+    return re.sub(r'[^a-zA-Z0-9]', '_', filename)
 
 
 def get_executable_path(executable_name: str) -> Optional[str]:
