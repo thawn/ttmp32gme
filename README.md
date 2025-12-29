@@ -328,6 +328,7 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 * integrate wkhtml2pdf into docker image for linux
 * save last selected albums in the browsers local storage
 * import/migrate library from one computer to another
+* migrate from library_handler.py to db_handler.py
 * initialize database if none is present
 * configure database path via command line argument
 * configure library path via command line argument
@@ -335,6 +336,12 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 * fix paths in db when library is moved: write test for this
 * make sure upload supports .ogg files
 * testAudioConversion use ttmp32gme.tttool_handler.convert_tracks() directly
+- `test_print_album`: test print functionality properly by first selecting albums, then print selected then wait for redicrect to /print and change the layout options there"
+- implement test_edit_album_info_oid: test that we can change the oid and all data in the gme_library database table (and the parent_oid in the tracks table) is changed accordingly
+- implement test_edit_album_info_reorder_tracks: test that tracks can be re-arranged
+- implement test_edit_album_info_combined: change oid, title, track order and track titles all at once and check the database
+
+
 
 
 ### Maybe later
