@@ -7,7 +7,7 @@ from typing import Dict, List, Any, Optional
 from flask import render_template
 
 from .build.file_handler import get_executable_path, get_default_library_path
-from .library_handler import get_album, get_album_online
+from .library_handler import get_album
 from .tttool_handler import get_sorted_tracks, create_oids
 import platform
 
@@ -191,14 +191,14 @@ def create_print_layout(
         if not oid:
             continue
 
-        album = get_album_online(oid, httpd, connection)
+        album = get_album(oid, connection)
 
         if not album.get("gme_file"):
             # Create GME if it doesn't exist
             from .tttool_handler import make_gme
 
             make_gme(oid, config, connection)
-            album = get_album_online(oid, httpd, connection)
+            album = get_album(oid, connection)
 
             # Refresh OID map after creating GME
             cursor.execute("SELECT script, code FROM script_codes")
