@@ -254,6 +254,24 @@ def _get_database_value(query, params=()):
     return result
 
 
+def _open_library_element_for_editing(ttmp32gme_server, driver, element_number: int = 0)
+    """Open the edit modal of the library element with the given number"""
+    driver.get(f"{ttmp32gme_server}/library") 
+    WebDriverWait(driver, 10).until( 
+        EC.presence_of_element_located((By.TAG_NAME, "body")) 
+    ) 
+  
+    # Look for create GME button and click it 
+    library_row = driver.find_element(By.ID, f"el{element_number}") 
+    edit_button = library_row.find_element(By.CLASS_NAME, "edit-button") 
+    edit_button.click() 
+    print(f"DEBUG: Clicked edit button") 
+    WebDriverWait(driver, 5).until( 
+        EC.element_to_be_clickable((By.CLASS_NAME, "make-gme")) 
+    )
+    return library_row
+
+
 @pytest.mark.e2e
 @pytest.mark.slow
 class TestRealFileUpload:
