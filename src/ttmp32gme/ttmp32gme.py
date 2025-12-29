@@ -33,7 +33,6 @@ from .library_handler import (
     create_library_entry,
     get_album_list,
     get_album,
-    get_album_online,
     update_album,
     delete_album,
     cleanup_album,
@@ -300,7 +299,7 @@ def library_post():
             if action == "update":
                 old_player_mode = data.pop("old_player_mode", None)
                 oid = update_album(data, db)
-                album = get_album_online(oid, None, db)
+                album = get_album(oid, db)
 
                 if old_player_mode and old_player_mode != data.get("player_mode"):
                     make_gme(oid, config, db)
@@ -313,22 +312,22 @@ def library_post():
 
             elif action == "cleanup":
                 oid = cleanup_album(data["uid"], None, db, Path(config["library_path"]))
-                album = get_album_online(oid, None, db)
+                album = get_album(oid, db)
                 return jsonify({"success": True, "element": album})
 
             elif action == "make_gme":
                 oid = make_gme(data["uid"], config, db)
-                album = get_album_online(oid, None, db)
+                album = get_album(oid, db)
                 return jsonify({"success": True, "element": album})
 
             elif action == "copy_gme":
                 oid = copy_gme(data["uid"], config, db)
-                album = get_album_online(oid, None, db)
+                album = get_album(oid, db)
                 return jsonify({"success": True, "element": album})
 
             elif action == "delete_gme_tiptoi":
                 oid = delete_gme_tiptoi(data["uid"], db)
-                album = get_album_online(oid, None, db)
+                album = get_album(oid, db)
                 return jsonify({"success": True, "element": album})
 
         except Exception as e:
@@ -342,7 +341,7 @@ def library_post():
 
         try:
             oid = replace_cover(int(uid), filename, file_data, None, db)
-            album = get_album_online(oid, None, db)
+            album = get_album(oid, db)
             return jsonify({"success": True, "uid": album})
         except Exception as e:
             logger.error(f"Error replacing cover: {e}")

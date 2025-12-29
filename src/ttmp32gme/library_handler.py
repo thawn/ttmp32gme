@@ -528,28 +528,6 @@ def replace_cover(oid: int, filename: str, file_data: bytes, httpd, connection) 
     return oid
 
 
-def get_album_online(oid: int, httpd, connection) -> Dict[str, Any]:
-    """Get album and make files available online.
-
-    Args:
-        oid: Album OID
-        httpd: HTTP server instance (not used in Flask - routes handle this)
-        connection: Database connection
-
-    Returns:
-        Album dictionary
-    """
-    album = get_album(oid, connection)
-    if not album:
-        return {}
-
-    # Files are served automatically via Flask routes in ttmp32gme.py
-    # /images/<oid>/<filename> for covers
-    # /images/<oid_file> for OID codes
-
-    return album
-
-
 def put_file_online(file_path: Path, online_path: str, httpd) -> bool:
     """Make a file available via HTTP server.
 
