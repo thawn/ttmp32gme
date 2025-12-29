@@ -195,7 +195,7 @@ def cleanup_filename(filename: str) -> str:
         Cleaned filename
     """
     # Remove or replace invalid filename characters
-    return re.sub(r'[^a-zA-Z0-9]', '_', filename)
+    return re.sub(r"[^\.a-zA-Z0-9]", "_", filename)
 
 
 def get_executable_path(executable_name: str) -> Optional[str]:
