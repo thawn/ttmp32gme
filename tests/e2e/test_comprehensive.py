@@ -428,13 +428,8 @@ class TestAudioConversion:
         )
 
         # Look for create GME button and click it
-        library_row = driver.find_element(By.ID, "el0")
+        library_row = _open_library_element_for_editing(ttmp32gme_server, driver)
         edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
-        edit_button.click()
-        print(f"DEBUG: Clicked edit button")
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
-        )
         create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
         create_button.click()
         time.sleep(5)  # Wait for conversion
@@ -461,28 +456,26 @@ class TestGMECreation:
         )
 
         # Trigger GME creation
-        try:
-            create_button = driver.find_element(
-                By.CSS_SELECTOR, "button[type='submit']"
-            )
-            create_button.click()
-            time.sleep(10)  # Wait for GME creation
+        # Look for create GME button and click it
+        library_row = _open_library_element_for_editing(ttmp32gme_server, driver)
+        edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+        create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
+        create_button.click()
+        time.sleep(5)  # Wait for conversion
 
-            # Check that GME file was created
-            library_path = Path.home() / ".ttmp32gme" / "library"
-            gme_files = list(library_path.rglob("*.gme"))
+        # Check that GME file was created
+        library_path = Path.home() / ".ttmp32gme" / "library"
+        gme_files = list(library_path.rglob("*.gme"))
 
-            assert len(gme_files) > 0, "No GME file created"
+        assert len(gme_files) > 0, "No GME file created"
 
-            # Verify GME file is valid using tttool
-            gme_file = gme_files[0]
-            result = subprocess.run(
-                ["tttool", "info", str(gme_file)], capture_output=True, text=True
-            )
-            assert result.returncode == 0, "tttool failed to validate GME file"
-            assert "Product ID" in result.stdout, "GME file not recognized by tttool"
-        except Exception as e:
-            pytest.skip(f"Could not create or validate GME: {e}")
+        # Verify GME file is valid using tttool
+        gme_file = gme_files[0]
+        result = subprocess.run(
+            ["tttool", "info", str(gme_file)], capture_output=True, text=True
+        )
+        assert result.returncode == 0, "tttool failed to validate GME file"
+        assert "Product ID" in result.stdout, "GME file not recognized by tttool"
 
 
 @pytest.mark.e2e
