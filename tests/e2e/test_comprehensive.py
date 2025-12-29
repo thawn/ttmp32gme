@@ -522,7 +522,7 @@ class TestWebInterface:
             "SELECT value FROM config WHERE key = 'audio_format'"
         )
         old_value = result[0]
-        new_value = "ogg" if old_value == "mp3" else: "mp3"
+        new_value = "ogg" if old_value == "mp3" else "mp3"
 
         # Change configuration options and save
         # Example: change audio format
