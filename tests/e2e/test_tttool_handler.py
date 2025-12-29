@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import shutil
 from unittest.mock import Mock, patch, MagicMock
+import yaml
 
 from ttmp32gme.tttool_handler import (
     generate_codes_yaml,
@@ -14,6 +15,7 @@ from ttmp32gme.tttool_handler import (
     run_tttool,
     make_gme
 )
+from ttmp32gme.db_handler import DBHandler
 
 
 @pytest.fixture
@@ -21,32 +23,11 @@ def temp_db():
     """Create a temporary database for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "test.db"
-        conn = sqlite3.connect(str(db_path))
-        
-        # Create necessary tables
-        conn.execute('''CREATE TABLE script_codes (
-            script TEXT PRIMARY KEY,
-            code INTEGER
-        )''')
-        
-        conn.execute('''CREATE TABLE albums (
-            oid INTEGER PRIMARY KEY,
-            title TEXT,
-            publisher TEXT,
-            author TEXT
-        )''')
-        
-        conn.execute('''CREATE TABLE tracks (
-            oid INTEGER PRIMARY KEY,
-            album_oid INTEGER,
-            title TEXT,
-            file_path TEXT,
-            track_no INTEGER
-        )''')
-        
-        conn.commit()
-        yield conn
-        conn.close()
+        db = DBHandler(str(db_path))
+        db.connect()
+        db.initialize()
+        yield db
+        db.close()
 
 
 @pytest.fixture
@@ -71,55 +52,54 @@ scripts:
 
 class TestGenerateCodesYaml:
     """Test YAML code generation."""
-    
+
     def test_generates_codes_for_new_scripts(self, temp_db, temp_files):
         """Test that codes are generated for new scripts."""
         yaml_file = temp_files / "test.yaml"
-        
+
         # Generate codes
-        codes_file = generate_codes_yaml(yaml_file, temp_db)
-        
+        codes_file = generate_codes_yaml(yaml_file, temp_db.conn)
+
         assert codes_file.exists()
         assert codes_file.suffix == ".yaml"
         assert "codes" in codes_file.name
-    
+        with open(codes_file, "r") as f:
+            codes_data = yaml.safe_load(f)
+            assert "script1" in codes_data["scriptcodes"].keys()
+            assert "script2" in codes_data["scriptcodes"].keys()
+            assert codes_data["scriptcodes"]["script1"] == 3948
+            assert codes_data["scriptcodes"]["script2"] == 3949
+        query = "SELECT code FROM script_codes WHERE script = 'script1'"
+        assert temp_db.fetchone(query)[0] == 3948
+
     def test_reuses_existing_codes(self, temp_db, temp_files):
         """Test that existing codes are reused."""
         yaml_file = temp_files / "test.yaml"
-        
+
         # Insert some existing codes
-        temp_db.execute("INSERT INTO script_codes VALUES ('script1', 100)")
+        temp_db.execute("INSERT INTO script_codes VALUES ('script1', 1001)")
         temp_db.commit()
-        
+
         # Generate codes
-        codes_file = generate_codes_yaml(yaml_file, temp_db)
-        
+        codes_file = generate_codes_yaml(yaml_file, temp_db.conn)
+
         assert codes_file.exists()
-        
-        # Check that existing code was reused
-        cursor = temp_db.cursor()
-        cursor.execute("SELECT code FROM script_codes WHERE script = 'script1'")
-        code = cursor.fetchone()[0]
-        assert code == 100
+        with open(codes_file, "r") as f:
+            codes_data = yaml.safe_load(f)
+            assert codes_data["scriptcodes"]["script1"] == 1001
 
 
 class TestTttoolParameters:
     """Test tttool parameter retrieval."""
-    
+
     def test_gets_parameters_from_database(self, temp_db):
         """Test getting tttool parameters from config."""
-        # Insert some config
-        temp_db.execute('''CREATE TABLE IF NOT EXISTS config (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )''')
-        temp_db.execute("INSERT INTO config VALUES ('language', 'de')")
-        temp_db.commit()
-        
+
         # Get parameters
-        params = get_tttool_parameters(temp_db)
-        
+        params = get_tttool_parameters(temp_db.conn)
+
         assert isinstance(params, dict)
+        assert params.get("dpi") == "1200"
 
 
 class TestConvertTracks:
