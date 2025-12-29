@@ -518,19 +518,20 @@ class TestWebInterface:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        initial_result = _get_database_value(
+        old_value = _get_database_value(
             "SELECT value FROM config WHERE param ='audio_format'"
-        )
-        old_value = result[0]
+        )[0]
         new_value = "ogg" if old_value == "mp3" else "mp3"
 
         # Change configuration options and save
         # Example: change audio format
         with TransientConfigChange(driver, ttmp32gme_server, "audio_format", "ogg"):
-            result = _get_database_value(
-                "SELECT value FROM config WHERE param ='audio_format'"
-            )
-            assert result[0] == "ogg", "Config change not persisted"
+            assert (
+                _get_database_value(
+                    "SELECT value FROM config WHERE param ='audio_format'"
+                )[0]
+                == "ogg"
+            ), "Config change not persisted"
 
     def test_edit_album_info(self, driver, base_config_with_album, ttmp32gme_server):
         """Test editing album information on library page."""
@@ -540,29 +541,21 @@ class TestWebInterface:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        # Look for edit button
-        try:
-            edit_button = driver.find_element(
-                By.CSS_SELECTOR, "button.edit, a.edit, [id*='edit'], [class*='edit']"
-            )
-            edit_button.click()
-            time.sleep(1)
+        library_element = _open_library_element_for_editing(ttmp32gme_server, driver)
 
-            # Edit album title
-            title_input = driver.find_element(By.NAME, "title")
-            title_input.clear()
-            title_input.send_keys("Updated Album Title")
+        # Edit album title
+        title_input = library_element.find_element(By.NAME, "album_title")
+        title_input.clear()
+        title_input.send_keys("Updated Album Title")
 
-            # Save
-            save_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
-            save_button.click()
-            time.sleep(1)
+        # Save
+        save_button = library_element.find_element(By.CLASS_NAME, "update")
+        save_button.click()
+        time.sleep(1)
 
-            # Verify change
-            body_text = driver.find_element(By.TAG_NAME, "body").text
-            assert "Updated Album Title" in body_text
-        except Exception:
-            pytest.skip("Could not test album editing - UI may differ")
+        # Verify change
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        assert "Updated Album Title" in body_text
 
     def test_select_deselect_all(
         self, driver, base_config_with_album, ttmp32gme_server
