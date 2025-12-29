@@ -325,10 +325,8 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 
 ## ToDo
-* integrate wkhtml2pdf into docker image for linux
-* save last selected albums in the browsers local storage
-* import/migrate library from one computer to another
 * migrate from library_handler.py to db_handler.py
+* use pydantic to validate input from frontend
 * configure database path via command line argument
 * configure library path via command line argument
 * start new server and set up clean library and config for each e2e test
@@ -339,6 +337,9 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 - implement test_edit_album_info_oid: test that we can change the oid and all data in the gme_library database table (and the parent_oid in the tracks table) is changed accordingly
 - implement test_edit_album_info_reorder_tracks: test that tracks can be re-arranged
 - implement test_edit_album_info_combined: change oid, title, track order and track titles all at once and check the database
+* integrate wkhtml2pdf into docker image for linux
+* save last selected albums in the browsers local storage
+* import/migrate library from one computer to another
 
 
 
