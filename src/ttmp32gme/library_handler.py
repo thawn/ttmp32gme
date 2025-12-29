@@ -421,10 +421,14 @@ def update_album(album_data: Dict[str, Any], connection, debug: int = 0) -> int:
         raise ValueError("Album OID/UID is required")
 
     # Remove uid if present (use oid)
-    album_data.pop("uid", None)
+    album_data.pop("uid")
+    old_oid = album_data.pop("old_oid", None)
+
+    if old_oid is None:
+        old_oid = oid
 
     update_data = {k: v for k, v in album_data.items() if k != "oid"}
-    update_table_entry("gme_library", "oid=?", [oid], update_data, connection)
+    update_table_entry("gme_library", "oid=?", [old_oid], update_data, connection)
 
     return oid
 
