@@ -421,7 +421,7 @@ def update_album(album_data: Dict[str, Any], connection, debug: int = 0) -> int:
         raise ValueError("Album OID/UID is required")
 
     # Remove uid if present (use oid)
-    album_data.pop("uid")
+    album_data.pop("uid", None)
     old_oid = album_data.pop("old_oid", None)
 
     if old_oid is None:

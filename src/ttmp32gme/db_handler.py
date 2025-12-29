@@ -572,7 +572,7 @@ class DBHandler:
             raise ValueError("Album OID/UID is required")
 
         # Remove uid if present (use oid)
-        album_data.pop("uid")
+        album_data.pop("uid", None)
 
         # store old_uid and use it for searching the entry to update
         old_oid = album_data.pop("old_oid", None)
