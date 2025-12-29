@@ -289,9 +289,9 @@ class TransientConfigChange():
             f"SELECT value FROM config WHERE param = '{config}'"
         )[0]
         
-    def _get_config_element():
+    def _get_config_element(self):
         """Helper to get audio format setting element from config."""
-        driver.get(f"{self.server_url}/config")
+        self.driver.get(f"{self.server_url}/config")
 
         WebDriverWait(self.driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
@@ -299,7 +299,7 @@ class TransientConfigChange():
 
         return self.driver.find_element(By.ID, self.config)
 
-    def _change_config(setting: str):
+    def _change_config(self, setting: str):
         """Helper to change audio format to OGG in config."""
         format_select = self._get_config_element()
         format_select.send_keys(setting)
