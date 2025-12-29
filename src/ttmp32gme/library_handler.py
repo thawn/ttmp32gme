@@ -1,5 +1,6 @@
 """Library handling module for ttmp32gme - manages albums and tracks."""
 
+import shutil
 import sqlite3
 import logging
 from pathlib import Path
@@ -185,7 +186,7 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
         if not album:
             logger.info(f"Album {i} is empty, skipping")
             continue
-        
+
         logger.info(f"Album {i} has {len(album)} files")
         oid = new_oid(connection)
         logger.info(f"Generated OID {oid} for album {i}")
@@ -193,10 +194,10 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
         track_data = []
         picture_data = None
         track_no = 1
-        
+
         for file_id in sorted(album.keys()):
             file_path = Path(album[file_id])
-            
+
             if file_path.suffix.lower() in ['.mp3', '.ogg']:
                 # Handle audio files
                 try:
@@ -205,24 +206,24 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
                         audio = MP3(str(file_path), ID3=EasyID3)
                     else:
                         audio = MutagenFile(str(file_path))
-                    
+
                     if audio is None:
                         continue
-                    
+
                     # Extract album info (using EasyID3 interface)
                     if not album_data.get('album_title') and 'album' in audio:
                         album_data['album_title'] = str(audio['album'][0])
                         album_data['path'] = cleanup_filename(album_data['album_title'])
-                    
+
                     if not album_data.get('album_artist'):
                         if 'albumartist' in audio:
                             album_data['album_artist'] = str(audio['albumartist'][0])
                         elif 'artist' in audio:
                             album_data['album_artist'] = str(audio['artist'][0])
-                    
+
                     if not album_data.get('album_year') and 'date' in audio:
                         album_data['album_year'] = str(audio['date'][0])
-                    
+
                     # Extract cover if present (need raw ID3 for APIC)
                     if not album_data.get('picture_filename') and file_path.suffix.lower() == '.mp3':
                         mp3_raw = MP3(str(file_path))  # Load with raw ID3 for APIC
@@ -235,30 +236,32 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
                                         apic.mime, picture_data
                                     )
                                     break
-                    
+
                     # Extract track info (using EasyID3 interface)
                     track_info = {
-                        'parent_oid': oid,
-                        'album': str(audio.get('album', [''])[0]),
-                        'artist': str(audio.get('artist', [''])[0]),
-                        'disc': str(audio.get('discnumber', [''])[0]),
-                        'duration': int(audio.info.length * 1000) if audio.info else 0,
-                        'genre': str(audio.get('genre', [''])[0]),
-                        'lyrics': str(audio.get('lyrics', [''])[0]),
-                        'title': str(audio.get('title', [''])[0]),
-                        'track': int(str(audio.get('tracknumber', [track_no])[0]).split('/')[0]),
-                        'filename': str(file_path),
+                        "parent_oid": oid,
+                        "album": str(audio.get("album", [""])[0]),
+                        "artist": str(audio.get("artist", [""])[0]),
+                        "disc": str(audio.get("discnumber", [""])[0]),
+                        "duration": int(audio.info.length * 1000) if audio.info else 0,
+                        "genre": str(audio.get("genre", [""])[0]),
+                        "lyrics": str(audio.get("lyrics", [""])[0]),
+                        "title": str(audio.get("title", [""])[0]),
+                        "track": int(
+                            str(audio.get("tracknumber", [track_no])[0]).split("/")[0]
+                        ),
+                        "filename": file_path,
                     }
-                    
+
                     if not track_info['title']:
                         track_info['title'] = cleanup_filename(file_path.name)
-                    
+
                     track_data.append(track_info)
                     track_no += 1
-                    
+
                 except Exception as e:
                     logger.error(f"Error processing audio file {file_path}: {e}")
-            
+
             elif file_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.gif', '.tif', '.tiff']:
                 # Handle image files
                 try:
@@ -267,38 +270,48 @@ def create_library_entry(album_list: List[Dict], connection, library_path: Path,
                     album_data['picture_filename'] = cleanup_filename(file_path.name)
                 except Exception as e:
                     logger.error(f"Error processing image file {file_path}: {e}")
-        
+
         # Finalize album data
         album_data['oid'] = oid
         album_data['num_tracks'] = len(track_data)
-        
+
         logger.info(f"Album {i}: Extracted data - title: {album_data.get('album_title', 'NONE')}, tracks: {len(track_data)}")
-        
+
         if not album_data.get('album_title'):
             album_data['path'] = 'unknown'
             album_data['album_title'] = 'unknown'
-        
+
         album_path = make_new_album_dir(album_data['path'], library_path)
         album_data['path'] = str(album_path)
-        
+
         # Save cover image
         if album_data.get('picture_filename') and picture_data:
             picture_file = album_path / album_data['picture_filename']
             with open(picture_file, 'wb') as f:
                 f.write(picture_data)
-        
+
         # Sort and renumber tracks
         track_data.sort(key=lambda t: (t.get('disc', 0), t.get('track', 0), t.get('filename', '')))
         for i, track in enumerate(track_data, 1):
             track['track'] = i
-        
+
         # Write to database
         logger.info(f"Album {i}: Writing to database - {album_data['album_title']} with {len(track_data)} tracks")
         write_to_database('gme_library', album_data, connection)
         for track in track_data:
+            target_file = album_path / cleanup_filename(track["filename"].name)
+            try:
+                track["filename"].rename(target_file)
+            except Exception as e:
+                logger.error(
+                    f"Error moving track file {track['filename']} to album directory: {e}"
+                )
+            logger.info(f"moving track file {track['filename']} to {target_file}")
+            track["filename"] = target_file.name
             write_to_database('tracks', track, connection)
         logger.info(f"Album {i}: Successfully written to database")
-    
+        shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)
+
     logger.info(f"create_library_entry: Completed processing all albums")
     return True
 
