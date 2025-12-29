@@ -301,7 +301,7 @@ class TransientConfigChange():
 
     def _change_config(setting: str):
         """Helper to change audio format to OGG in config."""
-        format_select = self._get_config_element():
+        format_select = self._get_config_element()
         format_select.send_keys(setting)
         save_button = self.driver.find_element(By.ID, "submit")
         save_button.click()
