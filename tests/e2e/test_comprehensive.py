@@ -519,7 +519,7 @@ class TestWebInterface:
         )
 
         initial_result = _get_database_value(
-            "SELECT value FROM config WHERE key = 'audio_format'"
+            "SELECT value FROM config WHERE param ='audio_format'"
         )
         old_value = result[0]
         new_value = "ogg" if old_value == "mp3" else "mp3"
@@ -528,7 +528,7 @@ class TestWebInterface:
         # Example: change audio format
         with TransientConfigChange(driver, ttmp32gme_server, "audio_format", "ogg"):
             result = _get_database_value(
-                "SELECT value FROM config WHERE key = 'audio_format'"
+                "SELECT value FROM config WHERE param ='audio_format'"
             )
             assert result[0] == "ogg", "Config change not persisted"
 
