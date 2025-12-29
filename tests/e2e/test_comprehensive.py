@@ -526,17 +526,11 @@ class TestWebInterface:
 
         # Change configuration options and save
         # Example: change audio format
-        _change_config_audio_format(driver, server_url, setting=new_value)
-
-        # Verify in database
-        try:
+        with TransientConfigChange(driver, ttmp32gme_server, "audio_format", "ogg"):
             result = _get_database_value(
                 "SELECT value FROM config WHERE key = 'audio_format'"
             )
-        except Exception as e:
-            prin
-        _change_config_audio_format(driver, server_url, setting=old_value)
-        assert result[0] == "ogg", "Config change not persisted"
+            assert result[0] == "ogg", "Config change not persisted"
 
     def test_edit_album_info(self, driver, base_config_with_album, ttmp32gme_server):
         """Test editing album information on library page."""
