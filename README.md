@@ -328,6 +328,14 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 * integrate wkhtml2pdf into docker image for linux
 * save last selected albums in the browsers local storage
 * import/migrate library from one computer to another
+* initialize database if none is present
+* configure database path via command line argument
+* configure library path via command line argument
+* start new server and set up clean library and config for each e2e test
+* fix paths in db when library is moved: write test for this
+* make sure upload supports .ogg files
+* testAudioConversion use ttmp32gme.tttool_handler.convert_tracks() directly
+
 
 ### Maybe later
 * add and remove music files from library page
