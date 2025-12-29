@@ -308,7 +308,7 @@ def delete_gme_tiptoi(gme_filename: str) -> bool:
     if not tiptoi_dir:
         logger.error("TipToi device not found")
         return False
-    
+
     gme_file = tiptoi_dir / gme_filename
     if gme_file.exists():
         try:
@@ -317,40 +317,32 @@ def delete_gme_tiptoi(gme_filename: str) -> bool:
         except Exception as e:
             logger.error(f"Error deleting GME from TipToi: {e}")
             return False
-    
+
     return False
 
 
-def move_library(old_path: Path, new_path: Path, connection, httpd=None, debug: int = 0) -> str:
+def copy_library(old_path: Path, new_path: Path) -> str:
     """Move library to a new location.
-    
+
     Args:
         old_path: Current library path
         new_path: New library path
-        connection: Database connection
-        httpd: Optional HTTP server instance
-        debug: Debug level
-        
+
     Returns:
         Success message or error description
     """
     old_path = Path(old_path)
     new_path = Path(new_path)
-    
-    if not old_path.exists():
-        return "Old library path does not exist."
-    
-    if new_path.exists() and any(new_path.iterdir()):
-        return "New library path already exists and is not empty."
-    
-    try:
-        new_path.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(old_path, new_path, dirs_exist_ok=True)
-        shutil.rmtree(old_path)
-        return "Success."
-    except Exception as e:
-        logger.error(f"Error moving library: {e}")
-        return f"Error moving library: {e}"
+
+    assert old_path.exists(), "Old library path does not exist."
+
+    assert not (
+        new_path.exists() and any(new_path.iterdir())
+    ), "New library path already exists and is not empty."
+
+    new_path.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(old_path, new_path, dirs_exist_ok=True)
+    return True
 
 
 def open_browser(host: str, port: int) -> bool:
