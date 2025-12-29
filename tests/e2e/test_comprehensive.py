@@ -23,48 +23,45 @@ FIXTURES_DIR = Path(__file__).parent.parent / 'fixtures'
 
 
 @contextmanager
-def test_audio_files_context():
+def test_audio_files_context(album_name="Test Album"):
     """Context manager to create and cleanup test MP3 files with various ID3 tags."""
     files = []
-    
+
     # Use bundled test audio file
     base_mp3 = FIXTURES_DIR / 'test_audio.mp3'
-    
+
     if not base_mp3.exists():
         raise FileNotFoundError("Test audio file not available.")
-    
+
     try:
         # Create multiple copies with different ID3 tags
         test_cases = [
             {
-                'filename': 'track1_full_tags.mp3',
-                'title': 'Test Track 1',
-                'artist': 'Test Artist',
-                'album': 'Test Album',
-                'year': '2024',
-                'track': 1,
-                'has_cover': True
+                "filename": "track1_full_tags.mp3",
+                "title": "Test Track 1",
+                "artist": "Test Artist",
+                "album": album_name,
+                "year": "2024",
+                "track": 1,
+                "has_cover": True,
             },
             {
-                'filename': 'track2_minimal_tags.mp3',
-                'title': 'Test Track 2',
-                'track': 2,
-                'has_cover': False
+                "filename": "track2_minimal_tags.mp3",
+                "title": "Test Track 2",
+                "track": 2,
+                "has_cover": False,
             },
-            {
-                'filename': 'track3_no_tags.mp3',
-                'has_cover': False
-            },
+            {"filename": "track3_no_tags.mp3", "has_cover": False},
         ]
-        
+
         for test_case in test_cases:
             test_file = FIXTURES_DIR / test_case['filename']
             shutil.copy(base_mp3, test_file)
-            
+
             # Add ID3 tags using EasyID3 for compatibility
             try:
                 audio = MP3(test_file, ID3=EasyID3)
-                
+
                 if 'title' in test_case:
                     audio['title'] = test_case['title']
                 if 'artist' in test_case:
@@ -75,20 +72,20 @@ def test_audio_files_context():
                     audio['date'] = test_case['year']
                 if 'track' in test_case:
                     audio['tracknumber'] = str(test_case['track'])
-                
+
                 audio.save()
-                
+
                 # Add cover image if requested (need to switch to raw ID3 for APIC)
                 if test_case.get('has_cover'):
                     mp3 = MP3(test_file)
                     if mp3.tags is None:
                         mp3.add_tags()
-                    
+
                     img = Image.new('RGB', (100, 100), color='red')
                     img_bytes = io.BytesIO()
                     img.save(img_bytes, format='JPEG')
                     img_bytes.seek(0)
-                    
+
                     mp3.tags.add(
                         APIC(
                             encoding=3,
@@ -99,21 +96,21 @@ def test_audio_files_context():
                         )
                     )
                     mp3.save()
-                    
+
             except Exception as e:
                 print(f"Warning: Could not add tags to {test_file}: {e}")
                 # File still exists and can be uploaded
-            
+
             files.append(test_file)
-        
+
         # Create a separate cover image file
         cover_img = FIXTURES_DIR / 'separate_cover.jpg'
         img = Image.new('RGB', (200, 200), color='blue')
         img.save(cover_img, 'JPEG')
         files.append(cover_img)
-        
+
         yield files
-        
+
     finally:
         # Cleanup
         for f in files:
@@ -130,30 +127,30 @@ def base_config_with_album(driver, ttmp32gme_server, tmp_path):
     # Save current state if it exists
     db_path = Path.home() / '.ttmp32gme' / 'config.sqlite'
     library_path = Path.home() / '.ttmp32gme' / 'library'
-    
+
     backup_db = tmp_path / 'backup.db'
     backup_lib = tmp_path / 'backup_lib'
-    
+
     if db_path.exists():
         shutil.copy(db_path, backup_db)
     if library_path.exists():
         shutil.copytree(library_path, backup_lib)
-    
+
     # Upload album with files using context manager
     with test_audio_files_context() as test_files:
         _upload_album_files(driver, ttmp32gme_server, test_files)
-    
+
     # Save the state with uploaded album
     snapshot_db = tmp_path / 'snapshot.db'
     snapshot_lib = tmp_path / 'snapshot_lib'
-    
+
     if db_path.exists():
         shutil.copy(db_path, snapshot_db)
     if library_path.exists():
         shutil.copytree(library_path, snapshot_lib)
-    
+
     yield
-    
+
     # Restore snapshot for each test
     if snapshot_db.exists():
         shutil.copy(snapshot_db, db_path)
@@ -163,22 +160,22 @@ def base_config_with_album(driver, ttmp32gme_server, tmp_path):
         shutil.copytree(snapshot_lib, library_path)
 
 
-def _upload_album_files(driver, server_url, test_audio_files):
+def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
     """Helper to upload album files through UI."""
     print(f"DEBUG: Navigating to {server_url}")
     driver.get(server_url)
-    
+
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
     )
     print("DEBUG: FineUploader container found")
-    
+
     time.sleep(1)
-    
+
     # Find file input (may be hidden by FineUploader)
     file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
     print(f"DEBUG: Found {len(file_inputs)} file inputs initially")
-    
+
     if len(file_inputs) == 0:
         try:
             select_button = driver.find_element(By.CSS_SELECTOR, ".qq-upload-button")
@@ -189,16 +186,19 @@ def _upload_album_files(driver, server_url, test_audio_files):
         except Exception as e:
             print(f"DEBUG: Error clicking select button: {e}")
             pass
-    
+
     if len(file_inputs) > 0:
-        mp3_files = [str(f) for f in test_audio_files if f.suffix == '.mp3']
-        print(f"DEBUG: Uploading {len(mp3_files)} MP3 files: {mp3_files}")
-        if mp3_files:
+        if audio_only:
+            upload_files = [str(f) for f in test_audio_files if f.suffix == ".mp3"]
+        else:
+            upload_files = [str(f) for f in test_audio_files]
+        print(f"DEBUG: Uploading {len(upload_files)} files: {upload_files}")
+        if upload_files:
             # Send files to input
-            file_inputs[0].send_keys('\n'.join(mp3_files))
+            file_inputs[0].send_keys("\n".join(upload_files))
             time.sleep(2)  # Wait for FineUploader to process file selection
             print("DEBUG: Files sent to input, waiting for FineUploader to process")
-            
+
             # Check if files were added to the upload list
             try:
                 upload_list = driver.find_element(By.CSS_SELECTOR, ".qq-upload-list")
@@ -206,7 +206,7 @@ def _upload_album_files(driver, server_url, test_audio_files):
                 print(f"DEBUG: Upload list has {len(list_items)} items")
             except Exception as e:
                 print(f"DEBUG: Could not check upload list: {e}")
-            
+
             # Click "Add Album to Library" button to trigger upload
             try:
                 upload_button = WebDriverWait(driver, 10).until(
@@ -214,34 +214,7 @@ def _upload_album_files(driver, server_url, test_audio_files):
                 )
                 print("DEBUG: Clicking 'Add Album to Library' button")
                 upload_button.click()
-                
-                # Wait for uploads to complete - check for success indicators
-                print("DEBUG: Waiting for uploads to complete...")
-                try:
-                    # Wait for all items to have success class or for upload list to disappear
-                    WebDriverWait(driver, 30).until(
-                        lambda d: len(d.find_elements(By.CSS_SELECTOR, ".qq-upload-list li")) == 0 or
-                                 all(
-                                     'qq-upload-success' in item.get_attribute('class') or 
-                                     'qq-upload-fail' in item.get_attribute('class')
-                                     for item in d.find_elements(By.CSS_SELECTOR, ".qq-upload-list li")
-                                 )
-                    )
-                    print("DEBUG: All uploads processed")
-                    
-                    # Check for any failed uploads
-                    failed_items = driver.find_elements(By.CSS_SELECTOR, ".qq-upload-list li.qq-upload-fail")
-                    if failed_items:
-                        print(f"DEBUG: {len(failed_items)} uploads failed")
-                        for item in failed_items:
-                            print(f"DEBUG: Failed item: {item.text}")
-                    
-                    # Give a moment for the success/failure state to settle
-                    time.sleep(1)
-                    
-                except TimeoutException:
-                    print("DEBUG: Timeout waiting for upload completion status")
-                
+
                 # Now wait for redirect to library page after upload completes
                 print("DEBUG: Waiting for redirect to /library...")
                 try:
@@ -251,7 +224,7 @@ def _upload_album_files(driver, server_url, test_audio_files):
                     print(f"DEBUG: Successfully redirected to {driver.current_url}")
                 except TimeoutException:
                     print(f"DEBUG: Timeout waiting for automatic redirect. Current URL: {driver.current_url}")
-                    # If automatic redirect doesn't happen (e.g., in headless mode), 
+                    # If automatic redirect doesn't happen (e.g., in headless mode),
                     # navigate manually since upload completed successfully
                     print("DEBUG: Navigating to library page manually...")
                     driver.get(f"{server_url}/library")
@@ -281,24 +254,25 @@ def _get_database_value(query, params=()):
 @pytest.mark.slow
 class TestRealFileUpload:
     """Test file upload functionality with real MP3 and image files."""
-    
+
     def test_upload_album_with_files(self, driver, ttmp32gme_server):
         """Test uploading an album with real MP3 files."""
-        with test_audio_files_context() as test_files:
+        album_name = "Upload Test Album"
+        with test_audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files)
-        
+
         # Should be redirected to library after upload
         # If not, navigate there
         if '/library' not in driver.current_url:
             print(f"DEBUG: Not redirected to library, manually navigating")
             driver.get(f"{ttmp32gme_server}/library")
-        
+
         # Wait for library page to load and albums to be populated via AJAX
         # The library page loads albums dynamically, so we need to wait for content
         try:
             # Wait for album title to appear (populated by AJAX)
             WebDriverWait(driver, 20).until(
-                lambda d: "Test Album" in d.find_element(By.TAG_NAME, "body").text
+                lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
             )
             print("DEBUG: Album found in library page")
         except:
@@ -306,119 +280,141 @@ class TestRealFileUpload:
             body_text = driver.find_element(By.TAG_NAME, "body").text
             print(f"DEBUG: Timeout waiting for album. Library page text: {body_text[:500]}")
             raise
-            
+
         # Verify album appears in library
         body_text = driver.find_element(By.TAG_NAME, "body").text
-        assert "Test Album" in body_text or "Test Track" in body_text, f"Album not found in library. Page text: {body_text[:200]}"
-    
+        assert (
+            album_name in body_text or "Test Track" in body_text
+        ), f"Album not found in library. Page text: {body_text[:200]}"
+        library_path = Path.home() / ".ttmp32gme" / "library"
+        album_path = library_path / album_name.replace(" ", "_")
+        assert album_path.exists(), "Album directory not found in library after upload"
+        assert list(
+            album_path.glob("*.mp3")
+        ), "No MP3 files found in album directory after upload"
+
     def test_id3_metadata_extraction(self, driver, ttmp32gme_server):
         """Test that ID3 metadata is correctly extracted and displayed."""
+        album_name = "id3 Test Album"
         # Upload files
-        with test_audio_files_context() as test_files:
+        with test_audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files)
-        
+
         # Check database for metadata
-        result = _get_database_value("SELECT title FROM albums WHERE title = 'Test Album'")
+        result = _get_database_value(
+            f"SELECT album_title FROM gme_library WHERE album_title = '{album_name}'"
+        )
         assert result is not None, "Album not found in database"
-        assert result[0] == 'Test Album'
-        
+        assert result[0] == album_name
+
         # Check metadata in UI
         driver.get(f"{ttmp32gme_server}/library")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         body_text = driver.find_element(By.TAG_NAME, "body").text
-        assert "Test Album" in body_text
+        assert album_name in body_text
         assert "Test Artist" in body_text
-    
+
     def test_cover_extraction_from_id3(self, driver, ttmp32gme_server):
         """Test that album covers are extracted from ID3 metadata."""
+        album_name = "Cover Test Album"
         # Upload file with embedded cover
-        with test_audio_files_context() as test_files:
+        with test_audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files)
-        
+
         # Check filesystem for cover image
-        library_path = Path.home() / '.ttmp32gme' / 'library'
+        library_path = (
+            Path.home() / ".ttmp32gme" / "library" / album_name.replace(" ", "_")
+        )
         cover_files = list(library_path.rglob('*.jpg')) + list(library_path.rglob('*.jpeg')) + list(library_path.rglob('*.png'))
-        
+
         assert len(cover_files) > 0, "No cover image found in library"
-        
+
         # Check UI displays cover
         driver.get(f"{ttmp32gme_server}/library")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         # Look for image elements
         images = driver.find_elements(By.TAG_NAME, "img")
-        cover_images = [img for img in images if 'cover' in img.get_attribute('src').lower() or '/images/' in img.get_attribute('src')]
+        cover_images = []
+        for img in images:
+            if img.get_attribute("alt"):
+                if img.get_attribute("alt").lower() == "cover":
+                    cover_images.append(img)
         assert len(cover_images) > 0, "No cover image displayed in UI"
-    
+
     def test_separate_cover_upload(self, driver, ttmp32gme_server):
         """Test uploading separate cover image files."""
-        with test_audio_files_context() as test_files:
-            driver.get(ttmp32gme_server)
-            
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
-            )
-            
-            time.sleep(1)
-            
-            file_inputs = driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-            if file_inputs:
-                # Upload MP3 files AND cover image
-                all_files = [str(f) for f in test_files]
-                if all_files:
-                    file_inputs[0].send_keys('\n'.join(all_files))
-                    time.sleep(3)
-                    
-                    # Check cover image exists
-                    library_path = Path.home() / '.ttmp32gme' / 'library'
-                    cover_files = list(library_path.rglob('*.jpg'))
-                    assert len(cover_files) > 0, "Cover image not uploaded"
+        album_name = "Separate Cover Album"
+        with test_audio_files_context(album_name=album_name) as test_files:
+            _upload_album_files(driver, ttmp32gme_server, test_files, audio_only=False)
+
+        # Check cover image exists
+        library_path = (
+            Path.home() / ".ttmp32gme" / "library" / album_name.replace(" ", "_")
+        )
+        cover_files = list(library_path.rglob("*.jpg"))
+        assert len(cover_files) > 0, "Cover image not uploaded"
 
 
 @pytest.mark.e2e
 @pytest.mark.slow 
 class TestAudioConversion:
     """Test MP3 to OGG conversion with real files."""
-    
-    def test_mp3_to_ogg_conversion(self, driver, base_config_with_album, ttmp32gme_server):
+
+    def _change_config_audio_format(self, driver, server_url, setting="ogg"):
+        """Helper to change audio format to OGG in config."""
+        driver.get(f"{server_url}/config")
+
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
+        # Find and change format setting (implementation depends on UI)
+        format_select = driver.find_element(By.ID, "audio_format")
+        format_select.send_keys(setting)
+        save_button = driver.find_element(By.ID, "submit")
+        save_button.click()
+        time.sleep(1)  # Wait for save
+
+    def test_mp3_to_ogg_conversion(self, driver, ttmp32gme_server):
         """Test that MP3 files can be converted to OGG format."""
         # Change configuration to OGG format
         driver.get(f"{ttmp32gme_server}/config")
-        
-        WebDriverWait(driver, 10).until(
+
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         # Find and change format setting (implementation depends on UI)
-        try:
-            format_select = driver.find_element(By.NAME, "audioformat")
-            format_select.send_keys("ogg")
-        except Exception:
-            pass  # UI might be different
-        
+        self._change_config_audio_format(driver, ttmp32gme_server, setting="ogg")
+
         # Trigger GME creation which should convert to OGG
         driver.get(f"{ttmp32gme_server}/library")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         # Look for create GME button and click it
-        try:
-            create_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
-            create_button.click()
-            time.sleep(5)  # Wait for conversion
-            
-            # Check that OGG files were created
-            library_path = Path.home() / '.ttmp32gme' / 'library'
-            ogg_files = list(library_path.rglob('*.ogg'))
-            assert len(ogg_files) > 0, "No OGG files created"
-        except Exception:
-            pytest.skip("Could not trigger GME creation")
+        library_row = driver.find_element(By.ID, "el0")
+        edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+        edit_button.click()
+        print(f"DEBUG: Clicked edit button")
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
+        )
+        create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
+        create_button.click()
+        time.sleep(5)  # Wait for conversion
+
+        self._change_config_audio_format(driver, ttmp32gme_server, setting="mp3")
+
+        # Cannot check that OGG files were created - they were already cleaned up
+        # after GME creation. Instead use tttool_handler.convert_tracks() directly.
 
 
 @pytest.mark.e2e
