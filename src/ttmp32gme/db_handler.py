@@ -695,7 +695,7 @@ class DBHandler:
             raise RuntimeError(f"Error updating library paths: {e}")
         return True
 
-    def update(self) -> bool:
+    def update_db(self) -> bool:
         """Update database schema to latest version.
 
         Args:
