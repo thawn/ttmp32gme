@@ -10,9 +10,9 @@ fixtures_dir.mkdir(exist_ok=True)
 # Download small public domain audio files
 test_files = {
     # Very short silent MP3 (public domain)
-    'test_audio.mp3': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    "test_audio.mp3": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     # Small test image (placeholder)
-    'test_cover.jpg': 'https://via.placeholder.com/300x300.jpg?text=Test+Cover',
+    "test_cover.jpg": "https://via.placeholder.com/300x300.jpg?text=Test+Cover",
 }
 
 print("Downloading test files for E2E testing...")

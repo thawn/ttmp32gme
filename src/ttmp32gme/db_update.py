@@ -35,17 +35,17 @@ UPDATE "config" SET value='1.0.0' WHERE param='version';
 
 def update(db_version: str, connection) -> bool:
     """Update database schema to latest version.
-    
+
     Args:
         db_version: Current database version string
         connection: Database connection object
-        
+
     Returns:
         True if update successful
     """
     current_version = Version(db_version)
     cursor = connection.cursor()
-    
+
     for version_str in sorted(UPDATES.keys(), key=Version):
         update_version = Version(version_str)
         if update_version > current_version:
@@ -55,5 +55,5 @@ def update(db_version: str, connection) -> bool:
             except Exception as e:
                 connection.rollback()
                 raise RuntimeError(f"Can't update config file.\n\tError: {e}")
-    
+
     return True

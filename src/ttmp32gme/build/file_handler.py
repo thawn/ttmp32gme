@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def get_local_storage() -> Path:
     """Get the local storage directory for configuration and library.
-    
+
     Returns:
         Path to local storage directory
     """
@@ -24,19 +24,19 @@ def get_local_storage() -> Path:
         base_dir = Path.home() / "Library" / "Application Support"
     else:  # Linux and others
         base_dir = Path.home() / ".ttmp32gme"
-        
+
     if platform.system() != "Linux":
         storage_dir = base_dir / "ttmp32gme"
     else:
         storage_dir = base_dir
-        
+
     storage_dir.mkdir(parents=True, exist_ok=True)
     return storage_dir
 
 
 def get_default_library_path() -> Path:
     """Get the default library path.
-    
+
     Returns:
         Path to default library directory
     """
@@ -47,13 +47,13 @@ def get_default_library_path() -> Path:
 
 def check_config_file() -> Path:
     """Check for and initialize config file if needed.
-    
+
     Returns:
         Path to config file
     """
     config_dir = get_local_storage()
     config_file = config_dir / "config.sqlite"
-    
+
     if not config_file.exists():
         # Copy default config from package
         src_dir = Path(__file__).parent.parent
@@ -61,24 +61,26 @@ def check_config_file() -> Path:
         if default_config.exists():
             shutil.copy(default_config, config_file)
         else:
-            raise FileNotFoundError(f"Could not find default config file at {default_config}")
-    
+            raise FileNotFoundError(
+                f"Could not find default config file at {default_config}"
+            )
+
     return config_file
 
 
 def make_temp_album_dir(temp_name: int, library_path: Optional[Path] = None) -> Path:
     """Create a temporary album directory.
-    
+
     Args:
         temp_name: Numeric identifier for temp directory
         library_path: Optional library path, uses default if not provided
-        
+
     Returns:
         Path to temporary album directory
     """
     if library_path is None:
         library_path = get_default_library_path()
-    
+
     album_path = library_path / "temp" / str(temp_name)
     album_path.mkdir(parents=True, exist_ok=True)
     return album_path
@@ -86,38 +88,38 @@ def make_temp_album_dir(temp_name: int, library_path: Optional[Path] = None) -> 
 
 def make_new_album_dir(album_title: str, library_path: Optional[Path] = None) -> Path:
     """Create a new album directory with unique name.
-    
+
     Args:
         album_title: Title for the album
         library_path: Optional library path, uses default if not provided
-        
+
     Returns:
         Path to new album directory
     """
     if library_path is None:
         library_path = get_default_library_path()
-    
+
     # Make sure no album hogs the temp directory
     if album_title == "temp":
         album_title = "temp_0"
-    
+
     album_path = library_path / album_title
     count = 0
     while album_path.exists():
         album_path = library_path / f"{album_title}_{count}"
         count += 1
-    
+
     album_path.mkdir(parents=True, exist_ok=True)
     return album_path
 
 
 def move_to_album(temp_dir: Path, album_dir: Path) -> bool:
     """Move files from temp directory to album directory.
-    
+
     Args:
         temp_dir: Source temporary directory
         album_dir: Destination album directory
-        
+
     Returns:
         True if successful
     """
@@ -132,10 +134,10 @@ def move_to_album(temp_dir: Path, album_dir: Path) -> bool:
 
 def remove_temp_dir(temp_dir: Path) -> bool:
     """Remove a temporary directory.
-    
+
     Args:
         temp_dir: Temporary directory to remove
-        
+
     Returns:
         True if successful
     """
@@ -149,10 +151,10 @@ def remove_temp_dir(temp_dir: Path) -> bool:
 
 def clear_album(album_dir: Path) -> bool:
     """Clear all files from an album directory.
-    
+
     Args:
         album_dir: Album directory to clear
-        
+
     Returns:
         True if successful
     """
@@ -170,10 +172,10 @@ def clear_album(album_dir: Path) -> bool:
 
 def remove_album(album_dir: Path) -> bool:
     """Remove an album directory completely.
-    
+
     Args:
         album_dir: Album directory to remove
-        
+
     Returns:
         True if successful
     """
@@ -187,10 +189,10 @@ def remove_album(album_dir: Path) -> bool:
 
 def cleanup_filename(filename: str) -> str:
     """Clean up filename by removing invalid characters.
-    
+
     Args:
         filename: Original filename
-        
+
     Returns:
         Cleaned filename
     """
@@ -200,10 +202,10 @@ def cleanup_filename(filename: str) -> str:
 
 def get_executable_path(executable_name: str) -> Optional[str]:
     """Find executable in PATH or common locations.
-    
+
     Args:
         executable_name: Name of executable to find
-        
+
     Returns:
         Path to executable or None if not found
     """
@@ -211,7 +213,7 @@ def get_executable_path(executable_name: str) -> Optional[str]:
     result = shutil.which(executable_name)
     if result:
         return result
-    
+
     # Check common installation locations
     common_paths = [
         Path("/usr/local/bin"),
@@ -219,21 +221,21 @@ def get_executable_path(executable_name: str) -> Optional[str]:
         Path.home() / "bin",
         Path.home() / ".local" / "bin",
     ]
-    
+
     if platform.system() == "Windows":
         executable_name += ".exe"
-    
+
     for path in common_paths:
         full_path = path / executable_name
         if full_path.exists() and os.access(full_path, os.X_OK):
             return str(full_path)
-    
+
     return None
 
 
 def get_oid_cache() -> Path:
     """Get the OID cache directory.
-    
+
     Returns:
         Path to OID cache directory
     """
@@ -244,13 +246,13 @@ def get_oid_cache() -> Path:
 
 def get_tiptoi_dir() -> Optional[Path]:
     """Find the TipToi device mount point.
-    
+
     Returns:
         Path to TipToi mount point or None if not found
     """
     # Common mount points for TipToi
     possible_mounts = []
-    
+
     if platform.system() == "Windows":
         # Check for removable drives with TipToi signature files
         for drive in "DEFGHIJKLMNOPQRSTUVWXYZ":
@@ -267,40 +269,40 @@ def get_tiptoi_dir() -> Optional[Path]:
         # Check common mount points
         media_user = Path(f"/media/{os.environ.get('USER', '')}")
         mnt_tiptoi = Path("/mnt/tiptoi")
-        
+
         if media_user.exists():
             for mount in media_user.iterdir():
                 if (mount / ".tiptoi").exists():
                     possible_mounts.append(mount)
         if mnt_tiptoi.exists() and (mnt_tiptoi / ".tiptoi").exists():
             possible_mounts.append(mnt_tiptoi)
-    
+
     return possible_mounts[0] if possible_mounts else None
 
 
 def get_gmes_already_on_tiptoi() -> list:
     """Get list of GME files already on TipToi device.
-    
+
     Returns:
         List of GME filenames
     """
     tiptoi_dir = get_tiptoi_dir()
     if not tiptoi_dir:
         return []
-    
+
     gmes = []
     for file in tiptoi_dir.glob("*.gme"):
         gmes.append(file.name)
-    
+
     return gmes
 
 
 def delete_gme_tiptoi(gme_filename: str) -> bool:
     """Delete a GME file from TipToi device.
-    
+
     Args:
         gme_filename: Name of GME file to delete
-        
+
     Returns:
         True if successful
     """
@@ -347,16 +349,16 @@ def copy_library(old_path: Path, new_path: Path) -> str:
 
 def open_browser(host: str, port: int) -> bool:
     """Open the default web browser to the application URL.
-    
+
     Args:
         host: Server host
         port: Server port
-        
+
     Returns:
         True if successful
     """
     url = f"http://{host}:{port}/"
-    
+
     try:
         if platform.system() == "Darwin":  # macOS
             subprocess.run(["open", url], check=True)

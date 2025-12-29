@@ -13,7 +13,7 @@ from ttmp32gme.tttool_handler import (
     convert_tracks,
     get_tttool_parameters,
     run_tttool,
-    make_gme
+    make_gme,
 )
 from ttmp32gme.db_handler import DBHandler
 
@@ -35,17 +35,19 @@ def temp_files():
     """Create temporary files for testing."""
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_path = Path(tmpdir)
-        
+
         # Create a simple YAML file
         yaml_file = temp_path / "test.yaml"
-        yaml_file.write_text("""product-id: 1
+        yaml_file.write_text(
+            """product-id: 1
 scripts:
   script1:
     - P(file1)
   script2:
     - P(file2)
-""")
-        
+"""
+        )
+
         yield temp_path
         # Cleanup happens automatically
 
@@ -104,38 +106,38 @@ class TestTttoolParameters:
 
 class TestConvertTracks:
     """Test audio track conversion."""
-    
-    @patch('ttmp32gme.tttool_handler.subprocess.run')
-    @patch('ttmp32gme.tttool_handler.get_executable_path')
+
+    @patch("ttmp32gme.tttool_handler.subprocess.run")
+    @patch("ttmp32gme.tttool_handler.get_executable_path")
     def test_converts_tracks_to_ogg(self, mock_exec, mock_subprocess):
         """Test track conversion to OGG format."""
         mock_exec.return_value = Path("/usr/bin/ffmpeg")
         mock_subprocess.return_value = Mock(returncode=0)
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
             yaml_file = temp_path / "test.yaml"
             yaml_file.write_text("product-id: 1001")
-            
+
             # Create dummy album structure
             album = {
-                'oid': 1001,
-                'title': 'Test Album',
-                'tracks': [
+                "oid": 1001,
+                "title": "Test Album",
+                "tracks": [
                     {
-                        'oid': 2001,
-                        'title': 'Track 1',
-                        'file_path': str(temp_path / 'track1.mp3'),
-                        'track_no': 1
+                        "oid": 2001,
+                        "title": "Track 1",
+                        "file_path": str(temp_path / "track1.mp3"),
+                        "track_no": 1,
                     }
-                ]
+                ],
             }
-            
+
             # Create dummy MP3 file
-            (temp_path / 'track1.mp3').write_bytes(b"fake mp3")
-            
-            config = {'audio_format': 'ogg'}
-            
+            (temp_path / "track1.mp3").write_bytes(b"fake mp3")
+
+            config = {"audio_format": "ogg"}
+
             # Attempt conversion (will call mocked subprocess)
             try:
                 result = convert_tracks(album, yaml_file, config, None)
@@ -149,30 +151,30 @@ class TestConvertTracks:
 
 class TestMakeGme:
     """Test GME file creation."""
-    
-    @patch('ttmp32gme.tttool_handler.run_tttool')
-    @patch('ttmp32gme.tttool_handler.get_album')
-    @patch('ttmp32gme.tttool_handler.convert_tracks')
+
+    @patch("ttmp32gme.tttool_handler.run_tttool")
+    @patch("ttmp32gme.tttool_handler.get_album")
+    @patch("ttmp32gme.tttool_handler.convert_tracks")
     def test_creates_gme_file(self, mock_convert, mock_get_album, mock_run_tttool):
         """Test GME file creation process."""
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
-            
+
             # Setup mocks
             mock_get_album.return_value = {
-                'oid': 1001,
-                'title': 'Test Album',
-                'tracks': []
+                "oid": 1001,
+                "title": "Test Album",
+                "tracks": [],
             }
             mock_convert.return_value = temp_path / "test.yaml"
             mock_run_tttool.return_value = True
-            
+
             # Create temp database
             db_path = temp_path / "test.db"
             conn = sqlite3.connect(str(db_path))
-            
-            config = {'library_path': str(temp_path)}
-            
+
+            config = {"library_path": str(temp_path)}
+
             # Try to make GME
             try:
                 result = make_gme(1001, config, conn)
