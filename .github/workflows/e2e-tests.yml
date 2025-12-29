@@ -113,6 +113,9 @@ jobs:
         
         # Verify files exist
         ls -lh tests/fixtures/
+
+        # start web service 
+        ttmp32gme
         
     - name: Run E2E tests with pytest (includes tttool tests)
       run: |
