@@ -115,7 +115,7 @@ jobs:
         ls -lh tests/fixtures/
 
         # start web service 
-        ttmp32gme
+        ttmp32gme & sleep 2
         
     - name: Run E2E tests with pytest (includes tttool tests)
       run: |
