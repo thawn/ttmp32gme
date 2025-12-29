@@ -538,3 +538,33 @@ def put_file_online(file_path: Path, online_path: str, httpd) -> bool:
     # No dynamic route registration needed - the serve_dynamic_image route
     # handles all /images/* requests
     return True
+
+
+def change_library_path(old_path: str, new_path: Path, connection) -> bool:
+    """Change the library path in the database.
+
+    Args:
+        new_path: New library path
+        connection: Database connection
+
+    Returns:
+        True if successful
+    """
+    import re
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT oid, path FROM gme_library")
+    rows = cursor.fetchall()
+    try:
+        for oid, old_path in rows:
+            updated_path = re.sub(
+                re.escape(old_path), str(new_path.absolute()), old_path
+            )
+            cursor.execute(
+                "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
+            )
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        raise RuntimeError(f"Error updating library paths: {e}")
+    return True

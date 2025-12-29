@@ -20,8 +20,15 @@ from .build.file_handler import (
     get_executable_path
 )
 from .library_handler import (
-    create_library_entry, get_album_list, get_album, get_album_online,
-    update_album, delete_album, cleanup_album, replace_cover
+    create_library_entry,
+    get_album_list,
+    get_album,
+    get_album_online,
+    update_album,
+    delete_album,
+    cleanup_album,
+    replace_cover,
+    change_library_path,
 )
 from .tttool_handler import make_gme, copy_gme, delete_gme_tiptoi
 from .print_handler import create_print_layout, create_pdf, format_print_button
@@ -94,23 +101,26 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
     global config
     
     db = get_db()
-    cursor = db.cursor()
     answer = 'Success.'
     
     # Handle library path changes
     if 'library_path' in config_params:
-        new_path = Path(config_params['library_path'])
+        new_path = Path(config_params["library_path"]).absolute()
         if config.get('library_path') and str(new_path) != config['library_path']:
             logger.info(f'Moving library to new path: {new_path}')
-            from .build.file_handler import move_library
-            answer = move_library(
-                Path(config['library_path']), 
-                new_path, 
-                db
-            )
-            if answer != 'Success.':
+            from .build.file_handler import copy_library
+
+            try:
+                copied = copy_library(Path(config["library_path"]), new_path)
+                db_updated = change_library_path(config["library_path"], new_path, db)
+            except Exception as e:
+                answer = f"Error moving library: {e}\nReverting to old path: {config['library_path']}"
                 config_params['library_path'] = config['library_path']
-    
+                logger.error(answer)
+                import shutil
+
+                shutil.rmtree(new_path, ignore_errors=True)
+
     # Validate DPI and pixel size
     if 'tt_dpi' in config_params and 'tt_pixel-size' in config_params:
         dpi = int(config_params['tt_dpi'])
@@ -122,6 +132,7 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
                 answer = 'OID pixels too large, please increase resolution and/or decrease pixel size.'
     
     # Update database
+    cursor = db.cursor()
     for param, value in config_params.items():
         cursor.execute('UPDATE config SET value=? WHERE param=?', (value, param))
     
