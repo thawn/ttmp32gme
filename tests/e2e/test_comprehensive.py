@@ -254,7 +254,7 @@ def _get_database_value(query, params=()):
     return result
 
 
-def _open_library_element_for_editing(ttmp32gme_server, driver, element_number: int = 0)
+def _open_library_element_for_editing(ttmp32gme_server, driver, element_number: int = 0):
     """Open the edit modal of the library element with the given number"""
     driver.get(f"{ttmp32gme_server}/library") 
     WebDriverWait(driver, 10).until( 
