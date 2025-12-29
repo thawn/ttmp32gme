@@ -44,8 +44,8 @@ def generate_codes_yaml(yaml_file: Path, connection) -> Path:
     codes = {row[0]: row[1] for row in cursor.fetchall()}
     
     # Find last used code
-    last_code = max(codes.values()) if codes else 0
-    
+    last_code = max(codes.values()) if codes else 1001
+
     # Generate codes file
     codes_file = yaml_file.with_suffix('.codes.yaml')
     with open(codes_file, 'w') as f:
@@ -112,13 +112,14 @@ def convert_tracks(album: Dict[str, Any], yaml_file: Path, config: Dict[str, Any
         
         for i, track_key in enumerate(tracks):
             track = album[track_key]
-            source_file = Path(track['filename'])
+            source_file = album_path / track["filename"]
             target_file = media_path / f'track_{i}.ogg'
             
             cmd = [
                 ffmpeg_path, '-y', '-i', str(source_file),
                 '-map', '0:a', '-ar', '22050', '-ac', '1', str(target_file)
             ]
+            logger.info(f"Runninf ffmpeg command: {' '.join(cmd)}")
             subprocess.run(cmd, check=True, capture_output=True)
     else:
         # Copy MP3 files
