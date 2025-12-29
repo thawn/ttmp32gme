@@ -272,6 +272,48 @@ def _open_library_element_for_editing(ttmp32gme_server, driver, element_number: 
     return library_row
 
 
+def _create_gme(ttmp32gme_server, driver, element_number=0):
+    library_row = _open_library_element_for_editing(ttmp32gme_server, driver, element_number)
+    edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+    create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
+    create_button.click()
+    time.sleep(5)  # 
+
+class TransientConfigChange():
+    def __init__(driver, server_url, config:str = "audio_format", value: str = "ogg"):
+        self.driver = driver
+        self.server_url = server_url
+        self.config = config
+        self.new_value = value
+        self.old_value = _get_database_value(
+            f"SELECT value FROM config WHERE key = '{config}'"
+        )[0]
+        
+    def _get_config_element():
+        """Helper to get audio format setting element from config."""
+        driver.get(f"{self.server_url}/config")
+
+        WebDriverWait(self.driver, 5).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
+        return self.driver.find_element(By.ID, self.config)
+
+    def _change_config(setting: str):
+        """Helper to change audio format to OGG in config."""
+        format_select = self._get_config_element():
+        format_select.send_keys(setting)
+        save_button = self.driver.find_element(By.ID, "submit")
+        save_button.click()
+        time.sleep(1)  # Wait for save
+
+    def __enter__(self):
+        self._change_config(self.new_value)
+
+    def __exit__(self ,type, value, traceback):
+         self._change_config(self.old_value)
+
+
 @pytest.mark.e2e
 @pytest.mark.slow
 class TestRealFileUpload:
@@ -394,50 +436,14 @@ class TestRealFileUpload:
 class TestAudioConversion:
     """Test MP3 to OGG conversion with real files."""
 
-    def _change_config_audio_format(self, driver, server_url, setting="ogg"):
-        """Helper to change audio format to OGG in config."""
-        driver.get(f"{server_url}/config")
-
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-
-        # Find and change format setting (implementation depends on UI)
-        format_select = driver.find_element(By.ID, "audio_format")
-        format_select.send_keys(setting)
-        save_button = driver.find_element(By.ID, "submit")
-        save_button.click()
-        time.sleep(1)  # Wait for save
-
     def test_mp3_to_ogg_conversion(self, driver, ttmp32gme_server):
         """Test that MP3 files can be converted to OGG format."""
         # Change configuration to OGG format
-        driver.get(f"{ttmp32gme_server}/config")
-
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-
-        # Find and change format setting (implementation depends on UI)
-        self._change_config_audio_format(driver, ttmp32gme_server, setting="ogg")
-
-        # Trigger GME creation which should convert to OGG
-        driver.get(f"{ttmp32gme_server}/library")
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-
-        # Look for create GME button and click it
-        library_row = _open_library_element_for_editing(ttmp32gme_server, driver)
-        edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
-        create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
-        create_button.click()
-        time.sleep(5)  # Wait for conversion
-
-        self._change_config_audio_format(driver, ttmp32gme_server, setting="mp3")
+        with TransientConfigChange(driver, ttmp32gme_server, "audio_format", "ogg"):
+            # Trigger GME creation which should convert to OGG
+            _create_gme(ttmp32gme_server, driver)
 
         # Cannot check that OGG files were created - they were already cleaned up
-        # after GME creation. Instead use tttool_handler.convert_tracks() directly.
 
 
 @pytest.mark.e2e
@@ -446,23 +452,12 @@ class TestGMECreation:
     """Test GME file creation with real audio files."""
 
     def test_gme_creation_with_real_files(
-        self, driver, base_config_with_album, ttmp32gme_server
+        self, driver, ttmp32gme_server
     ):
         """Test that GME files can be created from real MP3 files."""
-        driver.get(f"{ttmp32gme_server}/library")
-
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-
         # Trigger GME creation
-        # Look for create GME button and click it
-        library_row = _open_library_element_for_editing(ttmp32gme_server, driver)
-        edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
-        create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
-        create_button.click()
-        time.sleep(5)  # Wait for conversion
-
+        _create_gme(ttmp32gme_server, driver)
+       
         # Check that GME file was created
         library_path = Path.home() / ".ttmp32gme" / "library"
         gme_files = list(library_path.rglob("*.gme"))
@@ -523,25 +518,25 @@ class TestWebInterface:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
+        initial_result = _get_database_value(
+            "SELECT value FROM config WHERE key = 'audio_format'"
+        )
+        old_value = result[0]
+        new_value = "ogg" if old_value == "mp3" else: "mp3"
+
         # Change configuration options and save
+        # Example: change audio format
+        _change_config_audio_format(driver, server_url, setting=new_value)
+
+        # Verify in database
         try:
-            # Example: change audio format
-            format_select = driver.find_element(By.NAME, "audioformat")
-            format_select.send_keys("ogg")
-
-            # Save changes
-            save_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
-            save_button.click()
-            time.sleep(1)
-
-            # Verify in database
             result = _get_database_value(
-                "SELECT value FROM config WHERE key = 'audioformat'"
+                "SELECT value FROM config WHERE key = 'audio_format'"
             )
-            if result:
-                assert result[0] == "ogg", "Config change not persisted"
-        except Exception:
-            pytest.skip("Could not test config persistence - UI may differ")
+        except Exception as e:
+            prin
+        _change_config_audio_format(driver, server_url, setting=old_value)
+        assert result[0] == "ogg", "Config change not persisted"
 
     def test_edit_album_info(self, driver, base_config_with_album, ttmp32gme_server):
         """Test editing album information on library page."""
