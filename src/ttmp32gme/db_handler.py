@@ -572,10 +572,15 @@ class DBHandler:
             raise ValueError("Album OID/UID is required")
 
         # Remove uid if present (use oid)
-        album_data.pop("uid", None)
+        album_data.pop("uid")
+
+        # store old_uid and use it for searching the entry to update
+        old_oid = album_data.pop("old_oid", None)
+        if old_oid is None:
+            old_oid = oid
 
         update_data = {k: v for k, v in album_data.items() if k != "oid"}
-        self.update_table_entry("gme_library", "oid=?", [oid], update_data)
+        self.update_table_entry("gme_library", "oid=?", [old_oid], update_data)
 
         return oid
 
