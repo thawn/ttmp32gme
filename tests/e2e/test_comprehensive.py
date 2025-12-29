@@ -567,30 +567,24 @@ class TestWebInterface:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        # Look for select all checkbox or button
-        try:
-            checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox']")
-            if len(checkboxes) > 1:
-                # Find select all
-                select_all = checkboxes[0]
+        # Look for select all button
+        select_all = driver.find_elements(By.ID, "select-all")
+        select_all.click()
+        time.sleep(0.5)
+        checkboxes = driver.find_elements(
+            By.CSS_SELECTOR, "input[type='checkbox'][name='enabled']"
+        )
+        for cb in checkboxes:
+            assert cb.is_selected(), "Not all checkboxes selected"
 
-                # Click to select all
-                select_all.click()
-                time.sleep(0.5)
+        # Click to deselect all
+        select_all = driver.find_elements(By.ID, "deselect-all")
+        select_all.click()
+        time.sleep(0.5)
 
-                # Verify all are selected
-                for cb in checkboxes[1:]:
-                    assert cb.is_selected(), "Not all checkboxes selected"
-
-                # Click to deselect all
-                select_all.click()
-                time.sleep(0.5)
-
-                # Verify all are deselected
-                for cb in checkboxes[1:]:
-                    assert not cb.is_selected(), "Not all checkboxes deselected"
-        except Exception:
-            pytest.skip("Could not test select/deselect all - UI may differ")
+        # Verify all are deselected
+        for cb in checkboxes:
+            assert not cb.is_selected(), "Not all checkboxes deselected"
 
     def test_print_album(self, driver, base_config_with_album, ttmp32gme_server):
         """Test print layout generation with configuration changes."""
