@@ -286,7 +286,7 @@ class TransientConfigChange():
         self.config = config
         self.new_value = value
         self.old_value = _get_database_value(
-            f"SELECT value FROM config WHERE key = '{config}'"
+            f"SELECT value FROM config WHERE param = '{config}'"
         )[0]
         
     def _get_config_element():
