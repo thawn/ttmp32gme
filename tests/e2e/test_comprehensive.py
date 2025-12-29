@@ -280,7 +280,7 @@ def _create_gme(ttmp32gme_server, driver, element_number=0):
     time.sleep(5)  # 
 
 class TransientConfigChange():
-    def __init__(driver, server_url, config:str = "audio_format", value: str = "ogg"):
+    def __init__(self, driver, server_url, config:str = "audio_format", value: str = "ogg"):
         self.driver = driver
         self.server_url = server_url
         self.config = config
