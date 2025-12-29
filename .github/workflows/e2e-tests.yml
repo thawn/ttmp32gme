@@ -120,7 +120,6 @@ jobs:
     - name: Run E2E tests with pytest (includes tttool tests)
       run: |
         pytest tests/e2e/ -v --tb=short --html=e2e-report.html --self-contained-html
-      continue-on-error: true
     
     - name: Upload test report
       uses: actions/upload-artifact@v4
