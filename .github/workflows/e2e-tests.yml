@@ -44,10 +44,22 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y wget unzip
     
-    - name: Install Chromium and ChromeDriver
+    - name: Install Chrome and ChromeDriver
       run: |
-          # Install Chromium
-          sudo apt-get install -y chromium-chromedriver
+        # Install Chrome
+        wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+
+        # Install ChromeDriver using Chrome for Testing
+        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
+        CHROMEDRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | \
+          grep -o '"chromedriver".*"linux64".*"url":"[^"]*' | \
+          grep -o 'https://[^"]*' | head -1)
+        wget -q "$CHROMEDRIVER_URL" -O chromedriver-linux64.zip
+        unzip chromedriver-linux64.zip
+        sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+        rm -rf chromedriver-linux64*
      
     - name: Install tttool (from releases)
       run: |
