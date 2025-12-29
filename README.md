@@ -329,7 +329,6 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 * save last selected albums in the browsers local storage
 * import/migrate library from one computer to another
 * migrate from library_handler.py to db_handler.py
-* initialize database if none is present
 * configure database path via command line argument
 * configure library path via command line argument
 * start new server and set up clean library and config for each e2e test
