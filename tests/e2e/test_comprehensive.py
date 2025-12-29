@@ -567,10 +567,17 @@ class TestWebInterface:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        # Look for select all button
-        select_all = driver.find_elements(By.ID, "select-all")
-        select_all.click()
-        time.sleep(0.5)
+        # Open select menu
+        def click_select_option(option_id: str):
+            select_menu = driver.find_element(By.ID, "dropdownMenu1")
+            select_menu.click()
+            time.sleep(0.1)
+            option = driver.find_element(By.ID, option_id)
+            option.click()
+            time.sleep(0.5)
+
+        # Click select all option
+        click_select_option("select-all")
         checkboxes = driver.find_elements(
             By.CSS_SELECTOR, "input[type='checkbox'][name='enabled']"
         )
@@ -578,9 +585,7 @@ class TestWebInterface:
             assert cb.is_selected(), "Not all checkboxes selected"
 
         # Click to deselect all
-        select_all = driver.find_elements(By.ID, "deselect-all")
-        select_all.click()
-        time.sleep(0.5)
+        click_select_option("deselect-all")
 
         # Verify all are deselected
         for cb in checkboxes:
