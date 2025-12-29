@@ -557,6 +557,30 @@ class DBHandler:
 
         return albums
 
+    def update_tracks(
+        self, tracks: List[Dict[str, Any]], parent_oid: int, new_parent_oid: int
+    ) -> bool:
+        """Update tracks in the database.
+
+        Args:
+            tracks: List of track dictionaries
+            parent_oid: Original parent OID
+            new_parent_oid: New parent OID
+
+        Returns:
+            True if successful
+        """
+
+        complete_track_data = self.get_tracks({"oid": parent_oid})
+        self.delete_album_tracks(parent_oid)  # Clear existing tracks to avoid conflicts
+        for track in tracks:
+            track_data = complete_track_data.get(int(track.pop("old_track")), {})
+            track["parent_oid"] = new_parent_oid
+            track_data.update(track)
+            self.write_to_database("tracks", track_data)
+
+        return True
+
     def update_album(self, album_data: Dict[str, Any], debug: int = 0) -> int:
         """Update an existing album.
 
@@ -578,9 +602,19 @@ class DBHandler:
         old_oid = album_data.pop("old_oid", None)
         if old_oid is None:
             old_oid = oid
+        elif old_oid != oid:
+            logger.info(
+                f"OID has changed from {old_oid} to {oid}, need to update the key"
+            )
+            if self.oid_exist(oid):
+                raise ValueError(
+                    f"Cannot change OID to {oid}, it already exists, please choose another OID."
+                )
 
-        update_data = {k: v for k, v in album_data.items() if k != "oid"}
-        self.update_table_entry("gme_library", "oid=?", [old_oid], update_data)
+        tracks, album_data = self.extract_tracks_from_album(album_data)
+
+        self.update_table_entry("gme_library", "oid=?", [old_oid], album_data)
+        self.update_tracks(tracks, old_oid, oid)
 
         return oid
 
@@ -605,6 +639,19 @@ class DBHandler:
             self.commit()
 
         return uid
+
+    def delete_album_tracks(self, oid: int) -> int:
+        """Delete all tracks of an album.
+
+        Args:
+            oid: Album OID
+
+        Returns:
+            Album OID
+        """
+        self.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,))
+        self.commit()
+        return oid
 
     def cleanup_album(self, uid: int) -> int:
         """Clean up an album directory.
@@ -737,6 +784,24 @@ class DBHandler:
                     raise RuntimeError(f"Can't update config database.\n\tError: {e}")
 
         return True
+
+
+def extract_tracks_from_album(album: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Extract track dictionaries from an album dictionary.
+
+    Args:
+        album: Album dictionary
+
+    Returns:
+        List of track dictionaries
+    """
+    tracks = []
+    for key in sorted(album.keys(), reverse=True):
+        if key.startswith("track_"):
+            track = album.pop(key)
+            track["old_track"] = key.removeprefix("track_")
+            tracks.append(track)
+    return tracks, album
 
 
 def get_cover_filename(mimetype: Optional[str], picture_data: bytes) -> Optional[str]:

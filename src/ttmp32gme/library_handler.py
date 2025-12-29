@@ -405,6 +405,51 @@ def get_album_list(connection, httpd=None, debug: int = 0) -> List[Dict[str, Any
     return albums
 
 
+def extract_tracks_from_album(album: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Extract track dictionaries from an album dictionary.
+
+    Args:
+        album: Album dictionary
+
+    Returns:
+        List of track dictionaries
+    """
+    tracks = []
+    for key in sorted(album.keys(), reverse=True):
+        if key.startswith("track_"):
+            track = album.pop(key)
+            track["old_track"] = key.removeprefix("track_")
+            tracks.append(track)
+    return tracks, album
+
+
+def update_tracks(
+    tracks: List[Dict[str, Any]], parent_oid: int, new_parent_oid: int, connection
+) -> bool:
+    """Update tracks in the database.
+
+    Args:
+        tracks: List of track dictionaries
+        parent_oid: Original parent OID
+        new_parent_oid: New parent OID
+        connection: Database connection
+
+    Returns:
+        True if successful
+    """
+
+    complete_track_data = get_tracks({"oid": parent_oid}, connection)
+    # Clear existing tracks to avoid conflicts
+    delete_album_tracks(parent_oid, connection)
+    for track in tracks:
+        track_data = complete_track_data.get(int(track.pop("old_track")), {})
+        track["parent_oid"] = new_parent_oid
+        track_data.update(track)
+        write_to_database("tracks", track_data, connection)
+
+    return True
+
+
 def update_album(album_data: Dict[str, Any], connection, debug: int = 0) -> int:
     """Update an existing album.
 
@@ -426,9 +471,17 @@ def update_album(album_data: Dict[str, Any], connection, debug: int = 0) -> int:
 
     if old_oid is None:
         old_oid = oid
+    elif old_oid != oid:
+        logger.info(f"OID has changed from {old_oid} to {oid}, need to update the key")
+        if oid_exist(oid, connection):
+            raise ValueError(
+                f"Cannot change OID to {oid}, it already exists, please choose another OID."
+            )
 
-    update_data = {k: v for k, v in album_data.items() if k != "oid"}
-    update_table_entry("gme_library", "oid=?", [old_oid], update_data, connection)
+    tracks, album_data = extract_tracks_from_album(album_data)
+
+    update_table_entry("gme_library", "oid=?", [old_oid], album_data, connection)
+    update_tracks(tracks, old_oid, oid, connection)
 
     return oid
 
@@ -453,11 +506,27 @@ def delete_album(uid: int, httpd, connection, library_path: Path) -> int:
 
         # Delete from database
         cursor = connection.cursor()
-        cursor.execute("DELETE FROM tracks WHERE parent_oid=?", (uid,))
+        delete_album_tracks(uid, connection)
         cursor.execute("DELETE FROM gme_library WHERE oid=?", (uid,))
         connection.commit()
 
     return uid
+
+
+def delete_album_tracks(oid: int, connection) -> int:
+    """Delete all tracks of an album.
+
+    Args:
+        oid: Album OID
+        connection: Database connection
+
+    Returns:
+        Album OID
+    """
+    cursor = connection.cursor()
+    cursor.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,))
+    connection.commit()
+    return oid
 
 
 def cleanup_album(uid: int, httpd, connection, library_path: Path) -> int:
