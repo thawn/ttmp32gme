@@ -23,7 +23,7 @@ FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
 @contextmanager
-def test_audio_files_context(album_name="Test Album"):
+def audio_files_context(album_name="Test Album"):
     """Context manager to create and cleanup test MP3 files with various ID3 tags."""
     files = []
 
@@ -137,7 +137,7 @@ def base_config_with_album(driver, ttmp32gme_server, tmp_path):
         shutil.copytree(library_path, backup_lib)
 
     # Upload album with files using context manager
-    with test_audio_files_context() as test_files:
+    with audio_files_context() as test_files:
         _upload_album_files(driver, ttmp32gme_server, test_files)
 
     # Save the state with uploaded album
@@ -322,7 +322,7 @@ class TestRealFileUpload:
     def test_upload_album_with_files(self, driver, ttmp32gme_server):
         """Test uploading an album with real MP3 files."""
         album_name = "Upload Test Album"
-        with test_audio_files_context(album_name=album_name) as test_files:
+        with audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files)
 
         # Should be redirected to library after upload
@@ -363,7 +363,7 @@ class TestRealFileUpload:
         """Test that ID3 metadata is correctly extracted and displayed."""
         album_name = "id3 Test Album"
         # Upload files
-        with test_audio_files_context(album_name=album_name) as test_files:
+        with audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files)
 
         # Check database for metadata
@@ -387,7 +387,7 @@ class TestRealFileUpload:
         """Test that album covers are extracted from ID3 metadata."""
         album_name = "Cover Test Album"
         # Upload file with embedded cover
-        with test_audio_files_context(album_name=album_name) as test_files:
+        with audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files)
 
         # Check filesystem for cover image
@@ -420,7 +420,7 @@ class TestRealFileUpload:
     def test_separate_cover_upload(self, driver, ttmp32gme_server):
         """Test uploading separate cover image files."""
         album_name = "Separate Cover Album"
-        with test_audio_files_context(album_name=album_name) as test_files:
+        with audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, ttmp32gme_server, test_files, audio_only=False)
 
         # Check cover image exists
