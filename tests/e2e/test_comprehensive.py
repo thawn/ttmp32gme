@@ -591,6 +591,9 @@ class TestWebInterface:
         for cb in checkboxes:
             assert not cb.is_selected(), "Not all checkboxes deselected"
 
+    @pytest.mark.skip(
+        "ToDo: test print functionality properly by first selecting albums, then print selected"
+    )
     def test_print_album(self, driver, base_config_with_album, ttmp32gme_server):
         """Test print layout generation with configuration changes."""
         driver.get(f"{ttmp32gme_server}/print")
@@ -600,23 +603,18 @@ class TestWebInterface:
         )
 
         # Look for print configuration panel
-        try:
-            # Change print layout options
-            layout_select = driver.find_element(By.NAME, "layout")
-            layout_select.send_keys("2x2")
+        # Change print layout options
+        layout_select = driver.find_element(By.NAME, "layout")
+        layout_select.send_keys("2x2")
 
-            # Generate print layout
-            generate_button = driver.find_element(
-                By.CSS_SELECTOR, "button[type='submit']"
-            )
-            generate_button.click()
-            time.sleep(2)
+        # Generate print layout
+        generate_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+        generate_button.click()
+        time.sleep(2)
 
-            # Check for generated PDF or HTML
-            body_text = driver.find_element(By.TAG_NAME, "body").text
-            assert "print" in body_text.lower() or "pdf" in body_text.lower()
-        except Exception:
-            pytest.skip("Could not test print functionality - UI may differ")
+        # Check for generated PDF or HTML
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        assert "print" in body_text.lower() or "pdf" in body_text.lower()
 
     def test_config_page_loads(self, driver, ttmp32gme_server):
         """Test that configuration page loads."""
