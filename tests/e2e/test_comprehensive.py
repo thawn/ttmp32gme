@@ -15,7 +15,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import subprocess
 
 # Import fixtures and helpers from conftest
-from conftest import audio_files_context, _upload_album_files
+from .conftest import audio_files_context, _upload_album_files
 
 logger = logging.getLogger(__name__)
 
