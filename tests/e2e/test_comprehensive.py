@@ -400,15 +400,17 @@ class TestRealFileUpload:
 
     def test_upload_album_with_files(self, driver, clean_server):
         """Test uploading an album with real MP3 files."""
+        server_info = clean_server
+
         album_name = "Upload Test Album"
         with audio_files_context(album_name=album_name) as test_files:
-            _upload_album_files(driver, clean_server["url"], test_files)
+            _upload_album_files(driver, server_info["url"], test_files)
 
         # Should be redirected to library after upload
         # If not, navigate there
         if "/library" not in driver.current_url:
             print(f"DEBUG: Not redirected to library, manually navigating")
-            driver.get(f"{clean_server['url']}/library")
+            driver.get(f"{server_info['url']}/library")
 
         # Wait for library page to load and albums to be populated via AJAX
         # The library page loads albums dynamically, so we need to wait for content
@@ -431,7 +433,7 @@ class TestRealFileUpload:
         assert (
             album_name in body_text or "Test Track" in body_text
         ), f"Album not found in library. Page text: {body_text[:200]}"
-        library_path = Path.home() / ".ttmp32gme" / "library"
+        library_path = server_info["library_path"]
         album_path = library_path / album_name.replace(" ", "_")
         assert album_path.exists(), "Album directory not found in library after upload"
         assert list(
