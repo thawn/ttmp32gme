@@ -32,7 +32,7 @@ class AlbumUpdateModel(BaseModel):
     album_title: Optional[str] = Field(None, max_length=255)
     album_artist: Optional[str] = Field(None, max_length=255)
     num_tracks: Optional[int] = Field(None, ge=0, le=999)
-    player_mode: Optional[str] = Field(None, pattern="^(single|album)$")
+    player_mode: Optional[str] = Field(None, pattern="^(music|tiptoi)$")
     cover: Optional[str] = Field(None, description="Cover image path")
     
     # Allow dynamic track fields (track1_title, track2_title, etc.)
