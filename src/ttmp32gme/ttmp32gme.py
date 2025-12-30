@@ -529,7 +529,7 @@ def main():
     db_version = config.get("version", "0.1.0")
     if Version(__version__) > Version(db_version):
         logger.info("Updating config...")
-        db.update_db(db_version)
+        db.update_db()
         logger.info("Update successful.")
         config = fetch_config()
 
