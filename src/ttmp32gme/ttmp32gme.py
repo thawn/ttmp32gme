@@ -577,6 +577,9 @@ def main():
     parser.add_argument("--version", "-v", action="store_true", help="Show version")
     parser.add_argument("--database", type=str, help="Path to database file")
     parser.add_argument("--library", type=str, help="Path to library directory")
+    parser.add_argument(
+        "--no-browser", action="store_true", help="Do not open web browser on start"
+    )
 
     args = parser.parse_args()
 
@@ -588,7 +591,7 @@ def main():
     if args.database:
         custom_db_path = Path(args.database).absolute()
         logger.info(f"Using custom database path: {custom_db_path}")
-    
+
     if args.library:
         custom_library_path = Path(args.library).absolute()
         # Ensure library directory exists
@@ -624,8 +627,8 @@ def main():
     else:
         logger.error("No useable tttool found")
 
-    # Open browser if configured
-    if config.get("open_browser") == "TRUE":
+    # Open browser if configured and not disabled by command-line argument
+    if config.get("open_browser") == "TRUE" and not args.no_browser:
         open_browser(host, port)
 
     logger.info(f"Server running on http://{host}:{port}/")

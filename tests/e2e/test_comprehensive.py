@@ -160,6 +160,7 @@ def clean_server(tmp_path, driver):
         test_host,
         "--port",
         str(test_port),
+        "--no-browser",
     ]
 
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
