@@ -325,10 +325,9 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 
 ## ToDo
-* use pydantic to validate input from frontend
-* configure database path via command line argument
-* configure library path via command line argument
-* start new server and set up clean library and config for each e2e test
+* add argument to ttmp32gme.py to enable configuring the database path via command line
+* add argument to ttmp32gme.py to enable configuring the library path via command line
+* add a fixture to test_comprehensive that starts new server and sets up clean library and config using the command line arguments
 * fix paths in db when library is moved: write test for this
 * make sure upload supports .ogg files
 - implement test_edit_album_info_oid: test that we can change the oid and all data in the gme_library database table (and the parent_oid in the tracks table) is changed accordingly
