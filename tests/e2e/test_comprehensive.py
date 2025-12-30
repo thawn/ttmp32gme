@@ -566,24 +566,19 @@ class TestWebInterface:
         track2_title_before = track_items[1].find_element(By.NAME, "title").get_attribute("value")
         
         # Perform drag and drop to swap track 1 and track 2
-        # Use ActionChains with drag_and_drop_by_offset for better compatibility with jQuery UI sortable
+        # Use ActionChains with move_to_element for better compatibility with jQuery UI sortable
         from selenium.webdriver import ActionChains
         actions = ActionChains(driver)
         
-        # Get the position and size of elements
-        track1_location = track_items[0].location
-        track1_size = track_items[0].size
-        track2_location = track_items[1].location
+        # Scroll element into view first
+        driver.execute_script("arguments[0].scrollIntoView(true);", track_items[0])
+        time.sleep(0.2)
         
-        # Calculate offset to move track 1 below track 2
-        # Move down by the height of track 2 plus some padding
-        offset_y = track2_location['y'] - track1_location['y'] + 10
-        
-        # Perform drag and drop with offset
+        # Perform drag and drop by moving to second element
         actions.click_and_hold(track_items[0]).perform()
-        time.sleep(0.2)
-        actions.move_by_offset(0, offset_y).perform()
-        time.sleep(0.2)
+        time.sleep(0.3)
+        actions.move_to_element(track_items[1]).perform()
+        time.sleep(0.3)
         actions.release().perform()
         time.sleep(0.5)  # Wait for drag/drop to complete
         
@@ -663,23 +658,19 @@ class TestWebInterface:
         track2_title_input.clear()
         track2_title_input.send_keys(new_track2_title)
         
-        # Reorder tracks (swap 1 and 2) using drag and drop with offset
+        # Reorder tracks (swap 1 and 2) using drag and drop
         from selenium.webdriver import ActionChains
         actions = ActionChains(driver)
         
-        # Get the position and size of elements
-        track1_location = track_items[0].location
-        track1_size = track_items[0].size
-        track2_location = track_items[1].location
+        # Scroll element into view first
+        driver.execute_script("arguments[0].scrollIntoView(true);", track_items[0])
+        time.sleep(0.2)
         
-        # Calculate offset to move track 1 below track 2
-        offset_y = track2_location['y'] - track1_location['y'] + 10
-        
-        # Perform drag and drop with offset
+        # Perform drag and drop by moving to second element
         actions.click_and_hold(track_items[0]).perform()
-        time.sleep(0.2)
-        actions.move_by_offset(0, offset_y).perform()
-        time.sleep(0.2)
+        time.sleep(0.3)
+        actions.move_to_element(track_items[1]).perform()
+        time.sleep(0.3)
         actions.release().perform()
         time.sleep(0.5)  # Wait for drag/drop to complete
         
