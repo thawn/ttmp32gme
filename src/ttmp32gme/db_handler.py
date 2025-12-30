@@ -611,7 +611,7 @@ class DBHandler:
                     f"Cannot change OID to {oid}, it already exists, please choose another OID."
                 )
 
-        tracks, album_data = self.extract_tracks_from_album(album_data)
+        tracks, album_data = extract_tracks_from_album(album_data)
 
         self.update_table_entry("gme_library", "oid=?", [old_oid], album_data)
         self.update_tracks(tracks, old_oid, oid)
