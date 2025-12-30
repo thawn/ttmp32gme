@@ -218,8 +218,10 @@
 		}
 		if (data.gme_file) {
 			$id.find('button.print').show();
+			$id.find('button.download-gme').show();
 		} else {
 			$id.find('button.print').hide();
+			$id.find('button.download-gme').hide();
 		}
 		$id.find('input[name=old_oid]').val(data.oid);
 		$id.find('button').data('item-id', $id);
@@ -393,6 +395,10 @@
 		});
 		$('#albums').on('click','button.print',function() {
 			printAlbums([$(this).data('item-id').find('input[name=old_oid]').val()]);
+		});
+		$('#albums').on('click','button.download-gme',function() {
+			var oid = $(this).data('item-id').find('input[name=old_oid]').val();
+			window.location.href = '/download_gme/' + oid;
 		});
 		$('#albums').on('click', 'button.cancel', function() {
 			toggleShow($(this).data('item-id'));
@@ -630,6 +636,7 @@
 										<button type="button" class="btn btn-success make-gme">Create GME</button>
 										<button type="button" class="btn btn-success needs-tiptoi" style="display: none;">Copy GME to TipToi</button>
 										<button type="button" class="btn btn-success print" style="display: none;">Print</button>
+										<button type="button" class="btn btn-info download-gme" style="display: none;">Download GME</button>
 										<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
 										<button type="button" class="btn btn-danger delete">Delete</button>
 										<button type="button" class="btn btn-info cancel">Cancel</button>

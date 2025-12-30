@@ -564,6 +564,44 @@ def serve_dynamic_image(filename):
     return "File not found", 404
 
 
+@app.route("/download_gme/<int:oid>")
+def download_gme(oid):
+    """Download GME file for an album."""
+    try:
+        db = get_db()
+        row = db.fetchone(
+            "SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,)
+        )
+        
+        if not row:
+            logger.error(f"Album with OID {oid} not found")
+            return "Album not found", 404
+        
+        album_path, gme_filename = row
+        
+        if not gme_filename:
+            logger.error(f"No GME file for album {oid}")
+            return "GME file not created yet", 404
+        
+        album_dir = Path(album_path)
+        gme_path = album_dir / gme_filename
+        
+        if not gme_path.exists():
+            logger.error(f"GME file not found at {gme_path}")
+            return "GME file not found on filesystem", 404
+        
+        logger.info(f"Serving GME file: {gme_filename} from {album_dir}")
+        return send_from_directory(
+            album_dir,
+            gme_filename,
+            as_attachment=True,
+            download_name=gme_filename
+        )
+    except Exception as e:
+        logger.error(f"Error downloading GME file: {e}")
+        return "Error downloading GME file", 500
+
+
 def main():
     """Main entry point."""
     global config, custom_db_path, custom_library_path
