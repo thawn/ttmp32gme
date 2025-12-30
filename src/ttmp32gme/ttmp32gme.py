@@ -21,6 +21,7 @@ from werkzeug.utils import secure_filename
 from packaging.version import Version
 
 from .db_update import update as db_update
+from .db_handler import DBHandler
 from .build.file_handler import (
     check_config_file,
     get_default_library_path,
@@ -28,16 +29,6 @@ from .build.file_handler import (
     get_tiptoi_dir,
     open_browser,
     get_executable_path,
-)
-from .library_handler import (
-    create_library_entry,
-    get_album_list,
-    get_album,
-    update_album,
-    delete_album,
-    cleanup_album,
-    replace_cover,
-    change_library_path,
 )
 from .tttool_handler import make_gme, copy_gme, delete_gme_tiptoi
 from .print_handler import create_print_layout, create_pdf, format_print_button
@@ -59,7 +50,7 @@ app = Flask(
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB max upload
 
 # Global state TODO: use Flask global or app context instead
-db_connection = None
+db_handler = None
 config = {}
 file_count = 0
 album_count = 0
@@ -72,22 +63,20 @@ print_content = (
 
 
 def get_db():
-    """Get database connection."""
-    global db_connection
-    if db_connection is None:
+    """Get database handler."""
+    global db_handler
+    if db_handler is None:
         config_file = check_config_file()
-        db_connection = sqlite3.connect(str(config_file), check_same_thread=False)
-        db_connection.row_factory = sqlite3.Row
-    return db_connection
+        db_handler = DBHandler(str(config_file))
+        db_handler.connect()
+    return db_handler
 
 
 def fetch_config() -> Dict[str, Any]:
     """Fetch configuration from database."""
     db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT param, value FROM config")
-
-    temp_config = {row[0]: row[1] for row in cursor.fetchall()}
+    
+    temp_config = db.get_config()
 
     if not temp_config.get("library_path"):
         temp_config["library_path"] = str(get_default_library_path())
@@ -127,7 +116,7 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
 
             try:
                 copied = copy_library(Path(config["library_path"]), new_path)
-                db_updated = change_library_path(config["library_path"], new_path, db)
+                db_updated = db.change_library_path(config["library_path"], new_path)
             except Exception as e:
                 answer = f"Error moving library: {e}\nReverting to old path: {config['library_path']}"
                 config_params["library_path"] = config["library_path"]
@@ -238,11 +227,12 @@ def upload_post():
 
     elif "action" in request.form:
         # Copy albums to library
+        db = get_db()
         logger.info(
             f"Copying albums to library. Album list has {len(album_list)} albums"
         )
         logger.info(f"Album list contents: {album_list}")
-        create_library_entry(album_list, get_db(), Path(config["library_path"]))
+        db.create_library_entry(album_list, Path(config["library_path"]))
 
         # Reset state
         file_count = 0
@@ -279,7 +269,7 @@ def library_post():
     action = request.form.get("action")
 
     if action == "list":
-        albums = get_album_list(db)
+        albums = db.get_album_list()
         tiptoi_connected = get_tiptoi_dir() is not None
         return jsonify(
             {"success": True, "list": albums, "tiptoi_connected": tiptoi_connected}
@@ -298,8 +288,8 @@ def library_post():
         try:
             if action == "update":
                 old_player_mode = data.pop("old_player_mode", None)
-                oid = update_album(data, db)
-                album = get_album(oid, db)
+                oid = db.update_album(data)
+                album = db.get_album(oid)
 
                 if old_player_mode and old_player_mode != data.get("player_mode"):
                     make_gme(oid, config, db)
@@ -307,27 +297,27 @@ def library_post():
                 return jsonify({"success": True, "element": album})
 
             elif action == "delete":
-                oid = delete_album(data["uid"], None, db, Path(config["library_path"]))
+                oid = db.delete_album(data["uid"])
                 return jsonify({"success": True, "element": {"oid": oid}})
 
             elif action == "cleanup":
-                oid = cleanup_album(data["uid"], None, db, Path(config["library_path"]))
-                album = get_album(oid, db)
+                oid = db.cleanup_album(data["uid"])
+                album = db.get_album(oid)
                 return jsonify({"success": True, "element": album})
 
             elif action == "make_gme":
                 oid = make_gme(data["uid"], config, db)
-                album = get_album(oid, db)
+                album = db.get_album(oid)
                 return jsonify({"success": True, "element": album})
 
             elif action == "copy_gme":
                 oid = copy_gme(data["uid"], config, db)
-                album = get_album(oid, db)
+                album = db.get_album(oid)
                 return jsonify({"success": True, "element": album})
 
             elif action == "delete_gme_tiptoi":
                 oid = delete_gme_tiptoi(data["uid"], db)
-                album = get_album(oid, db)
+                album = db.get_album(oid)
                 return jsonify({"success": True, "element": album})
 
         except Exception as e:
@@ -340,8 +330,8 @@ def library_post():
         file_data = request.files["qqfile"].read()
 
         try:
-            oid = replace_cover(int(uid), filename, file_data, None, db)
-            album = get_album(oid, db)
+            oid = db.replace_cover(int(uid), filename, file_data)
+            album = db.get_album(oid)
             return jsonify({"success": True, "uid": album})
         except Exception as e:
             logger.error(f"Error replacing cover: {e}")

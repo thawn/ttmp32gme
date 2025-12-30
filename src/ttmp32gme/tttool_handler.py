@@ -13,17 +13,16 @@ from .build.file_handler import (
     get_oid_cache,
     get_tiptoi_dir,
 )
-from .library_handler import get_album, update_table_entry
 
 logger = logging.getLogger(__name__)
 
 
-def generate_codes_yaml(yaml_file: Path, connection) -> Path:
+def generate_codes_yaml(yaml_file: Path, db_handler) -> Path:
     """Generate script codes YAML file.
 
     Args:
         yaml_file: Main YAML file path
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         Path to codes YAML file
@@ -41,9 +40,8 @@ def generate_codes_yaml(yaml_file: Path, connection) -> Path:
                 scripts.append(line[:-1])
 
     # Get existing codes from database
-    cursor = connection.cursor()
-    cursor.execute("SELECT script, code FROM script_codes")
-    codes = {row[0]: row[1] for row in cursor.fetchall()}
+    script_codes = db_handler.fetchall("SELECT script, code FROM script_codes")
+    codes = {row[0]: row[1] for row in script_codes}
 
     # Find last used code
     last_code = max(codes.values()) if codes else 1001
@@ -83,12 +81,12 @@ scriptcodes:
                         )
 
                 codes[script] = last_code
-                cursor.execute(
+                db_handler.execute(
                     "INSERT INTO script_codes VALUES (?, ?)", (script, last_code)
                 )
                 f.write(f"  {script}: {last_code}\n")
 
-        connection.commit()
+        db_handler.commit()
 
     return codes_file
 
