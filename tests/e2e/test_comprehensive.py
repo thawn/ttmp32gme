@@ -165,7 +165,7 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
     print(f"DEBUG: Navigating to {server_url}")
     driver.get(server_url)
 
-    WebDriverWait(driver, 10).until(
+    WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.ID, "fine-uploader-manual-trigger"))
     )
     print("DEBUG: FineUploader container found")
@@ -211,7 +211,7 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
 
             # Click "Add Album to Library" button to trigger upload
             try:
-                upload_button = WebDriverWait(driver, 10).until(
+                upload_button = WebDriverWait(driver, 5).until(
                     EC.element_to_be_clickable((By.ID, "trigger-upload"))
                 )
                 print("DEBUG: Clicking 'Add Album to Library' button")
@@ -220,7 +220,7 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
                 # Now wait for redirect to library page after upload completes
                 print("DEBUG: Waiting for redirect to /library...")
                 try:
-                    WebDriverWait(driver, 30).until(
+                    WebDriverWait(driver, 5).until(
                         lambda d: "/library" in d.current_url
                     )
                     print(f"DEBUG: Successfully redirected to {driver.current_url}")
@@ -257,11 +257,11 @@ def _get_database_value(query, params=()):
 def _open_library_element_for_editing(ttmp32gme_server, driver, element_number: int = 0):
     """Open the edit modal of the library element with the given number"""
     driver.get(f"{ttmp32gme_server}/library") 
-    WebDriverWait(driver, 10).until( 
-        EC.presence_of_element_located((By.TAG_NAME, "body")) 
-    ) 
-  
-    # Look for create GME button and click it 
+    WebDriverWait(driver, 5).until(
+        EC.presence_of_element_located((By.TAG_NAME, "body"))
+    )
+
+    # Look for create GME button and click it
     library_row = driver.find_element(By.ID, f"el{element_number}") 
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button") 
     edit_button.click() 
@@ -335,7 +335,7 @@ class TestRealFileUpload:
         # The library page loads albums dynamically, so we need to wait for content
         try:
             # Wait for album title to appear (populated by AJAX)
-            WebDriverWait(driver, 20).until(
+            WebDriverWait(driver, 5).until(
                 lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
             )
             print("DEBUG: Album found in library page")
@@ -375,7 +375,7 @@ class TestRealFileUpload:
 
         # Check metadata in UI
         driver.get(f"{ttmp32gme_server}/library")
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
@@ -404,7 +404,7 @@ class TestRealFileUpload:
 
         # Check UI displays cover
         driver.get(f"{ttmp32gme_server}/library")
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
@@ -492,7 +492,7 @@ class TestWebInterface:
 
         for page in pages:
             driver.get(f"{ttmp32gme_server}{page}")
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
 
@@ -514,7 +514,7 @@ class TestWebInterface:
         """Test that configuration changes are saved to database."""
         driver.get(f"{ttmp32gme_server}/config")
 
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
@@ -537,7 +537,7 @@ class TestWebInterface:
         """Test editing album information on library page."""
         driver.get(f"{ttmp32gme_server}/library")
 
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
@@ -563,7 +563,7 @@ class TestWebInterface:
         """Test select all / deselect all on library page."""
         driver.get(f"{ttmp32gme_server}/library")
 
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
@@ -595,12 +595,12 @@ class TestWebInterface:
         """Test print layout generation with configuration changes."""
         # First, go to library page
         driver.get(f"{ttmp32gme_server}/library")
-        
+
         # Wait for library page to load with albums
-        WebDriverWait(driver, 20).until(
+        WebDriverWait(driver, 5).until(
             lambda d: "Test Album" in d.find_element(By.TAG_NAME, "body").text
         )
-        
+
         # Use the select menu to select all albums (like test_select_deselect_all)
         select_menu = driver.find_element(By.ID, "dropdownMenu1")
         select_menu.click()
@@ -608,31 +608,29 @@ class TestWebInterface:
         select_all_option = driver.find_element(By.ID, "select-all")
         select_all_option.click()
         time.sleep(0.5)
-        
+
         # Verify at least one checkbox is selected
         checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox'][name='enabled']")
         assert len(checkboxes) > 0, "No album checkboxes found"
         assert any(cb.is_selected() for cb in checkboxes), "No checkboxes selected"
-        
+
         # Find and click "Print selected" button
-        print_button = WebDriverWait(driver, 10).until(
+        print_button = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.ID, "print-selected"))
         )
         print_button.click()
-        
+
         # Wait for redirect to /print page
-        WebDriverWait(driver, 10).until(
-            lambda d: '/print' in d.current_url
-        )
-        
+        WebDriverWait(driver, 5).until(lambda d: "/print" in d.current_url)
+
         # Wait for print page to load
-        WebDriverWait(driver, 10).until(
+        WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         # Wait a bit for the page to fully render
         time.sleep(2)
-        
+
         # Try to expand the configuration panel - find the link in the panel heading
         try:
             # The config panel might be collapsed - look for the heading link
@@ -640,17 +638,17 @@ class TestWebInterface:
             config_link = config_panel.find_element(By.CSS_SELECTOR, "a[data-toggle='collapse']")
             config_link.click()
             time.sleep(1)  # Wait for panel to expand
-            
+
             # Change layout preset to "tiles"
             tiles_preset = driver.find_element(By.ID, "tiles")
             tiles_preset.click()
             time.sleep(0.5)
-            
+
             # Change number of columns
             num_cols_input = driver.find_element(By.NAME, "print_num_cols")
             num_cols_input.clear()
             num_cols_input.send_keys("2")
-            
+
             # Save configuration
             save_button = driver.find_element(By.ID, "config-save")
             save_button.click()
@@ -658,7 +656,7 @@ class TestWebInterface:
         except Exception as e:
             # If we can't interact with config panel, just log it and continue
             print(f"Could not interact with config panel: {e}")
-        
+
         # Check that the print page is displayed with album content
         body_text = driver.find_element(By.TAG_NAME, "body").text
         # Should have either print-related text or the album name
