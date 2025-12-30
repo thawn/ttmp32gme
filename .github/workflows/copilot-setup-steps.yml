@@ -1,0 +1,113 @@
+name: Copilot Setup Steps
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for setuptools-scm
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget unzip
+    
+    - name: Install Chrome and ChromeDriver
+      run: |
+        # Install Chrome
+        wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+
+        # Install ChromeDriver using Chrome for Testing
+        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
+        CHROMEDRIVER_URL=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | \
+          grep -o '"chromedriver".*"linux64".*"url":"[^"]*' | \
+          grep -o 'https://[^"]*' | head -1)
+        wget -q "$CHROMEDRIVER_URL" -O chromedriver-linux64.zip
+        unzip chromedriver-linux64.zip
+        sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+        rm -rf chromedriver-linux64*
+     
+    - name: Install tttool (from releases)
+      run: |
+        # Download a specific working version from GitHub releases
+        # Using the correct URL pattern: tttool-{version}.zip
+        TTTOOL_VERSION="1.8.1"
+        echo "Installing tttool version $TTTOOL_VERSION"
+        
+        # Use system temp directory for extraction
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+        
+        wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
+        
+        # Extract into temp directory
+        unzip -q "tttool-${TTTOOL_VERSION}.zip"
+        
+        # Move the binary to /usr/local/bin
+        chmod +x tttool
+        sudo mv tttool /usr/local/bin/
+        
+        # Cleanup - change permissions recursively then remove
+        cd "$GITHUB_WORKSPACE"
+        chmod -R u+w "$TEMP_DIR" || true
+        rm -rf "$TEMP_DIR"
+        
+        # Verify installation
+        tttool --help || { echo "Error: tttool installation failed"; exit 1; }
+    
+    - name: Install ffmpeg (static build)
+      run: |
+        wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+        tar -xf ffmpeg-release-amd64-static.tar.xz
+        sudo mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
+        sudo mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
+        rm -rf ffmpeg-*-amd64-static*
+    
+    - name: Install Python dependencies
+      run: |
+        uv pip install --system -e ".[test]"
+    
+    - name: Prepare test fixtures
+      run: |
+        # Bundled test audio file already exists in repo
+        ls -lh tests/fixtures/test_audio.mp3
+        
+        # Create test cover image if needed
+        if [ ! -f tests/fixtures/test_cover.jpg ]; then
+          python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"
+        fi
+        
+        # Verify files exist
+        ls -lh tests/fixtures/
+    
+    - name: Verify setup
+      run: |
+        echo "Setup complete. Verifying installations..."
+        python --version
+        google-chrome --version
+        chromedriver --version
+        tttool --help | head -5
+        ffmpeg -version | head -5
+        uv --version
+        echo "All tools installed successfully!"
