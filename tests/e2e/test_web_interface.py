@@ -10,9 +10,10 @@ from selenium.webdriver.support import expected_conditions as EC
 class TestWebInterface:
     """Test the web interface using Selenium."""
 
-    def test_homepage_loads(self, driver, ttmp32gme_server):
+    def test_homepage_loads(self, driver, clean_server):
         """Test that the homepage loads successfully."""
-        driver.get(ttmp32gme_server)
+        server_info = clean_server
+        driver.get(server_info["url"])
 
         # Check title
         assert "ttmp32gme" in driver.title
@@ -21,9 +22,10 @@ class TestWebInterface:
         nav = driver.find_element(By.TAG_NAME, "nav")
         assert nav is not None
 
-    def test_navigation_links(self, driver, ttmp32gme_server):
+    def test_navigation_links(self, driver, clean_server):
         """Test that navigation links work."""
-        driver.get(ttmp32gme_server)
+        server_info = clean_server
+        driver.get(server_info["url"])
 
         # Find and test library link
         library_link = driver.find_element(By.LINK_TEXT, "Library")
@@ -36,25 +38,28 @@ class TestWebInterface:
 
         assert "/library" in driver.current_url
 
-    def test_config_page_loads(self, driver, ttmp32gme_server):
+    def test_config_page_loads(self, driver, clean_server):
         """Test that configuration page loads."""
-        driver.get(f"{ttmp32gme_server}/config")
+        server_info = clean_server
+        driver.get(f"{server_info['url']}/config")
 
         # Check for config form elements
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
 
-    def test_help_page_loads(self, driver, ttmp32gme_server):
+    def test_help_page_loads(self, driver, clean_server):
         """Test that help page loads."""
-        driver.get(f"{ttmp32gme_server}/help")
+        server_info = clean_server
+        driver.get(f"{server_info['url']}/help")
 
         # Check page loaded
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
 
-    def test_library_page_loads(self, driver, ttmp32gme_server):
+    def test_library_page_loads(self, driver, clean_server):
         """Test that library page loads."""
-        driver.get(f"{ttmp32gme_server}/library")
+        server_info = clean_server
+        driver.get(f"{server_info['url']}/library")
 
         # Check page loaded
         body = driver.find_element(By.TAG_NAME, "body")
@@ -66,9 +71,10 @@ class TestWebInterface:
 class TestFileUpload:
     """Test file upload functionality (requires test files)."""
 
-    def test_upload_page_has_upload_widget(self, driver, ttmp32gme_server):
+    def test_upload_page_has_upload_widget(self, driver, clean_server):
         """Test that upload page has upload widget."""
-        driver.get(ttmp32gme_server)
+        server_info = clean_server
+        driver.get(server_info["url"])
 
         # Look for upload elements (the specific selectors depend on the upload widget used)
         body_text = driver.find_element(By.TAG_NAME, "body").text
