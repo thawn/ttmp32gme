@@ -126,48 +126,9 @@ def audio_files_context(album_name="Test Album"):
 
 
 @pytest.fixture(scope="function")
-def base_config_with_album(driver, ttmp32gme_server, tmp_path):
-    """Base configuration with one album uploaded - saves and restores state."""
-    # Save current state if it exists
-    db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
-    library_path = Path.home() / ".ttmp32gme" / "library"
-
-    backup_db = tmp_path / "backup.db"
-    backup_lib = tmp_path / "backup_lib"
-
-    if db_path.exists():
-        shutil.copy(db_path, backup_db)
-    if library_path.exists():
-        shutil.copytree(library_path, backup_lib)
-
-    # Upload album with files using context manager
-    with audio_files_context() as test_files:
-        _upload_album_files(driver, ttmp32gme_server, test_files)
-
-    # Save the state with uploaded album
-    snapshot_db = tmp_path / "snapshot.db"
-    snapshot_lib = tmp_path / "snapshot_lib"
-
-    if db_path.exists():
-        shutil.copy(db_path, snapshot_db)
-    if library_path.exists():
-        shutil.copytree(library_path, snapshot_lib)
-
-    yield
-
-    # Restore snapshot for each test
-    if snapshot_db.exists():
-        shutil.copy(snapshot_db, db_path)
-    if snapshot_lib.exists():
-        if library_path.exists():
-            shutil.rmtree(library_path)
-        shutil.copytree(snapshot_lib, library_path)
-
-
-@pytest.fixture(scope="function")
-def clean_server_with_custom_paths(tmp_path, driver):
+def clean_server(tmp_path, driver):
     """Start a new server with clean database and library in temporary directories.
-    
+
     This fixture creates temporary database and library paths, starts a server with
     those paths, and cleans up everything after the test completes.
     """
@@ -176,39 +137,45 @@ def clean_server_with_custom_paths(tmp_path, driver):
     import signal
     import os
     from selenium.common.exceptions import WebDriverException
-    
+
     # Create temporary paths
     test_db = tmp_path / "test_config.sqlite"
     test_library = tmp_path / "test_library"
     test_library.mkdir(parents=True, exist_ok=True)
-    
+
     # Find an available port (use a different port from default to avoid conflicts)
     test_port = 10021
     test_host = "127.0.0.1"
-    
+
     # Start server with custom paths in background
     server_cmd = [
-        "python", "-m", "ttmp32gme.ttmp32gme",
-        "--database", str(test_db),
-        "--library", str(test_library),
-        "--host", test_host,
-        "--port", str(test_port)
+        "python",
+        "-m",
+        "ttmp32gme.ttmp32gme",
+        "--database",
+        str(test_db),
+        "--library",
+        str(test_library),
+        "--host",
+        test_host,
+        "--port",
+        str(test_port),
     ]
-    
+
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
-    
+
     # Start the server process in the background
     server_process = subprocess.Popen(
         server_cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        start_new_session=True  # Ensure it runs in background
+        start_new_session=True,  # Ensure it runs in background
     )
-    
+
     # Wait for server to start using Selenium WebDriverWait
     server_url = f"http://{test_host}:{test_port}"
-    
+
     def server_is_ready(driver):
         """Check if server is ready by attempting to load the page."""
         try:
@@ -217,7 +184,7 @@ def clean_server_with_custom_paths(tmp_path, driver):
             return driver.title is not None
         except WebDriverException:
             return False
-    
+
     try:
         # Wait up to 10 seconds for server to be ready
         WebDriverWait(driver, 10).until(server_is_ready)
@@ -230,16 +197,16 @@ def clean_server_with_custom_paths(tmp_path, driver):
             f"Error: {e}\n"
             f"Stdout: {stdout}\nStderr: {stderr}"
         )
-    
+
     # Yield fixture data
     yield {
         "url": server_url,
         "db_path": test_db,
         "library_path": test_library,
         "port": test_port,
-        "host": test_host
+        "host": test_host,
     }
-    
+
     # Cleanup: stop server
     logger.info("Stopping test server")
     server_process.terminate()
@@ -249,48 +216,20 @@ def clean_server_with_custom_paths(tmp_path, driver):
         logger.warning("Server did not stop gracefully, killing it")
         server_process.kill()
         server_process.wait()
-    
+
     # Clean up temporary files (tmp_path is automatically cleaned up by pytest)
     logger.info("Test server cleanup complete")
 
 
 @pytest.fixture(scope="function")
-def base_config_with_album(driver, ttmp32gme_server, tmp_path):
-    """Base configuration with one album uploaded - saves and restores state."""
-    # Save current state if it exists
-    db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
-    library_path = Path.home() / ".ttmp32gme" / "library"
-
-    backup_db = tmp_path / "backup.db"
-    backup_lib = tmp_path / "backup_lib"
-
-    if db_path.exists():
-        shutil.copy(db_path, backup_db)
-    if library_path.exists():
-        shutil.copytree(library_path, backup_lib)
-
+def base_config_with_album(driver, clean_server):
+    """Base configuration with one album uploaded."""
+    server_info = clean_server
     # Upload album with files using context manager
     with audio_files_context() as test_files:
-        _upload_album_files(driver, ttmp32gme_server, test_files)
+        _upload_album_files(driver, server_info["url"], test_files)
 
-    # Save the state with uploaded album
-    snapshot_db = tmp_path / "snapshot.db"
-    snapshot_lib = tmp_path / "snapshot_lib"
-
-    if db_path.exists():
-        shutil.copy(db_path, snapshot_db)
-    if library_path.exists():
-        shutil.copytree(library_path, snapshot_lib)
-
-    yield
-
-    # Restore snapshot for each test
-    if snapshot_db.exists():
-        shutil.copy(snapshot_db, db_path)
-    if snapshot_lib.exists():
-        if library_path.exists():
-            shutil.rmtree(library_path)
-        shutil.copytree(snapshot_lib, library_path)
+    yield server_info
 
 
 def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
@@ -452,17 +391,17 @@ class TransientConfigChange():
 class TestRealFileUpload:
     """Test file upload functionality with real MP3 and image files."""
 
-    def test_upload_album_with_files(self, driver, ttmp32gme_server):
+    def test_upload_album_with_files(self, driver, clean_server):
         """Test uploading an album with real MP3 files."""
         album_name = "Upload Test Album"
         with audio_files_context(album_name=album_name) as test_files:
-            _upload_album_files(driver, ttmp32gme_server, test_files)
+            _upload_album_files(driver, clean_server["url"], test_files)
 
         # Should be redirected to library after upload
         # If not, navigate there
         if "/library" not in driver.current_url:
             print(f"DEBUG: Not redirected to library, manually navigating")
-            driver.get(f"{ttmp32gme_server}/library")
+            driver.get(f"{clean_server['url']}/library")
 
         # Wait for library page to load and albums to be populated via AJAX
         # The library page loads albums dynamically, so we need to wait for content
@@ -858,11 +797,11 @@ class TestWebInterface:
 
 @pytest.mark.e2e
 class TestCleanServerFixture:
-    """Test the clean_server_with_custom_paths fixture."""
+    """Test the clean_server fixture."""
 
-    def test_clean_server_starts_with_custom_paths(self, clean_server_with_custom_paths, driver):
+    def test_clean_server_starts_with_custom_paths(self, clean_server, driver):
         """Test that server starts with custom database and library paths."""
-        server_info = clean_server_with_custom_paths
+        server_info = clean_server
         
         # Verify server is accessible
         driver.get(server_info["url"])
