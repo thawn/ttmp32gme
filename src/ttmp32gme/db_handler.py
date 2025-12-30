@@ -730,11 +730,11 @@ class DBHandler:
                     ".tiff",
                 ]:
                     # Handle image files using helper method
-                    if not album_data.get("picture_filename"):
-                        pic_filename, pic_data = self._process_cover_image(file_path)
-                        if pic_filename:
-                            album_data["picture_filename"] = pic_filename
-                            picture_data = pic_data
+                    # Note: Separate image files take precedence over embedded covers
+                    pic_filename, pic_data = self._process_cover_image(file_path)
+                    if pic_filename:
+                        album_data["picture_filename"] = pic_filename
+                        picture_data = pic_data
 
             logger.info(
                 f"Album {album_idx}: Extracted data - title: {album_data.get('album_title', 'NONE')}, tracks: {len(track_data)}"
