@@ -31,8 +31,14 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
-# Jest coverage
+# Test coverage reports
 coverage/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+.cache
 
 # Python
 __pycache__/
