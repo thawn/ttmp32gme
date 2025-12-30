@@ -20,7 +20,6 @@ from flask import (
 from werkzeug.utils import secure_filename
 from packaging.version import Version
 
-from .db_update import update as db_update
 from .db_handler import DBHandler
 from .build.file_handler import (
     check_config_file,
@@ -530,7 +529,7 @@ def main():
     db_version = config.get("version", "0.1.0")
     if Version(__version__) > Version(db_version):
         logger.info("Updating config...")
-        db_update(db_version, db)
+        db.update_db(db_version)
         logger.info("Update successful.")
         config = fetch_config()
 
