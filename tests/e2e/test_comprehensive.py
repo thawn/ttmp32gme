@@ -313,9 +313,10 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
         print("DEBUG: No file inputs found, cannot upload files")
 
 
-def _get_database_value(query, params=()):
+def _get_database_value(query, params=(), db_path=None):
     """Helper to query database directly."""
-    db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
+    if db_path is None:
+        db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
     if not db_path.exists():
         return None
 
@@ -328,10 +329,10 @@ def _get_database_value(query, params=()):
 
 
 def _open_library_element_for_editing(
-    ttmp32gme_server, driver, element_number: int = 0
+    server_url, driver, element_number: int = 0
 ):
     """Open the edit modal of the library element with the given number"""
-    driver.get(f"{ttmp32gme_server}/library")
+    driver.get(f"{server_url}/library")
     WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
@@ -347,9 +348,9 @@ def _open_library_element_for_editing(
     return library_row
 
 
-def _create_gme(ttmp32gme_server, driver, element_number=0):
+def _create_gme(server_url, driver, element_number=0):
     library_row = _open_library_element_for_editing(
-        ttmp32gme_server, driver, element_number
+        server_url, driver, element_number
     )
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
     create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
@@ -359,14 +360,16 @@ def _create_gme(ttmp32gme_server, driver, element_number=0):
 
 class TransientConfigChange:
     def __init__(
-        self, driver, server_url, config: str = "audio_format", value: str = "ogg"
+        self, driver, server_url, config: str = "audio_format", value: str = "ogg", db_path=None
     ):
         self.driver = driver
         self.server_url = server_url
         self.config = config
         self.new_value = value
+        self.db_path = db_path
         self.old_value = _get_database_value(
-            f"SELECT value FROM config WHERE param = '{config}'"
+            f"SELECT value FROM config WHERE param = '{config}'",
+            db_path=db_path
         )[0]
 
     def _get_config_element(self):
@@ -441,22 +444,24 @@ class TestRealFileUpload:
             album_path.glob("*.mp3")
         ), "No MP3 files found in album directory after upload"
 
-    def test_id3_metadata_extraction(self, driver, ttmp32gme_server):
+    def test_id3_metadata_extraction(self, driver, clean_server):
         """Test that ID3 metadata is correctly extracted and displayed."""
+        server_info = clean_server
         album_name = "id3 Test Album"
         # Upload files
         with audio_files_context(album_name=album_name) as test_files:
-            _upload_album_files(driver, ttmp32gme_server, test_files)
+            _upload_album_files(driver, server_info["url"], test_files)
 
         # Check database for metadata
         result = _get_database_value(
-            f"SELECT album_title FROM gme_library WHERE album_title = '{album_name}'"
+            f"SELECT album_title FROM gme_library WHERE album_title = '{album_name}'",
+            db_path=server_info["db_path"]
         )
         assert result is not None, "Album not found in database"
         assert result[0] == album_name
 
         # Check metadata in UI
-        driver.get(f"{ttmp32gme_server}/library")
+        driver.get(f"{server_info['url']}/library")
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
@@ -465,17 +470,16 @@ class TestRealFileUpload:
         assert album_name in body_text
         assert "Test Artist" in body_text
 
-    def test_cover_extraction_from_id3(self, driver, ttmp32gme_server):
+    def test_cover_extraction_from_id3(self, driver, clean_server):
         """Test that album covers are extracted from ID3 metadata."""
+        server_info = clean_server
         album_name = "Cover Test Album"
         # Upload file with embedded cover
         with audio_files_context(album_name=album_name) as test_files:
-            _upload_album_files(driver, ttmp32gme_server, test_files)
+            _upload_album_files(driver, server_info["url"], test_files)
 
         # Check filesystem for cover image
-        library_path = (
-            Path.home() / ".ttmp32gme" / "library" / album_name.replace(" ", "_")
-        )
+        library_path = server_info["library_path"] / album_name.replace(" ", "_")
         cover_files = (
             list(library_path.rglob("*.jpg"))
             + list(library_path.rglob("*.jpeg"))
@@ -485,7 +489,7 @@ class TestRealFileUpload:
         assert len(cover_files) > 0, "No cover image found in library"
 
         # Check UI displays cover
-        driver.get(f"{ttmp32gme_server}/library")
+        driver.get(f"{server_info['url']}/library")
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
@@ -499,16 +503,15 @@ class TestRealFileUpload:
                     cover_images.append(img)
         assert len(cover_images) > 0, "No cover image displayed in UI"
 
-    def test_separate_cover_upload(self, driver, ttmp32gme_server):
+    def test_separate_cover_upload(self, driver, clean_server):
         """Test uploading separate cover image files."""
+        server_info = clean_server
         album_name = "Separate Cover Album"
         with audio_files_context(album_name=album_name) as test_files:
-            _upload_album_files(driver, ttmp32gme_server, test_files, audio_only=False)
+            _upload_album_files(driver, server_info["url"], test_files, audio_only=False)
 
         # Check cover image exists
-        library_path = (
-            Path.home() / ".ttmp32gme" / "library" / album_name.replace(" ", "_")
-        )
+        library_path = server_info["library_path"] / album_name.replace(" ", "_")
         cover_files = list(library_path.rglob("*.jpg"))
         assert len(cover_files) > 0, "Cover image not uploaded"
 
@@ -518,12 +521,13 @@ class TestRealFileUpload:
 class TestAudioConversion:
     """Test MP3 to OGG conversion with real files."""
 
-    def test_mp3_to_ogg_conversion(self, driver, ttmp32gme_server):
+    def test_mp3_to_ogg_conversion(self, driver, base_config_with_album):
         """Test that MP3 files can be converted to OGG format."""
+        server_info = base_config_with_album
         # Change configuration to OGG format
-        with TransientConfigChange(driver, ttmp32gme_server, "audio_format", "ogg"):
+        with TransientConfigChange(driver, server_info["url"], "audio_format", "ogg", db_path=server_info["db_path"]):
             # Trigger GME creation which should convert to OGG
-            _create_gme(ttmp32gme_server, driver)
+            _create_gme(server_info["url"], driver)
 
         # Cannot check that OGG files were created - they were already cleaned up
 
@@ -533,13 +537,14 @@ class TestAudioConversion:
 class TestGMECreation:
     """Test GME file creation with real audio files."""
 
-    def test_gme_creation_with_real_files(self, driver, ttmp32gme_server):
+    def test_gme_creation_with_real_files(self, driver, base_config_with_album):
         """Test that GME files can be created from real MP3 files."""
+        server_info = base_config_with_album
         # Trigger GME creation
-        _create_gme(ttmp32gme_server, driver)
+        _create_gme(server_info["url"], driver)
 
         # Check that GME file was created
-        library_path = Path.home() / ".ttmp32gme" / "library"
+        library_path = server_info["library_path"]
         gme_files = list(library_path.rglob("*.gme"))
 
         assert len(gme_files) > 0, "No GME file created"
@@ -557,21 +562,23 @@ class TestGMECreation:
 class TestWebInterface:
     """Test the web interface using Selenium."""
 
-    def test_homepage_loads(self, driver, ttmp32gme_server):
+    def test_homepage_loads(self, driver, clean_server):
         """Test that the homepage loads successfully."""
-        driver.get(ttmp32gme_server)
+        server_info = clean_server
+        driver.get(server_info["url"])
 
         assert "ttmp32gme" in driver.title
 
         nav = driver.find_element(By.TAG_NAME, "nav")
         assert nav is not None
 
-    def test_navigation_links(self, driver, ttmp32gme_server):
+    def test_navigation_links(self, driver, clean_server):
         """Test that all navigation links work from all pages."""
+        server_info = clean_server
         pages = ["/", "/library", "/config", "/help"]
 
         for page in pages:
-            driver.get(f"{ttmp32gme_server}{page}")
+            driver.get(f"{server_info['url']}{page}")
             WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
@@ -589,39 +596,43 @@ class TestWebInterface:
                     pytest.fail(f"Navigation link to {link_href} missing on {page}")
 
     def test_config_changes_persist(
-        self, driver, base_config_with_album, ttmp32gme_server
+        self, driver, base_config_with_album
     ):
         """Test that configuration changes are saved to database."""
-        driver.get(f"{ttmp32gme_server}/config")
+        server_info = base_config_with_album
+        driver.get(f"{server_info['url']}/config")
 
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
         old_value = _get_database_value(
-            "SELECT value FROM config WHERE param ='audio_format'"
+            "SELECT value FROM config WHERE param ='audio_format'",
+            db_path=server_info["db_path"]
         )[0]
         new_value = "ogg" if old_value == "mp3" else "mp3"
 
         # Change configuration options and save
         # Example: change audio format
-        with TransientConfigChange(driver, ttmp32gme_server, "audio_format", "ogg"):
+        with TransientConfigChange(driver, server_info["url"], "audio_format", "ogg", db_path=server_info["db_path"]):
             assert (
                 _get_database_value(
-                    "SELECT value FROM config WHERE param ='audio_format'"
+                    "SELECT value FROM config WHERE param ='audio_format'",
+                    db_path=server_info["db_path"]
                 )[0]
                 == "ogg"
             ), "Config change not persisted"
 
-    def test_edit_album_info(self, driver, base_config_with_album, ttmp32gme_server):
+    def test_edit_album_info(self, driver, base_config_with_album):
         """Test editing album information on library page."""
-        driver.get(f"{ttmp32gme_server}/library")
+        server_info = base_config_with_album
+        driver.get(f"{server_info['url']}/library")
 
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        library_element = _open_library_element_for_editing(ttmp32gme_server, driver)
+        library_element = _open_library_element_for_editing(server_info["url"], driver)
 
         # Edit album title
         title_input = library_element.find_element(By.NAME, "album_title")
@@ -638,10 +649,11 @@ class TestWebInterface:
         assert "Updated Album Title" in body_text
 
     def test_select_deselect_all(
-        self, driver, base_config_with_album, ttmp32gme_server
+        self, driver, base_config_with_album
     ):
         """Test select all / deselect all on library page."""
-        driver.get(f"{ttmp32gme_server}/library")
+        server_info = base_config_with_album
+        driver.get(f"{server_info['url']}/library")
 
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
@@ -671,10 +683,11 @@ class TestWebInterface:
         for cb in checkboxes:
             assert not cb.is_selected(), "Not all checkboxes deselected"
 
-    def test_print_album(self, driver, base_config_with_album, ttmp32gme_server):
+    def test_print_album(self, driver, base_config_with_album):
         """Test print layout generation with configuration changes."""
+        server_info = base_config_with_album
         # First, go to library page
-        driver.get(f"{ttmp32gme_server}/library")
+        driver.get(f"{server_info['url']}/library")
 
         # Wait for library page to load with albums
         WebDriverWait(driver, 5).until(
@@ -784,23 +797,26 @@ class TestWebInterface:
             "Test Album" in body_text or "print" in body_text.lower()
         ), f"Expected album or print content, got: {body_text[:200]}"
 
-    def test_config_page_loads(self, driver, ttmp32gme_server):
+    def test_config_page_loads(self, driver, clean_server):
         """Test that configuration page loads."""
-        driver.get(f"{ttmp32gme_server}/config")
+        server_info = clean_server
+        driver.get(f"{server_info['url']}/config")
 
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
 
-    def test_help_page_loads(self, driver, ttmp32gme_server):
+    def test_help_page_loads(self, driver, clean_server):
         """Test that help page loads."""
-        driver.get(f"{ttmp32gme_server}/help")
+        server_info = clean_server
+        driver.get(f"{server_info['url']}/help")
 
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
 
-    def test_library_page_loads(self, driver, ttmp32gme_server):
+    def test_library_page_loads(self, driver, clean_server):
         """Test that library page loads."""
-        driver.get(f"{ttmp32gme_server}/library")
+        server_info = clean_server
+        driver.get(f"{server_info['url']}/library")
 
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
