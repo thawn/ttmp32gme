@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
@@ -629,33 +630,71 @@ class TestWebInterface:
         )
 
         # Wait a bit for the page to fully render
-        time.sleep(2)
+        time.sleep(1)
+
+        # verify that we are using the default list layout
+        album_920 = driver.find_element(By.ID, "oid_920")
+
+        def _check_layout(
+            album_element: WebElement,
+            layout: str = "list",
+            class_name: list[str] = [
+                "cover",
+                "album-info",
+                "album-controls",
+                "tracks",
+                "general-controls",
+            ],
+        ):
+            if layout == "list":
+                # Default list layout: cover, album-info, album-controls and tracks visible
+                should_be_hidden = [False, False, False, False, True]
+            elif layout == "tiles":
+                # Tiles layout: only cover and general-controls visible
+                should_be_hidden = [False, True, True, True, False]
+            elif layout == "cd":
+                # CD layout: album-controls and tracks visible
+                should_be_hidden = [True, True, False, False, True]
+            else:
+                raise ValueError(f"Unknown layout: {layout}")
+            for i, cls in enumerate(class_name):
+                if class_name[i] == "general-controls":
+                    # General controls are outside album element
+                    element = driver.find_element(By.ID, cls)
+                else:
+                    element = album_element.find_element(By.CLASS_NAME, cls)
+                style_attr = element.get_attribute("style") or ""
+                is_hidden = "display:none" in style_attr.replace(" ", "").lower()
+                assert (
+                    is_hidden == should_be_hidden[i]
+                ), f"Layout: {layout}. Element {cls} hidden state mismatch: expected {should_be_hidden[i]}, got {is_hidden}"
+
+        _check_layout(album_920, "list")
 
         # Try to expand the configuration panel - find the link in the panel heading
-        try:
-            # The config panel might be collapsed - look for the heading link
-            config_panel = driver.find_element(By.CLASS_NAME, "panel-heading")
-            config_link = config_panel.find_element(By.CSS_SELECTOR, "a[data-toggle='collapse']")
-            config_link.click()
-            time.sleep(1)  # Wait for panel to expand
+        # The config panel might be collapsed - look for the heading link
+        config_link = driver.find_element(By.CSS_SELECTOR, "a[data-toggle='collapse']")
+        config_link.click()
+        time.sleep(0.1)  # Wait for panel to expand
 
-            # Change layout preset to "tiles"
-            tiles_preset = driver.find_element(By.ID, "tiles")
-            tiles_preset.click()
-            time.sleep(0.5)
+        # Change layout preset to "tiles"
+        tiles_preset = driver.find_element(By.ID, "tiles")
+        tiles_preset.click()
+        time.sleep(0.2)
 
-            # Change number of columns
-            num_cols_input = driver.find_element(By.NAME, "print_num_cols")
-            num_cols_input.clear()
-            num_cols_input.send_keys("2")
+        _check_layout(album_920, "tiles")
 
-            # Save configuration
-            save_button = driver.find_element(By.ID, "config-save")
-            save_button.click()
-            time.sleep(1)
-        except Exception as e:
-            # If we can't interact with config panel, just log it and continue
-            print(f"Could not interact with config panel: {e}")
+        # Change layout preset to "cd"
+        cd_preset = driver.find_element(By.ID, "cd")
+        cd_preset.click()
+        time.sleep(0.2)
+
+        _check_layout(album_920, "cd")
+
+        # # Save configuration
+        # save_button = driver.find_element(By.ID, "config-save")
+        # save_button.click()
+        # time.sleep(0.1)
 
         # Check that the print page is displayed with album content
         body_text = driver.find_element(By.TAG_NAME, "body").text
