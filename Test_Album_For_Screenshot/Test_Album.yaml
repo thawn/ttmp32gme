@@ -1,0 +1,68 @@
+#this file was generated automatically by ttmp32gme
+product-id: 915
+comment: "CHOMPTECH DATA FORMAT CopyRight 2019 Ver0.00.0001"
+gme-lang: GERMAN
+media-path: audio/track_%s
+init: $current:=0
+welcome: 0, 1, 2
+scripts:
+  play:
+  - $current==0? P(0) J(t1)
+  - $current==1? P(1) J(t2)
+  - $current==2? P(2) C
+  next:
+  - $current==0? $current:=1 P(1) J(t2)
+  - $current==1? $current:=2 P(2) C
+  prev:
+  - $current==1? $current:=0 P(0) J(t1)
+  - $current==2? $current:=1 P(1) J(t2)
+  stop:
+  - C C
+  t0:
+  - $current:=0 P(0) J(t1)
+  t1:
+  - $current:=1 P(1) J(t2)
+  t2:
+  - $current:=2 P(2) C
+  t3:
+  - $current:=2 P(2) C
+  t4:
+  - $current:=2 P(2) C
+  t5:
+  - $current:=2 P(2) C
+  t6:
+  - $current:=2 P(2) C
+  t7:
+  - $current:=2 P(2) C
+  t8:
+  - $current:=2 P(2) C
+  t9:
+  - $current:=2 P(2) C
+  t10:
+  - $current:=2 P(2) C
+  t11:
+  - $current:=2 P(2) C
+  t12:
+  - $current:=2 P(2) C
+  t13:
+  - $current:=2 P(2) C
+  t14:
+  - $current:=2 P(2) C
+  t15:
+  - $current:=2 P(2) C
+  t16:
+  - $current:=2 P(2) C
+  t17:
+  - $current:=2 P(2) C
+  t18:
+  - $current:=2 P(2) C
+  t19:
+  - $current:=2 P(2) C
+  t20:
+  - $current:=2 P(2) C
+  t21:
+  - $current:=2 P(2) C
+  t22:
+  - $current:=2 P(2) C
+  t23:
+  - $current:=2 P(2) C

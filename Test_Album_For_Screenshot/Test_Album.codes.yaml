@@ -1,0 +1,39 @@
+# This file contains a mapping from script names to oid codes.
+# This way the existing scripts are always assigned to the
+# same codes, even if you add further scripts.
+# 
+# You can copy the contents of this file into the main .yaml file,
+# if you want to have both together.
+# 
+# If you delete this file, the next run of "tttool assemble" might
+# use different codes for your scripts, and you might have to re-
+# create the images for your product.
+scriptcodes:
+  play: 3947
+  next: 3944
+  prev: 3945
+  stop: 3946
+  t0: 2663
+  t1: 2664
+  t2: 2665
+  t3: 2666
+  t4: 2667
+  t5: 2047
+  t6: 2048
+  t7: 2049
+  t8: 2050
+  t9: 2051
+  t10: 2052
+  t11: 2053
+  t12: 2054
+  t13: 2055
+  t14: 2056
+  t15: 2057
+  t16: 2058
+  t17: 2059
+  t18: 2060
+  t19: 2061
+  t20: 2062
+  t21: 2063
+  t22: 2064
+  t23: 2065
