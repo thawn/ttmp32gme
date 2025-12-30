@@ -1,3 +1,4 @@
+import shutil
 import sqlite3
 import logging
 from typing import Any, Dict, List, Tuple, Optional
@@ -425,7 +426,7 @@ class DBHandler:
                                     0
                                 ]
                             ),
-                            "filename": str(file_path),
+                            "filename": file_path,
                         }
 
                         if not track_info["title"]:
@@ -493,11 +494,20 @@ class DBHandler:
             )
             self.write_to_database("gme_library", album_data)
             for track in track_data:
+                target_file = album_path / cleanup_filename(track["filename"].name)
+                try:
+                    track["filename"].rename(target_file)
+                except Exception as e:
+                    logger.error(
+                        f"Error moving track file {track['filename']} to album directory: {e}"
+                    )
+                logger.info(f"moving track file {track['filename']} to {target_file}")
+                track["filename"] = target_file.name
                 self.write_to_database("tracks", track)
             logger.info(f"Album {i}: Successfully written to database")
+            shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)
 
         logger.info(f"create_library_entry: Completed processing all albums")
-        self.commit()
         return True
 
     def db_row_to_album(self, row: sqlite3.Row) -> Dict[str, Any]:
