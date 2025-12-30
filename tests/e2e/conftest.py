@@ -70,91 +70,94 @@ def audio_files_context(album_name="Test Album"):
     if not base_mp3.exists():
         raise FileNotFoundError("Test audio file not available.")
 
-    # Create temporary directory for test files
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        
-        try:
-            # Create multiple copies with different ID3 tags
-            test_cases = [
-                {
-                    "filename": "track1_full_tags.mp3",
-                    "title": "Test Track 1",
-                    "artist": "Test Artist",
-                    "album": album_name,
-                    "year": "2024",
-                    "track": 1,
-                    "has_cover": True,
-                },
-                {
-                    "filename": "track2_minimal_tags.mp3",
-                    "title": "Test Track 2",
-                    "track": 2,
-                    "has_cover": False,
-                },
-                {"filename": "track3_no_tags.mp3", "has_cover": False},
-            ]
+    # Create temporary directory for test files (will be cleaned up by this context manager)
+    tmpdir = tempfile.mkdtemp()
+    tmp_path = Path(tmpdir)
+    
+    try:
+        # Create multiple copies with different ID3 tags
+        test_cases = [
+            {
+                "filename": "track1_full_tags.mp3",
+                "title": "Test Track 1",
+                "artist": "Test Artist",
+                "album": album_name,
+                "year": "2024",
+                "track": 1,
+                "has_cover": True,
+            },
+            {
+                "filename": "track2_minimal_tags.mp3",
+                "title": "Test Track 2",
+                "track": 2,
+                "has_cover": False,
+            },
+            {"filename": "track3_no_tags.mp3", "has_cover": False},
+        ]
 
-            for test_case in test_cases:
-                test_file = tmp_path / test_case["filename"]
-                shutil.copy(base_mp3, test_file)
+        for test_case in test_cases:
+            test_file = tmp_path / test_case["filename"]
+            shutil.copy(base_mp3, test_file)
 
-                # Add ID3 tags using EasyID3 for compatibility
-                try:
-                    audio = MP3(test_file, ID3=EasyID3)
+            # Add ID3 tags using EasyID3 for compatibility
+            try:
+                audio = MP3(test_file, ID3=EasyID3)
 
-                    if "title" in test_case:
-                        audio["title"] = test_case["title"]
-                    if "artist" in test_case:
-                        audio["artist"] = test_case["artist"]
-                    if "album" in test_case:
-                        audio["album"] = test_case["album"]
-                    if "year" in test_case:
-                        audio["date"] = test_case["year"]
-                    if "track" in test_case:
-                        audio["tracknumber"] = str(test_case["track"])
+                if "title" in test_case:
+                    audio["title"] = test_case["title"]
+                if "artist" in test_case:
+                    audio["artist"] = test_case["artist"]
+                if "album" in test_case:
+                    audio["album"] = test_case["album"]
+                if "year" in test_case:
+                    audio["date"] = test_case["year"]
+                if "track" in test_case:
+                    audio["tracknumber"] = str(test_case["track"])
 
-                    audio.save()
+                audio.save()
 
-                    # Add cover image if requested (need to switch to raw ID3 for APIC)
-                    if test_case.get("has_cover"):
-                        mp3 = MP3(test_file)
-                        if mp3.tags is None:
-                            mp3.add_tags()
+                # Add cover image if requested (need to switch to raw ID3 for APIC)
+                if test_case.get("has_cover"):
+                    mp3 = MP3(test_file)
+                    if mp3.tags is None:
+                        mp3.add_tags()
 
-                        img = Image.new("RGB", (100, 100), color="red")
-                        img_bytes = io.BytesIO()
-                        img.save(img_bytes, format="JPEG")
-                        img_bytes.seek(0)
+                    img = Image.new("RGB", (100, 100), color="red")
+                    img_bytes = io.BytesIO()
+                    img.save(img_bytes, format="JPEG")
+                    img_bytes.seek(0)
 
-                        mp3.tags.add(
-                            APIC(
-                                encoding=3,
-                                mime="image/jpeg",
-                                type=3,
-                                desc="Cover",
-                                data=img_bytes.read(),
-                            )
+                    mp3.tags.add(
+                        APIC(
+                            encoding=3,
+                            mime="image/jpeg",
+                            type=3,
+                            desc="Cover",
+                            data=img_bytes.read(),
                         )
-                        mp3.save()
+                    )
+                    mp3.save()
 
-                except Exception as e:
-                    print(f"Warning: Could not add tags to {test_file}: {e}")
-                    # File still exists and can be uploaded
+            except Exception as e:
+                print(f"Warning: Could not add tags to {test_file}: {e}")
+                # File still exists and can be uploaded
 
-                files.append(test_file)
+            files.append(test_file)
 
-            # Create a separate cover image file
-            cover_img = tmp_path / "separate_cover.jpg"
-            img = Image.new("RGB", (200, 200), color="blue")
-            img.save(cover_img, "JPEG")
-            files.append(cover_img)
+        # Create a separate cover image file
+        cover_img = tmp_path / "separate_cover.jpg"
+        img = Image.new("RGB", (200, 200), color="blue")
+        img.save(cover_img, "JPEG")
+        files.append(cover_img)
 
-            yield files
+        yield files
 
-        finally:
-            # Cleanup happens automatically when exiting the tempfile.TemporaryDirectory context
-            pass
+    finally:
+        # Cleanup: remove temporary directory
+        try:
+            shutil.rmtree(tmpdir)
+        except Exception as e:
+            print(f"Warning: Could not remove temporary directory {tmpdir}: {e}")
 
 
 @pytest.fixture(scope="function")
