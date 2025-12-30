@@ -1,8 +1,11 @@
 #!/bin/bash
-# Script to run E2E tests locally, replicating CI pipeline steps
-# execute the script without the -s flag on first usage so that it can set up the environment.
-# this script may take a long time. do not use head or or tail to truncate this scripts output or you will miss the partial status information.
-
+# Legacy wrapper script for backward compatibility
+# This script has been split into:
+#   - setup_e2e_environment.sh: Sets up the test environment
+#   - run_e2e_tests.sh: Runs the E2E tests
+#
+# For new usage, use those scripts directly.
+# This wrapper maintains the original command-line interface.
 
 set -e  # Exit on any error
 
@@ -12,6 +15,11 @@ SKIP_SETUP=false
 
 usage() {
     echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "DEPRECATED: This script is maintained for backward compatibility."
+    echo "For new usage, use:"
+    echo "  ./setup_e2e_environment.sh       # Set up environment (one-time)"
+    echo "  ./run_e2e_tests.sh [OPTIONS]     # Run tests"
     echo ""
     echo "Options:"
     echo "  -t, --test TEST_NAME    Run specific test (e.g., test_upload_album_with_files)"
@@ -52,8 +60,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "======================================================================"
-echo "Local E2E Test Execution Script"
+echo "Local E2E Test Execution Script (LEGACY)"
 echo "======================================================================"
+echo ""
+echo "NOTE: This script has been split into two separate scripts:"
+echo "  - setup_e2e_environment.sh: One-time environment setup"
+echo "  - run_e2e_tests.sh: Run tests (can be run repeatedly)"
+echo ""
+echo "This wrapper is maintained for backward compatibility."
+echo "Consider using the new scripts for better control."
 echo ""
 
 if [ -n "$SPECIFIC_TEST" ]; then
