@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 import shutil
 
-from .build.file_handler import (
+from ttmp32gme.db_handler import DBHandler
+
+from ttmp32gme.build.file_handler import (
     cleanup_filename,
     get_executable_path,
     get_oid_cache,
@@ -17,7 +19,7 @@ from .build.file_handler import (
 logger = logging.getLogger(__name__)
 
 
-def generate_codes_yaml(yaml_file: Path, db_handler) -> Path:
+def generate_codes_yaml(yaml_file: Path, db_handler: DBHandler) -> Path:
     """Generate script codes YAML file.
 
     Args:
@@ -92,7 +94,10 @@ scriptcodes:
 
 
 def convert_tracks(
-    album: Dict[str, Any], yaml_file: Path, config: Dict[str, Any], connection
+    album: Dict[str, Any],
+    yaml_file: Path,
+    config: Dict[str, Any],
+    db_handler: DBHandler,
 ) -> Path:
     """Convert audio tracks to appropriate format.
 
@@ -100,7 +105,7 @@ def convert_tracks(
         album: Album dictionary
         yaml_file: YAML file path
         config: Configuration dictionary
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         Path to media directory
@@ -184,7 +189,7 @@ def convert_tracks(
 
         # Update track script in database
         # Using db_handler methods
-        cursor.execute(
+        db_handler.execute(
             "UPDATE tracks SET tt_script=? WHERE parent_oid=? AND track=?",
             (f"t{i}", album["oid"], track["track"]),
         )
@@ -227,34 +232,32 @@ def convert_tracks(
     return media_path
 
 
-def get_tttool_parameters(connection) -> Dict[str, str]:
+def get_tttool_parameters(db_handler: DBHandler) -> Dict[str, str]:
     """Get tttool parameters from configuration.
 
     Args:
-        connection: Database connection
-
+        db_handler: Database handler instance
     Returns:
         Dictionary of tttool parameters
     """
     # Using db_handler methods
-    cursor.execute(
+    rows = db_handler.fetchall(
         "SELECT param, value FROM config WHERE param LIKE 'tt\\_%' ESCAPE '\\' AND value IS NOT NULL"
     )
 
     parameters = {}
-    for param, value in db_handler.fetchall(query):
+    for param, value in rows:
         parameter_name = param.replace("tt_", "", 1)
         parameters[parameter_name] = value
 
     return parameters
 
 
-def get_tttool_command(connection) -> List[str]:
+def get_tttool_command(db_handler: DBHandler) -> List[str]:
     """Build tttool command with parameters.
 
     Args:
-        connection: Database connection
-
+        db_handler: Database handler instance
     Returns:
         Command as list of arguments
     """
@@ -263,7 +266,7 @@ def get_tttool_command(connection) -> List[str]:
         raise RuntimeError("tttool not found")
 
     command = [tttool_path]
-    parameters = get_tttool_parameters(connection)
+    parameters = get_tttool_parameters(db_handler)
 
     for param, value in sorted(parameters.items()):
         command.extend([f"--{param}", value])
@@ -271,13 +274,13 @@ def get_tttool_command(connection) -> List[str]:
     return command
 
 
-def run_tttool(arguments: str, path: Optional[Path], db_handler) -> bool:
+def run_tttool(arguments: str, path: Optional[Path], db_handler: DBHandler) -> bool:
     """Run tttool command.
 
     Args:
         arguments: Command arguments
         path: Working directory
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         True if successful
@@ -288,7 +291,7 @@ def run_tttool(arguments: str, path: Optional[Path], db_handler) -> bool:
         if path:
             os.chdir(path)
 
-        command = get_tttool_command(connection)
+        command = get_tttool_command(db_handler)
         command.extend(arguments.split())
 
         logger.info(f"Running: {' '.join(command)}")
@@ -321,18 +324,18 @@ def get_sorted_tracks(album: Dict[str, Any]) -> List[str]:
     return tracks
 
 
-def make_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
+def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     """Create GME file for an album.
 
     Args:
         oid: Album OID
         config: Configuration dictionary
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         Album OID
     """
-    album = get_album(oid, connection)
+    album = db_handler.get_album(oid)
     if not album:
         raise ValueError(f"Album {oid} not found")
 
@@ -348,17 +351,17 @@ def make_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
         f.write(f"gme-lang: {config.get('pen_language', 'GERMAN')}\n")
 
     # Convert tracks and add scripts
-    media_path = convert_tracks(album, yaml_file, config, connection)
+    media_path = convert_tracks(album, yaml_file, config, db_handler)
 
     # Generate codes file
-    codes_file = generate_codes_yaml(yaml_file, connection)
+    codes_file = generate_codes_yaml(yaml_file, db_handler)
 
     # Run tttool to assemble GME
     yaml_basename = yaml_file.name
-    if run_tttool(f"assemble {yaml_basename}", album_path, connection):
+    if run_tttool(f"assemble {yaml_basename}", album_path, db_handler):
         gme_filename = yaml_basename.replace(".yaml", ".gme")
-        update_table_entry(
-            "gme_library", "oid=?", [oid], {"gme_file": gme_filename}, connection
+        db_handler.update_table_entry(
+            "gme_library", "oid=?", [oid], {"gme_file": gme_filename}, db_handler
         )
 
     # Cleanup temporary audio directory
@@ -374,13 +377,13 @@ def create_oids(oids: List[int], size: int, db_handler) -> List[Path]:
     Args:
         oids: List of OIDs to create
         size: Size in mm
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         List of OID image file paths
     """
     target_path = get_oid_cache()
-    parameters = get_tttool_parameters(connection)
+    parameters = get_tttool_parameters(db_handler)
     dpi = parameters.get("dpi", "1200")
     pixel_size = parameters.get("pixel-size", "2")
 
@@ -391,7 +394,7 @@ def create_oids(oids: List[int], size: int, db_handler) -> List[Path]:
 
         if not oid_file.exists():
             # Create OID image
-            command = get_tttool_command(connection)
+            command = get_tttool_command(db_handler)
             command.extend(["--code-dim", str(size), "oid-code", str(oid)])
 
             try:
@@ -419,14 +422,15 @@ def copy_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
     Args:
         oid: Album OID
         config: Configuration dictionary
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         Album OID
     """
     # Using db_handler methods
-    cursor.execute("SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,))
-    row = cursor.fetchone()
+    row = db_handler.fetchone(
+        "SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,)
+    )
 
     if not row:
         raise ValueError(f"Album {oid} not found")
@@ -435,9 +439,10 @@ def copy_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
 
     if not gme_file:
         # Create GME if it doesn't exist
-        make_gme(oid, config, connection)
-        cursor.execute("SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,))
-        path, gme_file = cursor.fetchone()
+        make_gme(oid, config, db_handler)
+        path, gme_file = db_handler.fetchone(
+            "SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,)
+        )
 
     tiptoi_dir = get_tiptoi_dir()
     if not tiptoi_dir:
@@ -453,21 +458,21 @@ def copy_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
     return oid
 
 
-def delete_gme_tiptoi(uid: int, db_handler) -> int:
+def delete_gme_tiptoi(uid: int, db_handler: DBHandler) -> int:
     """Delete GME file from TipToi device.
 
     Args:
         uid: Album OID
-        connection: Database connection
+        db_handler: Database handler instance
 
     Returns:
         Album OID
     """
     # Using db_handler methods
-    cursor.execute("SELECT gme_file FROM gme_library WHERE oid=?", (uid,))
-    row = cursor.fetchone()
+    row = db_handler.fetchone("SELECT gme_file FROM gme_library WHERE oid=?", (uid,))
 
     if not row or not row[0]:
+        logger.info(f"No GME file found for album {uid}. Nothing to delete.")
         return uid
 
     gme_file = row[0]
