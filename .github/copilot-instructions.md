@@ -10,7 +10,7 @@
 - **Framework**: Flask 3.0+ web application with Jinja2 templates
 - **Database**: SQLite with custom DBHandler class
 - **Python Version**: 3.11+ required
-- **Testing**: 80+ tests (unit, integration, E2E with Selenium); coverage 90%+
+- **Testing**: 80+ tests (unit, integration, E2E with Selenium); coverage target 75%+
 
 ### Architecture
 - **Backend**: Python Flask application migrated from Perl
@@ -62,7 +62,7 @@ ttmp32gme --host 0.0.0.0 --port 8080
 
 #### Test Coverage
 
-Aim for test coverage >90%.
+Aim for test coverage >75%.
 
 #### Unit Tests (Fast, no dependencies)
 ```bash
