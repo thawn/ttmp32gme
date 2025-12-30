@@ -1,6 +1,7 @@
 """Unit tests for db_handler module."""
 
 import tempfile
+import shutil
 import sqlite3
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -665,8 +666,6 @@ class TestDBHandlerCoreMethods:
 
     def test_update_tracks(self, db):
         """Test update_tracks method."""
-        import tempfile
-        import shutil
         
         # Create a temporary directory for album
         temp_dir = Path(tempfile.mkdtemp())
@@ -716,8 +715,6 @@ class TestDBHandlerCoreMethods:
 
     def test_update_album(self, db):
         """Test update_album method."""
-        import tempfile
-        import shutil
         
         temp_dir = Path(tempfile.mkdtemp())
         
@@ -764,8 +761,6 @@ class TestDBHandlerCoreMethods:
 
     def test_delete_album(self, db):
         """Test delete_album method."""
-        import tempfile
-        import shutil
         
         temp_dir = Path(tempfile.mkdtemp())
         
@@ -802,8 +797,6 @@ class TestDBHandlerCoreMethods:
 
     def test_replace_cover(self, db):
         """Test replace_cover method."""
-        import tempfile
-        import shutil
         
         temp_dir = Path(tempfile.mkdtemp())
         
@@ -841,8 +834,6 @@ class TestDBHandlerCoreMethods:
 
     def test_cleanup_album(self, db):
         """Test cleanup_album method."""
-        import tempfile
-        import shutil
         
         temp_dir = Path(tempfile.mkdtemp())
         
