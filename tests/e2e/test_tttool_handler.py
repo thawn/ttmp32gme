@@ -60,7 +60,7 @@ class TestGenerateCodesYaml:
         yaml_file = temp_files / "test.yaml"
 
         # Generate codes
-        codes_file = generate_codes_yaml(yaml_file, temp_db.conn)
+        codes_file = generate_codes_yaml(yaml_file, temp_db)
 
         assert codes_file.exists()
         assert codes_file.suffix == ".yaml"
@@ -83,7 +83,7 @@ class TestGenerateCodesYaml:
         temp_db.commit()
 
         # Generate codes
-        codes_file = generate_codes_yaml(yaml_file, temp_db.conn)
+        codes_file = generate_codes_yaml(yaml_file, temp_db)
 
         assert codes_file.exists()
         with open(codes_file, "r") as f:
@@ -98,7 +98,7 @@ class TestTttoolParameters:
         """Test getting tttool parameters from config."""
 
         # Get parameters
-        params = get_tttool_parameters(temp_db.conn)
+        params = get_tttool_parameters(temp_db)
 
         assert isinstance(params, dict)
         assert params.get("dpi") == "1200"
@@ -153,7 +153,7 @@ class TestMakeGme:
     """Test GME file creation."""
 
     @patch("ttmp32gme.tttool_handler.run_tttool")
-    @patch("ttmp32gme.tttool_handler.get_album")
+    @patch("ttmp32gme.db_handler.DBHandler.get_album")
     @patch("ttmp32gme.tttool_handler.convert_tracks")
     def test_creates_gme_file(self, mock_convert, mock_get_album, mock_run_tttool):
         """Test GME file creation process."""
