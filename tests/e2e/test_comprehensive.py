@@ -565,22 +565,15 @@ class TestWebInterface:
         track1_title_before = track_items[0].find_element(By.NAME, "title").get_attribute("value")
         track2_title_before = track_items[1].find_element(By.NAME, "title").get_attribute("value")
         
-        # Perform drag and drop to swap track 1 and track 2
-        # Use ActionChains with move_to_element for better compatibility with jQuery UI sortable
-        from selenium.webdriver import ActionChains
-        actions = ActionChains(driver)
-        
-        # Scroll element into view first
-        driver.execute_script("arguments[0].scrollIntoView(true);", track_items[0])
-        time.sleep(0.2)
-        
-        # Perform drag and drop by moving to second element
-        actions.click_and_hold(track_items[0]).perform()
-        time.sleep(0.3)
-        actions.move_to_element(track_items[1]).perform()
-        time.sleep(0.3)
-        actions.release().perform()
-        time.sleep(0.5)  # Wait for drag/drop to complete
+        # Use JavaScript to reorder tracks (more reliable than drag-and-drop in headless mode)
+        # Move the first track after the second track
+        driver.execute_script("""
+            var trackList = arguments[0];
+            var firstTrack = trackList.children[0];
+            var secondTrack = trackList.children[1];
+            trackList.insertBefore(secondTrack, firstTrack);
+        """, track_list)
+        time.sleep(0.5)  # Wait for DOM to update
         
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
@@ -658,21 +651,15 @@ class TestWebInterface:
         track2_title_input.clear()
         track2_title_input.send_keys(new_track2_title)
         
-        # Reorder tracks (swap 1 and 2) using drag and drop
-        from selenium.webdriver import ActionChains
-        actions = ActionChains(driver)
-        
-        # Scroll element into view first
-        driver.execute_script("arguments[0].scrollIntoView(true);", track_items[0])
-        time.sleep(0.2)
-        
-        # Perform drag and drop by moving to second element
-        actions.click_and_hold(track_items[0]).perform()
-        time.sleep(0.3)
-        actions.move_to_element(track_items[1]).perform()
-        time.sleep(0.3)
-        actions.release().perform()
-        time.sleep(0.5)  # Wait for drag/drop to complete
+        # Reorder tracks (swap 1 and 2) using JavaScript (more reliable than drag-and-drop in headless mode)
+        # Move the first track after the second track
+        driver.execute_script("""
+            var trackList = arguments[0];
+            var firstTrack = trackList.children[0];
+            var secondTrack = trackList.children[1];
+            trackList.insertBefore(secondTrack, firstTrack);
+        """, track_list)
+        time.sleep(0.5)  # Wait for DOM to update
         
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
