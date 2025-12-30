@@ -1,10 +1,10 @@
 """Unit tests for print_handler module."""
 
 import tempfile
-import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 import pytest
+import sqlite3
 
 from ttmp32gme.print_handler import (
     format_tracks,
@@ -68,7 +68,7 @@ class TestFormatTracks:
         mock_get_sorted_tracks.return_value = ["track_1", "track_2"]
         
         def create_oids_side_effect(oids, *args):
-            return [Mock(name=f"oid_{oid}.png") for oid in oids]
+            return [Mock(spec=['name'], **{'name': f"oid_{oid}.png"}) for oid in oids]
         
         mock_create_oids.side_effect = create_oids_side_effect
         
@@ -247,7 +247,7 @@ class TestCreatePrintLayout:
                     "script": script,
                     "code": code
                 })
-            except Exception:
+            except sqlite3.IntegrityError:
                 # Already exists, update it
                 db_handler.execute(
                     "UPDATE script_codes SET code=? WHERE script=?",
