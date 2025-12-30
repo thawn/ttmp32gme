@@ -48,7 +48,6 @@ def _open_library_element_for_editing(
     library_row = driver.find_element(By.ID, f"el{element_number}")
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
     edit_button.click()
-    print(f"DEBUG: Clicked edit button")
     WebDriverWait(driver, 5).until(
         EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
     )
@@ -120,7 +119,6 @@ class TestRealFileUpload:
         # Should be redirected to library after upload
         # If not, navigate there
         if "/library" not in driver.current_url:
-            print(f"DEBUG: Not redirected to library, manually navigating")
             driver.get(f"{server_info['url']}/library")
 
         # Wait for library page to load and albums to be populated via AJAX
@@ -358,7 +356,6 @@ class TestWebInterface:
         
         # Verify audio files exist in old location
         old_audio_files = list(old_album_dir.glob("*.mp3"))
-        print(f"DEBUG: Found {len(old_audio_files)} audio files in old location: {old_album_dir}")
         assert len(old_audio_files) > 0, "No audio files found before library move"
         
         # Create new library path
@@ -386,7 +383,6 @@ class TestWebInterface:
             "SELECT value FROM config WHERE param = 'library_path'",
             db_path=server_info["db_path"]
         )[0]
-        print(f"DEBUG: New config path: {new_config_path}, expected: {new_library_path}")
         assert new_config_path == str(new_library_path), f"Library path not updated in config. Expected {new_library_path}, got {new_config_path}"
         
         # Verify album path updated in gme_library table
@@ -395,25 +391,19 @@ class TestWebInterface:
             params=(album_oid,),
             db_path=server_info["db_path"]
         )[0]
-        print(f"DEBUG: New album path from DB: {new_album_path_from_db}")
-        print(f"DEBUG: Old album path: {album_path}")
         
         # The files are copied to the new library location with directory structure preserved
         # The album directory name should be the same as before
         album_dir_name = Path(album_path).name
         new_album_dir = new_library_path / album_dir_name
-        print(f"DEBUG: Expected album subdirectory: {new_album_dir}")
-        print(f"DEBUG: New album dir exists: {new_album_dir.exists()}")
         if new_album_dir.exists():
             all_files = list(new_album_dir.glob("*"))
-            print(f"DEBUG: Files in new album dir: {all_files}")
         
         # The database path may not be correct due to a bug, but files should still be moved
         assert new_album_dir.exists(), f"Album directory not found at new location: {new_album_dir}"
         
         # Verify audio files were moved
         audio_files = list(new_album_dir.glob("*.mp3"))
-        print(f"DEBUG: Found {len(audio_files)} audio files in new location")
         assert len(audio_files) > 0, f"No audio files found in new location. Expected at least {len(old_audio_files)} files"
         
         # Verify GME file was moved
@@ -427,7 +417,6 @@ class TestWebInterface:
         # Just log this for information
         if old_album_dir.exists():
             old_remaining_files = list(old_album_dir.glob("*"))
-            print(f"DEBUG: Files remaining in old location: {old_remaining_files}")
         
         # Test that GME can still be created after move
         # First update the database to point to the correct album directory
