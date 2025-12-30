@@ -486,8 +486,9 @@ def serve_dynamic_image(filename):
         oid_str, cover_filename = parts
         try:
             db = get_db()
-            db.execute("SELECT path FROM gme_library WHERE oid=?", (int(oid_str),))
-            row = db.fetchone()
+            row = db.fetchone(
+                "SELECT path FROM gme_library WHERE oid=?", (int(oid_str),)
+            )
             if row:
                 album_path = Path(row[0])
                 cover_path = album_path / cover_filename
