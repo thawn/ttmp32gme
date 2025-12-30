@@ -583,6 +583,11 @@ def main():
 
     args = parser.parse_args()
 
+    # Set logging level based on debug flag (do this early)
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug("Debug mode enabled")
+
     if args.version:
         print(f"ttmp32gme version {__version__}")
         return

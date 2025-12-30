@@ -282,15 +282,24 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 ## ToDo
 
-* make debug command line flag change logger into debug mode
-* fix paths in db when library is moved: write test for this
+* add a download button to the web frontend that allows downloading the gme files if they were created
+  * add a corresponding end-to-end test that first creates the gme and then downloads it
+* change the docker setup in build/docker/ to work with the new python backend
+  * base image: ignore ttmp32gme-deps, it is for the old perl setup. Instead use a modern, slim python container
+  * set up the dependencies like it is done in .github/workflows/e2e-tests.yml but without the selenium testing dependencies (chrome and chromedriver)
+  * take into account these pull requests for the perl installation: 
+    * https://github.com/thawn/ttmp32gme/pull/70
+    * https://github.com/thawn/ttmp32gme/pull/68
+  * test the docker container if possible
+* add pre-commit hooks that run code linter (ruff) and formatter (black)
+* add sphinx documentation
+  * auto-generate API documentation from docstrings in the code
+  * thoroughly analyze README.md, the frontend help page and the entire code then write the documentation in a docs/ folder using markdown files
+  * after you are done update the copilot-instructions.md file to reflect the current status of the project
 * make sure upload supports .ogg files
-- implement test_edit_album_info_oid: test that we can change the oid and all data in the gme_library database table (and the parent_oid in the tracks table) is changed accordingly
-- implement test_edit_album_info_reorder_tracks: test that tracks can be re-arranged
-- implement test_edit_album_info_combined: change oid, title, track order and track titles all at once and check the database
-* integrate wkhtml2pdf into docker image for linux
+* integrate ~~wkhtml2pdf~~ pdf creation by selenium + browser into frontend (via the save PDF button that is already on the print page) make sure the PDFs created by the browser version used work for OID printing (ideally PNG images are not changed in the PDF)
 * save last selected albums in the browsers local storage
-* import/migrate library from one computer to another
+* import/migrate library from one computer to another - can already be done manually, needs documentation. GUI for this will not be done.
 
 
 
