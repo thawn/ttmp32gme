@@ -142,6 +142,11 @@ with test_audio_files_context() as test_files:
     # Files cleaned up automatically on exit
 ```
 
+### Tests
+
+- Tests use pytest framework with fixtures for setup/teardown. E2E tests use Selenium WebDriver (Chrome).
+- Write tests to be strict and fail early on errors.
+
 ### Threading
 SQLite connection uses `check_same_thread=False` for Flask's multi-threaded environment. DBHandler is safe to use across request threads.
 

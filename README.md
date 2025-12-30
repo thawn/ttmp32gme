@@ -36,6 +36,40 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
        Alternatively you can use [docker compose](https://docs.docker.com/compose/) and startup ttmp32gme with `docker-compse up` using the [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml).
   * Perl (legacy): run the perl sources (see [instructions](#perl-backend-legacy) below)
 
+## Command Line Options
+
+When running ttmp32gme from the command line, you can customize its behavior with the following options:
+
+```bash
+ttmp32gme [OPTIONS]
+```
+
+### Available Options
+
+* `--port PORT`, `-p PORT`: Specify the server port (default: 10020)
+* `--host HOST`: Specify the server host (default: 127.0.0.1)
+* `--database DATABASE`: Path to custom database file (default: ~/.ttmp32gme/config.sqlite)
+* `--library LIBRARY`: Path to custom library directory (default: ~/.ttmp32gme/library)
+* `--debug`, `-d`: Enable debug mode
+* `--version`, `-v`: Show version information
+
+### Examples
+
+Start server on a different port:
+```bash
+ttmp32gme --port 8080
+```
+
+Use custom database and library paths (useful for testing or multiple instances):
+```bash
+ttmp32gme --database /path/to/custom.sqlite --library /path/to/custom/library
+```
+
+Run on all network interfaces:
+```bash
+ttmp32gme --host 0.0.0.0 --port 8080
+```
+
 ## Usage
 ### 1. Add mp3 files
 Add one or more mp3 files on the "Upload" page. Only add one
@@ -325,9 +359,7 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 
 ## ToDo
-* add argument to ttmp32gme.py to enable configuring the database path via command line
-* add argument to ttmp32gme.py to enable configuring the library path via command line
-* add a fixture to test_comprehensive that starts new server and sets up clean library and config using the command line arguments
+* make debug command line flag change logger into debug mode
 * fix paths in db when library is moved: write test for this
 * make sure upload supports .ogg files
 - implement test_edit_album_info_oid: test that we can change the oid and all data in the gme_library database table (and the parent_oid in the tracks table) is changed accordingly
