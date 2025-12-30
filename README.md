@@ -359,6 +359,7 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 
 ## ToDo
+* make debug command line flag change logger into debug mode
 * fix paths in db when library is moved: write test for this
 * make sure upload supports .ogg files
 - implement test_edit_album_info_oid: test that we can change the oid and all data in the gme_library database table (and the parent_oid in the tracks table) is changed accordingly
