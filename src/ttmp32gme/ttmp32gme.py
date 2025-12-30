@@ -135,9 +135,8 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
                 answer = "OID pixels too large, please increase resolution and/or decrease pixel size."
 
     # Update database
-    cursor = db.cursor()
     for param, value in config_params.items():
-        cursor.execute("UPDATE config SET value=? WHERE param=?", (value, param))
+        db.execute("UPDATE config SET value=? WHERE param=?", (value, param))
 
     db.commit()
     config = fetch_config()
@@ -487,9 +486,8 @@ def serve_dynamic_image(filename):
         oid_str, cover_filename = parts
         try:
             db = get_db()
-            cursor = db.cursor()
-            cursor.execute("SELECT path FROM gme_library WHERE oid=?", (int(oid_str),))
-            row = cursor.fetchone()
+            db.execute("SELECT path FROM gme_library WHERE oid=?", (int(oid_str),))
+            row = db.fetchone()
             if row:
                 album_path = Path(row[0])
                 cover_path = album_path / cover_filename
