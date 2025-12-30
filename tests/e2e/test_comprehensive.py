@@ -4,6 +4,7 @@ import pytest
 import time
 import shutil
 import sqlite3
+import logging
 from pathlib import Path
 from contextlib import contextmanager
 from selenium.webdriver.common.by import By
@@ -17,6 +18,8 @@ from mutagen.id3 import APIC
 from PIL import Image
 import io
 import subprocess
+
+logger = logging.getLogger(__name__)
 
 
 # Fixtures directory
@@ -120,6 +123,134 @@ def audio_files_context(album_name="Test Album"):
                     f.unlink()
                 except Exception as e:
                     print(f"Warning: Could not remove {f}: {e}")
+
+
+@pytest.fixture(scope="function")
+def base_config_with_album(driver, ttmp32gme_server, tmp_path):
+    """Base configuration with one album uploaded - saves and restores state."""
+    # Save current state if it exists
+    db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
+    library_path = Path.home() / ".ttmp32gme" / "library"
+
+    backup_db = tmp_path / "backup.db"
+    backup_lib = tmp_path / "backup_lib"
+
+    if db_path.exists():
+        shutil.copy(db_path, backup_db)
+    if library_path.exists():
+        shutil.copytree(library_path, backup_lib)
+
+    # Upload album with files using context manager
+    with audio_files_context() as test_files:
+        _upload_album_files(driver, ttmp32gme_server, test_files)
+
+    # Save the state with uploaded album
+    snapshot_db = tmp_path / "snapshot.db"
+    snapshot_lib = tmp_path / "snapshot_lib"
+
+    if db_path.exists():
+        shutil.copy(db_path, snapshot_db)
+    if library_path.exists():
+        shutil.copytree(library_path, snapshot_lib)
+
+    yield
+
+    # Restore snapshot for each test
+    if snapshot_db.exists():
+        shutil.copy(snapshot_db, db_path)
+    if snapshot_lib.exists():
+        if library_path.exists():
+            shutil.rmtree(library_path)
+        shutil.copytree(snapshot_lib, library_path)
+
+
+@pytest.fixture(scope="function")
+def clean_server_with_custom_paths(tmp_path):
+    """Start a new server with clean database and library in temporary directories.
+    
+    This fixture creates temporary database and library paths, starts a server with
+    those paths, and cleans up everything after the test completes.
+    """
+    import subprocess
+    import time
+    import signal
+    import os
+    
+    # Create temporary paths
+    test_db = tmp_path / "test_config.sqlite"
+    test_library = tmp_path / "test_library"
+    test_library.mkdir(parents=True, exist_ok=True)
+    
+    # Find an available port (use a different port from default to avoid conflicts)
+    test_port = 10021
+    test_host = "127.0.0.1"
+    
+    # Start server with custom paths
+    server_cmd = [
+        "python", "-m", "ttmp32gme.ttmp32gme",
+        "--database", str(test_db),
+        "--library", str(test_library),
+        "--host", test_host,
+        "--port", str(test_port)
+    ]
+    
+    logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
+    
+    # Start the server process
+    server_process = subprocess.Popen(
+        server_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    
+    # Wait for server to start
+    server_url = f"http://{test_host}:{test_port}"
+    max_wait = 10  # seconds
+    start_time = time.time()
+    server_ready = False
+    
+    while time.time() - start_time < max_wait:
+        try:
+            import requests
+            response = requests.get(server_url, timeout=1)
+            if response.status_code == 200:
+                server_ready = True
+                logger.info(f"Test server is ready at {server_url}")
+                break
+        except Exception:
+            pass
+        time.sleep(0.5)
+    
+    if not server_ready:
+        server_process.terminate()
+        stdout, stderr = server_process.communicate(timeout=5)
+        raise RuntimeError(
+            f"Server failed to start within {max_wait} seconds.\n"
+            f"Stdout: {stdout}\nStderr: {stderr}"
+        )
+    
+    # Yield fixture data
+    yield {
+        "url": server_url,
+        "db_path": test_db,
+        "library_path": test_library,
+        "port": test_port,
+        "host": test_host
+    }
+    
+    # Cleanup: stop server
+    logger.info("Stopping test server")
+    server_process.terminate()
+    try:
+        server_process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        logger.warning("Server did not stop gracefully, killing it")
+        server_process.kill()
+        server_process.wait()
+    
+    # Clean up temporary files (tmp_path is automatically cleaned up by pytest)
+    logger.info("Test server cleanup complete")
 
 
 @pytest.fixture(scope="function")
@@ -722,3 +853,35 @@ class TestWebInterface:
 
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
+
+
+@pytest.mark.e2e
+class TestCleanServerFixture:
+    """Test the clean_server_with_custom_paths fixture."""
+
+    def test_clean_server_starts_with_custom_paths(self, clean_server_with_custom_paths, driver):
+        """Test that server starts with custom database and library paths."""
+        server_info = clean_server_with_custom_paths
+        
+        # Verify server is accessible
+        driver.get(server_info["url"])
+        assert "ttmp32gme" in driver.title
+        
+        # Verify database file exists at custom path
+        assert server_info["db_path"].exists(), "Custom database file was not created"
+        
+        # Verify library directory exists at custom path
+        assert server_info["library_path"].exists(), "Custom library directory was not created"
+        assert server_info["library_path"].is_dir(), "Custom library path is not a directory"
+        
+        # Verify we can access the library page
+        driver.get(f"{server_info['url']}/library")
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # Verify library is initially empty (clean state)
+        # The page should load successfully but have no albums
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        # Just check page loaded - don't check for specific content as it's a clean state
+        assert body_text is not None

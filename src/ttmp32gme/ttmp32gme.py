@@ -61,12 +61,27 @@ print_content = (
     'Please go to the /print page, configure your layout, and click "save as pdf"'
 )
 
+# Custom paths (set via command line or defaults)
+custom_db_path = None
+custom_library_path = None
+
 
 def get_db():
     """Get database handler."""
-    global db_handler
+    global db_handler, custom_db_path
     if db_handler is None:
-        config_file = check_config_file()
+        if custom_db_path:
+            config_file = Path(custom_db_path)
+            # Ensure parent directory exists
+            config_file.parent.mkdir(parents=True, exist_ok=True)
+            # If custom path doesn't exist, copy default config
+            if not config_file.exists():
+                default_config = Path(__file__).parent / "config.sqlite"
+                if default_config.exists():
+                    import shutil
+                    shutil.copy(default_config, config_file)
+        else:
+            config_file = check_config_file()
         db_handler = DBHandler(str(config_file))
         db_handler.connect()
     return db_handler
@@ -74,12 +89,19 @@ def get_db():
 
 def fetch_config() -> Dict[str, Any]:
     """Fetch configuration from database."""
+    global custom_library_path
     db = get_db()
     
     temp_config = db.get_config()
 
     if not temp_config.get("library_path"):
-        temp_config["library_path"] = str(get_default_library_path())
+        if custom_library_path:
+            temp_config["library_path"] = str(custom_library_path)
+        else:
+            temp_config["library_path"] = str(get_default_library_path())
+    elif custom_library_path:
+        # Override database library path with custom path if provided
+        temp_config["library_path"] = str(custom_library_path)
 
     # convert strings to numeric types where appropriate
     if "port" in temp_config:
@@ -544,7 +566,7 @@ def serve_dynamic_image(filename):
 
 def main():
     """Main entry point."""
-    global config
+    global config, custom_db_path, custom_library_path
 
     parser = argparse.ArgumentParser(
         description="ttmp32gme - TipToi MP3 to GME converter"
@@ -553,6 +575,8 @@ def main():
     parser.add_argument("--host", default="127.0.0.1", help="Server host")
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug mode")
     parser.add_argument("--version", "-v", action="store_true", help="Show version")
+    parser.add_argument("--database", type=str, help="Path to database file")
+    parser.add_argument("--library", type=str, help="Path to library directory")
 
     args = parser.parse_args()
 
@@ -560,8 +584,19 @@ def main():
         print(f"ttmp32gme version {__version__}")
         return
 
+    # Set custom paths from command-line arguments
+    if args.database:
+        custom_db_path = Path(args.database).absolute()
+        logger.info(f"Using custom database path: {custom_db_path}")
+    
+    if args.library:
+        custom_library_path = Path(args.library).absolute()
+        # Ensure library directory exists
+        custom_library_path.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Using custom library path: {custom_library_path}")
+
     # Initialize database and config
-    config_file = check_config_file()
+    config_file = check_config_file() if not custom_db_path else custom_db_path
     db = get_db()
     config = fetch_config()
 
