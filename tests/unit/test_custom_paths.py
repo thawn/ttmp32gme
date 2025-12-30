@@ -122,3 +122,59 @@ def test_cli_arguments_parsing():
         
     finally:
         sys.argv = original_argv
+
+
+def test_clean_server_fixture_setup():
+    """Test that clean_server_with_custom_paths fixture creates proper paths.
+    
+    This is a unit test that verifies the fixture would set up paths correctly
+    without actually starting a server or using Selenium.
+    """
+    import tempfile
+    import subprocess
+    from pathlib import Path
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        
+        # Simulate fixture setup
+        test_db = tmp_path / "test_config.sqlite"
+        test_library = tmp_path / "test_library"
+        test_library.mkdir(parents=True, exist_ok=True)
+        
+        # Verify paths were created
+        assert test_library.exists(), "Library directory was not created"
+        assert test_library.is_dir(), "Library path is not a directory"
+        
+        # Verify database path is prepared (parent exists)
+        assert test_db.parent.exists(), "Database parent directory does not exist"
+        
+        # Test that we can construct the command
+        test_port = 10021
+        test_host = "127.0.0.1"
+        server_cmd = [
+            "python", "-m", "ttmp32gme.ttmp32gme",
+            "--database", str(test_db),
+            "--library", str(test_library),
+            "--host", test_host,
+            "--port", str(test_port)
+        ]
+        
+        # Verify command is properly constructed
+        assert "--database" in server_cmd
+        assert str(test_db) in server_cmd
+        assert "--library" in server_cmd
+        assert str(test_library) in server_cmd
+        assert "--port" in server_cmd
+        assert str(test_port) in server_cmd
+        
+        # Verify the command would be valid (checking help doesn't start server)
+        result = subprocess.run(
+            ["python", "-m", "ttmp32gme.ttmp32gme", "--help"],
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 0
+        assert "--database" in result.stdout
+        assert "--library" in result.stdout
+

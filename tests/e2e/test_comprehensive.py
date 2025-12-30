@@ -165,7 +165,7 @@ def base_config_with_album(driver, ttmp32gme_server, tmp_path):
 
 
 @pytest.fixture(scope="function")
-def clean_server_with_custom_paths(tmp_path):
+def clean_server_with_custom_paths(tmp_path, driver):
     """Start a new server with clean database and library in temporary directories.
     
     This fixture creates temporary database and library paths, starts a server with
@@ -175,6 +175,7 @@ def clean_server_with_custom_paths(tmp_path):
     import time
     import signal
     import os
+    from selenium.common.exceptions import WebDriverException
     
     # Create temporary paths
     test_db = tmp_path / "test_config.sqlite"
@@ -185,7 +186,7 @@ def clean_server_with_custom_paths(tmp_path):
     test_port = 10021
     test_host = "127.0.0.1"
     
-    # Start server with custom paths
+    # Start server with custom paths in background
     server_cmd = [
         "python", "-m", "ttmp32gme.ttmp32gme",
         "--database", str(test_db),
@@ -196,37 +197,37 @@ def clean_server_with_custom_paths(tmp_path):
     
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
     
-    # Start the server process
+    # Start the server process in the background
     server_process = subprocess.Popen(
         server_cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        start_new_session=True  # Ensure it runs in background
     )
     
-    # Wait for server to start
+    # Wait for server to start using Selenium WebDriverWait
     server_url = f"http://{test_host}:{test_port}"
-    max_wait = 10  # seconds
-    start_time = time.time()
-    server_ready = False
     
-    while time.time() - start_time < max_wait:
+    def server_is_ready(driver):
+        """Check if server is ready by attempting to load the page."""
         try:
-            import requests
-            response = requests.get(server_url, timeout=1)
-            if response.status_code == 200:
-                server_ready = True
-                logger.info(f"Test server is ready at {server_url}")
-                break
-        except Exception:
-            pass
-        time.sleep(0.5)
+            driver.get(server_url)
+            # If we can get the page title, server is ready
+            return driver.title is not None
+        except WebDriverException:
+            return False
     
-    if not server_ready:
+    try:
+        # Wait up to 10 seconds for server to be ready
+        WebDriverWait(driver, 10).until(server_is_ready)
+        logger.info(f"Test server is ready at {server_url}")
+    except Exception as e:
         server_process.terminate()
         stdout, stderr = server_process.communicate(timeout=5)
         raise RuntimeError(
-            f"Server failed to start within {max_wait} seconds.\n"
+            f"Server failed to start within timeout.\n"
+            f"Error: {e}\n"
             f"Stdout: {stdout}\nStderr: {stderr}"
         )
     
