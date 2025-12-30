@@ -200,14 +200,8 @@ pytest tests/ -v
 # Run unit tests only
 pytest tests/unit/ -v
 
-# Setup E2E environment
-./setup_e2e_environment.sh -b
-
-# Run E2E tests
-./run_e2e_tests.sh
-
-# Run specific E2E test
-./run_e2e_tests.sh -t test_upload_album_with_files
+# Run E2E tests (takes about 1-2 minutes)
+pytest tests/e2e/ -v
 ```
 
 ## CI/CD
