@@ -667,14 +667,13 @@ class DBHandler:
             self.write_to_database("tracks", validated_data)
 
     def create_library_entry(
-        self, album_list: List[Dict], library_path: Path, debug: int = 0
+        self, album_list: List[Dict], library_path: Path
     ) -> bool:
         """Create a new library entry from uploaded files.
 
         Args:
             album_list: List of albums with file paths
             library_path: Library path
-            debug: Debug level
 
         Returns:
             True if successful
@@ -843,12 +842,11 @@ class DBHandler:
 
         return True
 
-    def update_album(self, album_data: Dict[str, Any], debug: int = 0) -> int:
+    def update_album(self, album_data: Dict[str, Any]) -> int:
         """Update an existing album.
 
         Args:
             album_data: Album data to update
-            debug: Debug level
 
         Returns:
             Album OID
