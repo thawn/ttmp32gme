@@ -10,7 +10,7 @@
 - **Framework**: Flask 3.0+ web application with Jinja2 templates
 - **Database**: SQLite with custom DBHandler class
 - **Python Version**: 3.11+ required
-- **Testing**: 45+ tests (unit, integration, E2E with Selenium)
+- **Testing**: 80+ tests (unit, integration, E2E with Selenium); coverage 90%+
 
 ### Architecture
 - **Backend**: Python Flask application migrated from Perl
@@ -60,6 +60,10 @@ ttmp32gme --host 0.0.0.0 --port 8080
 
 ### Testing
 
+#### Test Coverage
+
+Aim for test coverage >90%.
+
 #### Unit Tests (Fast, no dependencies)
 ```bash
 # Run all unit tests
@@ -69,20 +73,13 @@ pytest tests/unit/ -v
 pytest tests/unit/test_library_handler.py -v
 ```
 
-#### Integration Tests (Requires running server)
+#### Integration Tests
 ```bash
-# Terminal 1: Start server
-python -m ttmp32gme.ttmp32gme
-
-# Terminal 2: Run integration tests
 pytest tests/test_web_frontend.py -v
 ```
 
-#### E2E Tests (Selenium, requires full setup)
+#### E2E Tests (Selenium)
 ```bash
-# One-time setup (installs Chrome, tttool, etc.)
-./ttmp32gme > /tmp/server.log 2>&1 & sleep(2)  # Start server in background
-
 # Run all E2E tests
 ./pytest tests/e2e/ -v
 

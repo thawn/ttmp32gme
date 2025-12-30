@@ -47,7 +47,26 @@ markers = [
     "e2e: End-to-end tests using Selenium (deselect with '-m \"not e2e\"')",
     "slow: Slow tests (deselect with '-m \"not slow\"')",
 ]
-addopts = "-v --strict-markers"
 
+addopts = [
+    "--verbose",
+    "--cov=ttmp32gme",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
 [tool.uv]
 # Using same dependencies as project.optional-dependencies.test
