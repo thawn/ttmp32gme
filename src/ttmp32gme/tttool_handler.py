@@ -146,7 +146,7 @@ def convert_tracks(
         # Copy MP3 files
         for i, track_key in enumerate(tracks):
             track = album[track_key]
-            source_file = Path(track["filename"])
+            source_file = album_path / track["filename"]
             target_file = media_path / f"track_{i}.mp3"
             shutil.copy(source_file, target_file)
 
@@ -359,10 +359,8 @@ def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     # Run tttool to assemble GME
     yaml_basename = yaml_file.name
     if run_tttool(f"assemble {yaml_basename}", album_path, db_handler):
-        gme_filename = yaml_basename.replace(".yaml", ".gme")
-        db_handler.update_table_entry(
-            "gme_library", "oid=?", [oid], {"gme_file": gme_filename}, db_handler
-        )
+        gme_data = {"gme_file": yaml_basename.replace(".yaml", ".gme")}
+        db_handler.update_table_entry("gme_library", "oid=?", [oid], gme_data)
 
     # Cleanup temporary audio directory
     if media_path.exists():
