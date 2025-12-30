@@ -123,11 +123,9 @@ cursor.execute("SELECT ...")
 
 ✅ **ALWAYS do this**:
 ```python
-db.execute("SELECT ...")
-result = db.fetchone()  # or db.fetchall()
+result = db.fetchone("SELECT ...")  # or db.fetchall()
 ```
-
-All database operations MUST go through DBHandler methods.
+All database operations MUST go through DBHandler methods (except in unit tests).
 
 ### Input Validation
 All frontend input MUST be validated with Pydantic models in `db_handler.py`:
@@ -175,14 +173,7 @@ SQLite connection uses `check_same_thread=False` for Flask's multi-threaded envi
 1. Run single test: `./run_e2e_tests.sh -s -t test_name`
 2. Check server logs in test output
 3. Add debug statements to test for element visibility
-4. Use explicit waits: `WebDriverWait(driver, 20).until(...)`
-
-## Deprecated/Legacy Code
-
-- **library_handler.py**: Replaced by DBHandler, do not use for new code
-- **db_update.py**: Database migrations now in DBHandler.update_db()
-- **Perl backend**: Legacy, Python is current implementation
-- **run_e2e_tests_locally.sh**: Legacy wrapper, use new modular scripts
+4. Use explicit waits: `WebDriverWait(driver, 5).until(...)`
 
 ## File Locations
 
@@ -224,4 +215,4 @@ GitHub Actions workflows run automatically on PRs:
 - **javascript-tests.yml**: Frontend Jest tests (Node 18.x, 20.x)
 - **e2e-tests.yml**: Full E2E suite (manual trigger or workflow_dispatch)
 
-Tests must pass before merging. E2E tests run on-demand to save CI resources.
+Tests must pass before merging.
