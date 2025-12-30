@@ -4,7 +4,6 @@ import pytest
 import logging
 import sys
 from pathlib import Path
-from io import StringIO
 
 # Add src to path to import ttmp32gme
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -13,7 +12,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 def test_debug_flag_enables_debug_logging(caplog):
     """Test that --debug flag enables DEBUG level logging."""
     from ttmp32gme.ttmp32gme import main
-    import sys
     
     # Test with --debug flag
     original_argv = sys.argv
@@ -40,7 +38,6 @@ def test_debug_flag_enables_debug_logging(caplog):
 def test_without_debug_flag_uses_info_logging():
     """Test that without --debug flag, INFO level is used."""
     from ttmp32gme.ttmp32gme import main
-    import sys
     
     root_logger = logging.getLogger()
     original_level = root_logger.level
