@@ -3,6 +3,7 @@
 import pytest
 import time
 import logging
+import requests
 from pathlib import Path
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -129,7 +130,6 @@ class TestGMEDownload:
         
         # Test direct download via URL (Selenium can't easily test file downloads,
         # but we can verify the endpoint returns 200 OK)
-        import requests
         response = requests.get(download_url)
         assert response.status_code == 200, f"Download endpoint returned {response.status_code}"
         assert response.headers.get('Content-Type') in ['application/octet-stream', 'audio/mpeg', 'audio/x-mpeg'], \
@@ -179,7 +179,6 @@ class TestGMEDownload:
         # Try to download (should fail)
         download_url = f"{server_info['url']}/download_gme/{oid}"
         
-        import requests
         response = requests.get(download_url)
         assert response.status_code == 404, f"Expected 404, got {response.status_code}"
         assert "not created" in response.text.lower() or "not found" in response.text.lower(), \
@@ -192,7 +191,6 @@ class TestGMEDownload:
         # Try to download with invalid OID
         download_url = f"{server_info['url']}/download_gme/99999"
         
-        import requests
         response = requests.get(download_url)
         assert response.status_code == 404, f"Expected 404, got {response.status_code}"
         assert "not found" in response.text.lower(), \
