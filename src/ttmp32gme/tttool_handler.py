@@ -20,14 +20,20 @@ logger = logging.getLogger(__name__)
 
 
 def generate_codes_yaml(yaml_file: Path, db_handler: DBHandler) -> Path:
-    """Generate script codes YAML file.
+    """Generate script codes YAML file with OID code mappings.
+
+    Reads script names from the main YAML file and assigns OID codes to each script.
+    Reuses existing codes from database when available, assigns new codes otherwise.
 
     Args:
-        yaml_file: Main YAML file path
-        db_handler: Database handler instance
+        yaml_file: Path to main album YAML file
+        db_handler: Database handler instance for accessing and storing script codes
 
     Returns:
-        Path to codes YAML file
+        Path to generated codes YAML file (.codes.yaml)
+    
+    Raises:
+        RuntimeError: If all script codes (1001-14999) are exhausted
     """
     # Read scripts from main YAML file
     scripts = []
@@ -99,16 +105,22 @@ def convert_tracks(
     config: Dict[str, Any],
     db_handler: DBHandler,
 ) -> Path:
-    """Convert audio tracks to appropriate format.
+    """Convert audio tracks to appropriate format and generate TipToi scripts.
+
+    Converts tracks to OGG (if configured) or copies MP3 files to audio directory.
+    Generates play, next, prev, and individual track control scripts for TipToi.
 
     Args:
-        album: Album dictionary
-        yaml_file: YAML file path
-        config: Configuration dictionary
-        db_handler: Database handler instance
+        album: Album dictionary containing tracks and metadata
+        yaml_file: Path to album YAML file where scripts will be appended
+        config: Configuration dictionary with audio_format and other settings
+        db_handler: Database handler instance for updating track scripts
 
     Returns:
-        Path to media directory
+        Path to media directory containing converted audio files
+        
+    Raises:
+        RuntimeError: If ffmpeg is not found when OGG conversion is requested
     """
     album_path = Path(album["path"])
     media_path = album_path / "audio"
@@ -233,12 +245,16 @@ def convert_tracks(
 
 
 def get_tttool_parameters(db_handler: DBHandler) -> Dict[str, str]:
-    """Get tttool parameters from configuration.
+    """Get tttool parameters from database configuration.
+
+    Retrieves all configuration parameters that start with 'tt_' prefix
+    and returns them with the prefix removed.
 
     Args:
-        db_handler: Database handler instance
+        db_handler: Database handler instance for accessing configuration
+        
     Returns:
-        Dictionary of tttool parameters
+        Dictionary mapping parameter names to values (e.g., {'dpi': '1200', 'pixel-size': '2'})
     """
     # Using db_handler methods
     rows = db_handler.fetchall(
@@ -254,12 +270,16 @@ def get_tttool_parameters(db_handler: DBHandler) -> Dict[str, str]:
 
 
 def get_tttool_command(db_handler: DBHandler) -> List[str]:
-    """Build tttool command with parameters.
+    """Build tttool command with configuration parameters.
 
     Args:
-        db_handler: Database handler instance
+        db_handler: Database handler instance for accessing configuration
+        
     Returns:
-        Command as list of arguments
+        Command as list of arguments ready for subprocess execution
+        
+    Raises:
+        RuntimeError: If tttool executable is not found in system PATH
     """
     tttool_path = get_executable_path("tttool")
     if not tttool_path:
@@ -275,15 +295,18 @@ def get_tttool_command(db_handler: DBHandler) -> List[str]:
 
 
 def run_tttool(arguments: str, path: Optional[Path], db_handler: DBHandler) -> bool:
-    """Run tttool command.
+    """Run tttool command with specified arguments.
+
+    Changes to the specified directory (if provided), executes tttool with arguments,
+    and returns to the original directory.
 
     Args:
-        arguments: Command arguments
-        path: Working directory
-        db_handler: Database handler instance
+        arguments: Space-separated command arguments to pass to tttool
+        path: Working directory for command execution (None to use current directory)
+        db_handler: Database handler instance for building tttool command
 
     Returns:
-        True if successful
+        True if command executed successfully, False if it failed
     """
     original_dir = Path.cwd()
 
@@ -325,15 +348,22 @@ def get_sorted_tracks(album: Dict[str, Any]) -> List[str]:
 
 
 def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
-    """Create GME file for an album.
+    """Create GME file for an album using tttool.
+
+    Generates YAML configuration, converts audio tracks, creates script codes,
+    and assembles the final GME file.
 
     Args:
-        oid: Album OID
-        config: Configuration dictionary
-        db_handler: Database handler instance
+        oid: Album OID identifier
+        config: Configuration dictionary with audio_format, pen_language, etc.
+        db_handler: Database handler instance for accessing album data
 
     Returns:
         Album OID
+        
+    Raises:
+        ValueError: If album with specified OID is not found
+        RuntimeError: If required tools (tttool, ffmpeg) are not found
     """
     album = db_handler.get_album(oid)
     if not album:
@@ -369,16 +399,16 @@ def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     return oid
 
 
-def create_oids(oids: List[int], size: int, db_handler) -> List[Path]:
+def create_oids(oids: List[int], size: int, db_handler: DBHandler) -> List[Path]:
     """Create OID code images.
 
     Args:
-        oids: List of OIDs to create
-        size: Size in mm
-        db_handler: Database handler instance
+        oids: List of OID codes to generate images for
+        size: Size of OID code in millimeters
+        db_handler: Database handler instance for configuration access
 
     Returns:
-        List of OID image file paths
+        List of paths to generated OID image files
     """
     target_path = get_oid_cache()
     parameters = get_tttool_parameters(db_handler)
@@ -414,13 +444,13 @@ def create_oids(oids: List[int], size: int, db_handler) -> List[Path]:
     return files
 
 
-def copy_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
+def copy_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     """Copy GME file to TipToi device.
 
     Args:
-        oid: Album OID
-        config: Configuration dictionary
-        db_handler: Database handler instance
+        oid: Album OID identifier
+        config: Configuration dictionary (unused, kept for API compatibility)
+        db_handler: Database handler instance for accessing album data
 
     Returns:
         Album OID

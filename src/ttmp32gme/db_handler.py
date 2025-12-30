@@ -89,6 +89,76 @@ class LibraryActionModel(BaseModel):
         return v
 
 
+class AlbumMetadataModel(BaseModel):
+    """Validates album-level metadata extracted from audio files."""
+
+    oid: int = Field(..., description="Album OID", ge=0, le=1000)
+    album_title: str = Field(..., max_length=255, description="Album title")
+    album_artist: Optional[str] = Field(None, max_length=255, description="Album artist")
+    album_year: Optional[str] = Field(None, max_length=10, description="Album year")
+    num_tracks: int = Field(..., ge=0, le=999, description="Number of tracks")
+    picture_filename: Optional[str] = Field(None, max_length=255, description="Cover image filename")
+    path: str = Field(..., max_length=500, description="Album directory path")
+
+    @field_validator("album_title", mode="before")
+    @classmethod
+    def validate_album_title(cls, v):
+        """Ensure album title is not empty."""
+        if not v or not v.strip():
+            raise ValueError("Album title cannot be empty")
+        return v.strip()
+
+    @field_validator("album_artist", mode="before")
+    @classmethod
+    def validate_album_artist(cls, v):
+        """Trim album artist."""
+        if v:
+            return v.strip()
+        return v
+
+    @field_validator("album_year", mode="before")
+    @classmethod
+    def validate_year(cls, v):
+        """Validate year format."""
+        if v:
+            v = str(v).strip()
+            # Accept various year formats (YYYY, YYYY-MM-DD, etc.)
+            if len(v) >= 4:
+                return v[:10]  # Limit to 10 chars
+        return v
+
+
+class TrackMetadataModel(BaseModel):
+    """Validates track-level metadata extracted from audio files."""
+
+    parent_oid: int = Field(..., description="Parent album OID", ge=0, le=1000)
+    album: Optional[str] = Field(None, max_length=255, description="Track album name")
+    artist: Optional[str] = Field(None, max_length=255, description="Track artist")
+    disc: Optional[str] = Field(None, max_length=10, description="Disc number")
+    duration: int = Field(..., ge=0, description="Track duration in milliseconds")
+    genre: Optional[str] = Field(None, max_length=100, description="Track genre")
+    lyrics: Optional[str] = Field(None, description="Track lyrics")
+    title: str = Field(..., max_length=255, description="Track title")
+    track: int = Field(..., ge=1, le=999, description="Track number")
+    filename: str = Field(..., max_length=255, description="Track filename")
+
+    @field_validator("title", mode="before")
+    @classmethod
+    def validate_title(cls, v):
+        """Ensure track title is not empty."""
+        if not v or not v.strip():
+            raise ValueError("Track title cannot be empty")
+        return v.strip()
+
+    @field_validator("album", "artist", "genre", mode="before")
+    @classmethod
+    def trim_string_fields(cls, v):
+        """Trim string fields."""
+        if v:
+            return v.strip()
+        return v
+
+
 class DBHandler:
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -401,6 +471,201 @@ class DBHandler:
         self.commit()
         return True
 
+    def _extract_audio_metadata(
+        self, file_path: Path, oid: int, track_no: int
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]], Optional[bytes]]:
+        """Extract metadata from audio file.
+
+        Args:
+            file_path: Path to audio file
+            oid: Album OID
+            track_no: Default track number
+
+        Returns:
+            Tuple of (album_data, track_info, picture_data) or (None, None, None) on error
+        """
+        try:
+            # Use EasyID3 for MP3 files to support easy tag access
+            if file_path.suffix.lower() == ".mp3":
+                audio = MP3(str(file_path), ID3=EasyID3)
+            else:
+                audio = MutagenFile(str(file_path))
+
+            if audio is None:
+                return None, None, None
+
+            # Extract album info (using EasyID3 interface)
+            album_data = {}
+            if "album" in audio:
+                album_data["album_title"] = str(audio["album"][0])
+                album_data["path"] = cleanup_filename(album_data["album_title"])
+
+            if "albumartist" in audio:
+                album_data["album_artist"] = str(audio["albumartist"][0])
+            elif "artist" in audio:
+                album_data["album_artist"] = str(audio["artist"][0])
+
+            if "date" in audio:
+                album_data["album_year"] = str(audio["date"][0])
+
+            # Extract cover if present (need raw ID3 for APIC)
+            picture_data = None
+            if file_path.suffix.lower() == ".mp3":
+                mp3_raw = MP3(str(file_path))  # Load with raw ID3 for APIC
+                if mp3_raw.tags:
+                    for key in mp3_raw.tags.keys():
+                        if key.startswith("APIC"):
+                            apic = mp3_raw.tags[key]
+                            picture_data = apic.data
+                            album_data["picture_filename"] = get_cover_filename(
+                                apic.mime, picture_data
+                            )
+                            break
+
+            # Extract track info (using EasyID3 interface)
+            track_info = {
+                "parent_oid": oid,
+                "album": str(audio.get("album", [""])[0]),
+                "artist": str(audio.get("artist", [""])[0]),
+                "disc": str(audio.get("discnumber", [""])[0]),
+                "duration": int(audio.info.length * 1000) if audio.info else 0,
+                "genre": str(audio.get("genre", [""])[0]),
+                "lyrics": str(audio.get("lyrics", [""])[0]),
+                "title": str(audio.get("title", [""])[0]),
+                "track": int(
+                    str(audio.get("tracknumber", [track_no])[0]).split("/")[0]
+                ),
+                "filename": file_path,
+            }
+
+            if not track_info["title"]:
+                track_info["title"] = cleanup_filename(file_path.name)
+
+            return album_data, track_info, picture_data
+
+        except Exception as e:
+            logger.error(f"Error processing audio file {file_path}: {e}")
+            return None, None, None
+
+    def _process_cover_image(self, file_path: Path) -> Tuple[Optional[str], Optional[bytes]]:
+        """Process cover image file.
+
+        Args:
+            file_path: Path to image file
+
+        Returns:
+            Tuple of (filename, image_data) or (None, None) on error
+        """
+        try:
+            with open(file_path, "rb") as f:
+                picture_data = f.read()
+            picture_filename = cleanup_filename(file_path.name)
+            return picture_filename, picture_data
+        except Exception as e:
+            logger.error(f"Error processing image file {file_path}: {e}")
+            return None, None
+
+    def _finalize_album_data(
+        self, album_data: Dict[str, Any], oid: int, num_tracks: int
+    ) -> Dict[str, Any]:
+        """Finalize album data with defaults and validation.
+
+        Args:
+            album_data: Raw album data
+            oid: Album OID
+            num_tracks: Number of tracks
+
+        Returns:
+            Validated album data
+        """
+        album_data["oid"] = oid
+        album_data["num_tracks"] = num_tracks
+
+        if not album_data.get("album_title"):
+            album_data["path"] = "unknown"
+            album_data["album_title"] = "unknown"
+
+        # Validate with Pydantic model
+        validated = AlbumMetadataModel(**album_data)
+        return validated.model_dump()
+
+    def _sort_and_renumber_tracks(
+        self, track_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Sort tracks and renumber them sequentially.
+
+        Args:
+            track_data: List of track dictionaries
+
+        Returns:
+            Sorted and renumbered track list
+        """
+        track_data.sort(
+            key=lambda t: (
+                t.get("disc", 0),
+                t.get("track", 0),
+                t.get("filename", ""),
+            )
+        )
+        for i, track in enumerate(track_data, 1):
+            track["track"] = i
+        return track_data
+
+    def _save_album_to_database(
+        self,
+        album_data: Dict[str, Any],
+        track_data: List[Dict[str, Any]],
+        picture_data: Optional[bytes],
+        album_path: Path,
+    ) -> None:
+        """Save album and tracks to database with validation.
+
+        Args:
+            album_data: Validated album data
+            track_data: List of track dictionaries
+            picture_data: Cover image data (if any)
+            album_path: Album directory path
+
+        Raises:
+            ValidationError: If data validation fails
+        """
+        # Save cover image
+        if album_data.get("picture_filename") and picture_data:
+            picture_file = album_path / album_data["picture_filename"]
+            with open(picture_file, "wb") as f:
+                f.write(picture_data)
+
+        # Write album to database (already validated)
+        self.write_to_database("gme_library", album_data)
+
+        # Validate and write tracks to database
+        for track in track_data:
+            # First, validate all metadata except filename (which is still a Path)
+            temp_track = track.copy()
+            source_file = temp_track.pop("filename")  # Remove Path object
+            temp_track["filename"] = source_file.name  # Use just the name for validation
+            
+            # Validate track metadata
+            validated_track = TrackMetadataModel(**temp_track)
+            
+            # Now move file to album directory
+            target_file = album_path / cleanup_filename(source_file.name)
+            try:
+                source_file.rename(target_file)
+                logger.info(f"moved track file {source_file} to {target_file}")
+                final_filename = target_file.name
+            except Exception as e:
+                logger.error(
+                    f"Error moving track file {source_file} to album directory: {e}"
+                )
+                # If move fails, use just the source filename
+                final_filename = source_file.name
+            
+            # Update filename in validated data and write to database
+            validated_data = validated_track.model_dump()
+            validated_data["filename"] = final_filename
+            self.write_to_database("tracks", validated_data)
+
     def create_library_entry(
         self, album_list: List[Dict], library_path: Path, debug: int = 0
     ) -> bool:
@@ -415,97 +680,46 @@ class DBHandler:
             True if successful
         """
         logger.info(f"create_library_entry: Processing {len(album_list)} albums")
-        for i, album in enumerate(album_list):
-            logger.info(f"Processing album {i}: {album}")
+        for album_idx, album in enumerate(album_list):
+            logger.info(f"Processing album {album_idx}: {album}")
             if not album:
-                logger.info(f"Album {i} is empty, skipping")
+                logger.info(f"Album {album_idx} is empty, skipping")
                 continue
 
-            logger.info(f"Album {i} has {len(album)} files")
+            logger.info(f"Album {album_idx} has {len(album)} files")
             oid = self.new_oid()
-            logger.info(f"Generated OID {oid} for album {i}")
+            logger.info(f"Generated OID {oid} for album {album_idx}")
+            
             album_data = {}
             track_data = []
             picture_data = None
             track_no = 1
 
+            # Process all files in the album
             for file_id in sorted(album.keys()):
                 file_path = Path(album[file_id])
 
                 if file_path.suffix.lower() in [".mp3", ".ogg"]:
-                    # Handle audio files
-                    try:
-                        # Use EasyID3 for MP3 files to support easy tag access
-                        if file_path.suffix.lower() == ".mp3":
-                            audio = MP3(str(file_path), ID3=EasyID3)
-                        else:
-                            audio = MutagenFile(str(file_path))
-
-                        if audio is None:
-                            continue
-
-                        # Extract album info (using EasyID3 interface)
-                        if not album_data.get("album_title") and "album" in audio:
-                            album_data["album_title"] = str(audio["album"][0])
-                            album_data["path"] = cleanup_filename(
-                                album_data["album_title"]
-                            )
-
-                        if not album_data.get("album_artist"):
-                            if "albumartist" in audio:
-                                album_data["album_artist"] = str(
-                                    audio["albumartist"][0]
-                                )
-                            elif "artist" in audio:
-                                album_data["album_artist"] = str(audio["artist"][0])
-
-                        if not album_data.get("album_year") and "date" in audio:
-                            album_data["album_year"] = str(audio["date"][0])
-
-                        # Extract cover if present (need raw ID3 for APIC)
-                        if (
-                            not album_data.get("picture_filename")
-                            and file_path.suffix.lower() == ".mp3"
-                        ):
-                            mp3_raw = MP3(str(file_path))  # Load with raw ID3 for APIC
-                            if mp3_raw.tags:
-                                for key in mp3_raw.tags.keys():
-                                    if key.startswith("APIC"):
-                                        apic = mp3_raw.tags[key]
-                                        picture_data = apic.data
-                                        album_data["picture_filename"] = (
-                                            get_cover_filename(apic.mime, picture_data)
-                                        )
-                                        break
-
-                        # Extract track info (using EasyID3 interface)
-                        track_info = {
-                            "parent_oid": oid,
-                            "album": str(audio.get("album", [""])[0]),
-                            "artist": str(audio.get("artist", [""])[0]),
-                            "disc": str(audio.get("discnumber", [""])[0]),
-                            "duration": (
-                                int(audio.info.length * 1000) if audio.info else 0
-                            ),
-                            "genre": str(audio.get("genre", [""])[0]),
-                            "lyrics": str(audio.get("lyrics", [""])[0]),
-                            "title": str(audio.get("title", [""])[0]),
-                            "track": int(
-                                str(audio.get("tracknumber", [track_no])[0]).split("/")[
-                                    0
-                                ]
-                            ),
-                            "filename": file_path,
-                        }
-
-                        if not track_info["title"]:
-                            track_info["title"] = cleanup_filename(file_path.name)
-
+                    # Handle audio files using helper method
+                    audio_album_data, track_info, audio_picture_data = (
+                        self._extract_audio_metadata(file_path, oid, track_no)
+                    )
+                    
+                    if track_info:
+                        # Merge album data (first file wins for album-level metadata)
+                        if not album_data.get("album_title") and audio_album_data.get("album_title"):
+                            album_data["album_title"] = audio_album_data["album_title"]
+                            album_data["path"] = audio_album_data["path"]
+                        if not album_data.get("album_artist") and audio_album_data.get("album_artist"):
+                            album_data["album_artist"] = audio_album_data["album_artist"]
+                        if not album_data.get("album_year") and audio_album_data.get("album_year"):
+                            album_data["album_year"] = audio_album_data["album_year"]
+                        if not album_data.get("picture_filename") and audio_album_data.get("picture_filename"):
+                            album_data["picture_filename"] = audio_album_data["picture_filename"]
+                            picture_data = audio_picture_data
+                        
                         track_data.append(track_info)
                         track_no += 1
-
-                    except Exception as e:
-                        logger.error(f"Error processing audio file {file_path}: {e}")
 
                 elif file_path.suffix.lower() in [
                     ".jpg",
@@ -515,65 +729,34 @@ class DBHandler:
                     ".tif",
                     ".tiff",
                 ]:
-                    # Handle image files
-                    try:
-                        with open(file_path, "rb") as f:
-                            picture_data = f.read()
-                        album_data["picture_filename"] = cleanup_filename(
-                            file_path.name
-                        )
-                    except Exception as e:
-                        logger.error(f"Error processing image file {file_path}: {e}")
-
-            # Finalize album data
-            album_data["oid"] = oid
-            album_data["num_tracks"] = len(track_data)
+                    # Handle image files using helper method
+                    # Note: Separate image files take precedence over embedded covers
+                    pic_filename, pic_data = self._process_cover_image(file_path)
+                    if pic_filename:
+                        album_data["picture_filename"] = pic_filename
+                        picture_data = pic_data
 
             logger.info(
-                f"Album {i}: Extracted data - title: {album_data.get('album_title', 'NONE')}, tracks: {len(track_data)}"
+                f"Album {album_idx}: Extracted data - title: {album_data.get('album_title', 'NONE')}, tracks: {len(track_data)}"
             )
 
-            if not album_data.get("album_title"):
-                album_data["path"] = "unknown"
-                album_data["album_title"] = "unknown"
+            # Finalize and validate album data using helper method
+            album_data = self._finalize_album_data(album_data, oid, len(track_data))
 
+            # Create album directory
             album_path = make_new_album_dir(album_data["path"], library_path)
             album_data["path"] = str(album_path)
 
-            # Save cover image
-            if album_data.get("picture_filename") and picture_data:
-                picture_file = album_path / album_data["picture_filename"]
-                with open(picture_file, "wb") as f:
-                    f.write(picture_data)
+            # Sort and renumber tracks using helper method
+            track_data = self._sort_and_renumber_tracks(track_data)
 
-            # Sort and renumber tracks
-            track_data.sort(
-                key=lambda t: (
-                    t.get("disc", 0),
-                    t.get("track", 0),
-                    t.get("filename", ""),
-                )
-            )
-            for i, track in enumerate(track_data, 1):
-                track["track"] = i
-
-            # Write to database
+            # Save to database with validation using helper method
             logger.info(
-                f"Album {i}: Writing to database - {album_data['album_title']} with {len(track_data)} tracks"
+                f"Album {album_idx}: Writing to database - {album_data['album_title']} with {len(track_data)} tracks"
             )
-            self.write_to_database("gme_library", album_data)
-            for track in track_data:
-                target_file = album_path / cleanup_filename(track["filename"].name)
-                try:
-                    track["filename"].rename(target_file)
-                except Exception as e:
-                    logger.error(
-                        f"Error moving track file {track['filename']} to album directory: {e}"
-                    )
-                logger.info(f"moving track file {track['filename']} to {target_file}")
-                track["filename"] = target_file.name
-                self.write_to_database("tracks", track)
-            logger.info(f"Album {i}: Successfully written to database")
+            self._save_album_to_database(album_data, track_data, picture_data, album_path)
+            
+            logger.info(f"Album {album_idx}: Successfully written to database")
             shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)
 
         logger.info(f"create_library_entry: Completed processing all albums")

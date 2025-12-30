@@ -6,7 +6,7 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import logging
 
 logger = logging.getLogger(__name__)
@@ -280,11 +280,11 @@ def get_tiptoi_dir() -> Optional[Path]:
     return possible_mounts[0] if possible_mounts else None
 
 
-def get_gmes_already_on_tiptoi() -> list:
+def get_gmes_already_on_tiptoi() -> List[str]:
     """Get list of GME files already on TipToi device.
 
     Returns:
-        List of GME filenames
+        List of GME filenames found on the TipToi device
     """
     tiptoi_dir = get_tiptoi_dir()
     if not tiptoi_dir:

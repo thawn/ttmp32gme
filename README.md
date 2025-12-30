@@ -34,7 +34,6 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
        A complete docker run command could look like this: `docker run -d --rm --publish 8080:8080 --volume ~/.ttmp32gme:/var/lib/ttmp32gme --volume /media/${USER}/tiptoi:/mnt/tiptoi --name ttmp32gme thawn/ttmp32gme:latest`
     
        Alternatively you can use [docker compose](https://docs.docker.com/compose/) and startup ttmp32gme with `docker-compse up` using the [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml).
-  * Perl (legacy): run the perl sources (see [instructions](#perl-backend-legacy) below)
 
 ## Command Line Options
 
@@ -217,69 +216,6 @@ ttmp32gme --help
 
 Now you should be able to access the ttmp32gme user interface at http://localhost:10020 using your web browser.
 
-### Perl Backend (Legacy)
-
-The original Perl backend is still available for those who prefer it.
-
-#### Required libraries
-ttmp32gme requires the following libraries to run"
-`libc6`, `libxml2`, `zlib`
-on a debian (-based) system (including Ubuntu), you can install these by running:
-`sudo apt-get install libc6-dev libxml2-dev zlib1g-dev`.
-
-If you want to use the ogg format, you need `ffmpeg`:
-`sudo apt-get install ffmpeg`.
-
-
-On linux systems, pdfs can be created using wkhtmltopdf if version 0.13.x is found on the path (i.e. in /usr/local/bin or /usr/bin).
-
-You also need to [install tttool](https://github.com/entropia/tip-toi-reveng#installation) and copy/link the resulting binary into your path.
-
-### Required perl modules
-Run `cpan -i` (or the equivalent tool from your distro such as g-cpan for gentoo) followed by the following
-modules (some modules required the `-f` flag to install on my Mac OS system):
- 
-EV
-AnyEvent::HTTPD
-Path::Class
-Cwd
-File::Basename
-File::Find
-List::MoreUtils
-PAR
-Encode
-Text::Template
-JSON::XS
-URI::Escape
-Getopt::Long
-Perl::Version
-DBI
-DBIx::MultiStatementDo
-Log::Message::Simple
-Music::Tag::MP3
-Music::Tag::OGG
-Music::Tag::MusicBrainz
-Music::Tag::Auto
-MP3::Tag
-Image::Info
-
-### Running ttmp32gme from source
-
-Once you have all the required perl modules installed, check out the git repository into a directory of your choice:
-`git clone https://github.com/thawn/ttmp32gme.git`.
-
-Then run the main ttmp32gme perl script:
-`cd ttmp32gme/src`
-`perl ttmp32gme.pl`.
-
-Now you should be able to access the ttmp32gme user interface (http://localhost:10020) using your web browser.
-
-### Build requirements (for building mac and windows binaries)
-
-For building from source, you also need:
-
-pp
-
 ## Web Links
 * [tttool home page](http://tttool.entropia.de/)
 * [tttool manual](https://tttool.readthedocs.io/de/latest/)
@@ -327,20 +263,6 @@ pytest tests/ -v
 pytest tests/ -v --html=report.html --self-contained-html
 ```
 
-**Note:** Python integration tests will skip if the ttmp32gme server is not running. To run the full integration test suite, start the server first:
-
-```bash
-# In one terminal - using Python backend
-ttmp32gme
-
-# Or using Perl backend
-cd src
-perl ttmp32gme.pl
-
-# In another terminal
-pytest tests/ -v
-```
-
 ### Continuous Integration
 
 All tests run automatically on GitHub Actions for pull requests and pushes to main branches:
@@ -359,6 +281,7 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 
 ## ToDo
+
 * make debug command line flag change logger into debug mode
 * fix paths in db when library is moved: write test for this
 * make sure upload supports .ogg files

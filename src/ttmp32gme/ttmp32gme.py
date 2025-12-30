@@ -391,7 +391,7 @@ def print_page():
     oids = data.get("oids", [])
 
     # Create print layout content
-    content = create_print_layout(oids, None, config, None, get_db())
+    content = create_print_layout(oids, None, config, get_db())
 
     return render_template(
         "print.html",

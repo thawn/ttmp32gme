@@ -8,24 +8,22 @@ from flask import render_template
 
 from .build.file_handler import get_executable_path, get_default_library_path
 from .tttool_handler import get_sorted_tracks, create_oids
+from .db_handler import DBHandler
 import platform
 
 logger = logging.getLogger(__name__)
 
 
-def format_tracks(
-    album: Dict[str, Any], oid_map: Dict[str, Dict], httpd, db_handler
-) -> str:
+def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
     """Format track list with OID codes for printing.
 
     Args:
-        album: Album dictionary
-        oid_map: Mapping of scripts to OID codes
-        httpd: HTTP server instance
-        db_handler: Database handler instance
+        album: Album dictionary containing track information
+        oid_map: Mapping of script names to OID codes (e.g., {"t0": {"code": 2663}})
+        db_handler: Database handler instance for accessing album data
 
     Returns:
-        HTML content for track list
+        HTML content for track list with embedded OID images
     """
     content = ""
     tracks = get_sorted_tracks(album)
@@ -59,16 +57,16 @@ def format_tracks(
 
     return content
 
-def format_controls(oid_map: Dict[str, Dict], httpd, db_handler) -> str:
+
+def format_controls(oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
     """Format playback controls with OID codes.
 
     Args:
-        oid_map: Mapping of scripts to OID codes
-        httpd: HTTP server instance
-        db_handler: Database handler instance
+        oid_map: Mapping of script names to OID codes (e.g., {"play": {"code": 3947}})
+        db_handler: Database handler instance for creating OID images
 
     Returns:
-        HTML content for controls
+        HTML content for playback controls (prev, play, stop, next buttons)
     """
     scripts = ["prev", "play", "stop", "next"]
     icons = ["backward", "play", "stop", "forward"]
@@ -91,19 +89,16 @@ def format_controls(oid_map: Dict[str, Dict], httpd, db_handler) -> str:
     return content
 
 
-def format_track_control(
-    track_no: int, oid_map: Dict[str, Dict], httpd, db_handler
-) -> str:
+def format_track_control(track_no: int, oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
     """Format a single track control button.
 
     Args:
-        track_no: Track number
-        oid_map: Mapping of scripts to OID codes
-        httpd: HTTP server instance
-        db_handler: Database handler instance
+        track_no: Track number (1-indexed)
+        oid_map: Mapping of script names to OID codes (e.g., {"t0": {"code": 2663}})
+        db_handler: Database handler instance for creating OID images
 
     Returns:
-        HTML content for track control
+        HTML content for track control button with embedded OID image
     """
     script = f"t{track_no - 1}"
     oid = oid_map.get(script, {}).get("code", 0)
@@ -122,17 +117,15 @@ def format_track_control(
     return template.format(oid_path, oid, track_no)
 
 
-def format_main_oid(oid: int, oid_map: Dict[str, Dict], httpd, db_handler) -> str:
-    """Format main OID image.
+def format_main_oid(oid: int, db_handler: DBHandler) -> str:
+    """Format main OID image for an album.
 
     Args:
-        oid: Album OID
-        oid_map: Mapping of scripts to OID codes
-        httpd: HTTP server instance
-        db_handler: Database handler instance
+        oid: Album OID number
+        db_handler: Database handler instance for creating OID images
 
     Returns:
-        HTML content for main OID
+        HTML img tag with embedded OID image
     """
     oid_files = create_oids([oid], 24, db_handler)
     oid_file = oid_files[0]
@@ -144,13 +137,13 @@ def format_main_oid(oid: int, oid_map: Dict[str, Dict], httpd, db_handler) -> st
 
 
 def format_cover(album: Dict[str, Any]) -> str:
-    """Format cover image.
+    """Format cover image for an album.
 
     Args:
-        album: Album dictionary
+        album: Album dictionary containing picture_filename and oid
 
     Returns:
-        HTML content for cover image
+        HTML img tag for cover image, or empty string if no cover exists
     """
     if album.get("picture_filename"):
         return (
@@ -162,19 +155,21 @@ def format_cover(album: Dict[str, Any]) -> str:
 
 
 def create_print_layout(
-    oids: List[int], template, config: Dict[str, Any], httpd, db_handler
+    oids: List[int], 
+    template: Any, 
+    config: Dict[str, Any], 
+    db_handler: DBHandler
 ) -> str:
     """Create print layout for selected albums.
 
     Args:
-        oids: List of album OIDs to print
-        template: Template object for rendering
-        config: Configuration dictionary
-        httpd: HTTP server instance
-        db_handler: Database handler instance
+        oids: List of album OIDs to include in print layout
+        template: Flask template object for rendering (unused, kept for compatibility)
+        config: Configuration dictionary with print settings
+        db_handler: Database handler instance for accessing album data
 
     Returns:
-        HTML content for print layout
+        HTML content for complete print layout including all albums and controls
     """
     content = ""
 
@@ -182,7 +177,7 @@ def create_print_layout(
     script_codes = db_handler.fetchall("SELECT script, code FROM script_codes")
     oid_map = {row[0]: {"code": row[1]} for row in script_codes}
 
-    controls = format_controls(oid_map, httpd, db_handler)
+    controls = format_controls(oid_map, db_handler)
 
     for oid in oids:
         if not oid:
@@ -202,9 +197,9 @@ def create_print_layout(
             oid_map = {row[0]: {"code": row[1]} for row in script_codes}
 
         # Prepare album data for template
-        album["track_list"] = format_tracks(album, oid_map, httpd, db_handler)
+        album["track_list"] = format_tracks(album, oid_map, db_handler)
         album["play_controls"] = controls
-        album["main_oid_image"] = format_main_oid(oid, oid_map, httpd, db_handler)
+        album["main_oid_image"] = format_main_oid(oid, db_handler)
         album["formatted_cover"] = format_cover(album)
 
         # Create HTML for album
@@ -225,7 +220,7 @@ def create_print_layout(
     max_track_controls = config.get("print_max_track_controls", 24)
     counter = 1
     while counter <= max_track_controls:
-        content += format_track_control(counter, oid_map, httpd, db_handler)
+        content += format_track_control(counter, oid_map, db_handler)
         if counter < max_track_controls and (counter % 12) == 0:
             content += "</div></div>"
             content += '<div class="col-xs-12" style="margin-bottom:10px;">'
@@ -238,14 +233,14 @@ def create_print_layout(
 
 
 def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]:
-    """Create PDF from print layout.
+    """Create PDF from print layout using wkhtmltopdf.
 
     Args:
-        port: Server port for accessing print page
-        library_path: Library path for saving PDF
+        port: Server port number for accessing the print page via HTTP
+        library_path: Path to library directory where PDF will be saved (defaults to system library path)
 
     Returns:
-        Path to created PDF or None if failed
+        Path to created PDF file, or None if PDF creation failed
     """
     wkhtmltopdf_path = get_executable_path("wkhtmltopdf")
 
@@ -288,10 +283,10 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
 
 
 def format_print_button() -> str:
-    """Format the print button HTML based on platform.
+    """Format the print button HTML based on platform and wkhtmltopdf availability.
 
     Returns:
-        HTML for print button(s)
+        HTML string for print/PDF button(s) appropriate for the current platform
     """
     if platform.system() == "Windows":
         return (
