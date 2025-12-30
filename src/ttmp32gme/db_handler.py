@@ -9,8 +9,6 @@ from mutagen.mp3 import MP3
 from PIL import Image
 import io
 
-from ttmp32gme.library_handler import write_to_database
-
 from .build.file_handler import (
     cleanup_filename,
     make_new_album_dir,

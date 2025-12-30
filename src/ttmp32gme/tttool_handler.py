@@ -183,13 +183,13 @@ def convert_tracks(
             track_scripts += f"  t{i}:\n  - $current:={i} P({i}) C\n"
 
         # Update track script in database
-        cursor = connection.cursor()
+        # Using db_handler methods
         cursor.execute(
             "UPDATE tracks SET tt_script=? WHERE parent_oid=? AND track=?",
             (f"t{i}", album["oid"], track["track"]),
         )
 
-    connection.commit()
+    db_handler.commit()
 
     # Handle general track controls
     last_track = len(tracks) - 1
@@ -236,13 +236,13 @@ def get_tttool_parameters(connection) -> Dict[str, str]:
     Returns:
         Dictionary of tttool parameters
     """
-    cursor = connection.cursor()
+    # Using db_handler methods
     cursor.execute(
         "SELECT param, value FROM config WHERE param LIKE 'tt\\_%' ESCAPE '\\' AND value IS NOT NULL"
     )
 
     parameters = {}
-    for param, value in cursor.fetchall():
+    for param, value in db_handler.fetchall(query):
         parameter_name = param.replace("tt_", "", 1)
         parameters[parameter_name] = value
 
@@ -271,7 +271,7 @@ def get_tttool_command(connection) -> List[str]:
     return command
 
 
-def run_tttool(arguments: str, path: Optional[Path], connection) -> bool:
+def run_tttool(arguments: str, path: Optional[Path], db_handler) -> bool:
     """Run tttool command.
 
     Args:
@@ -321,7 +321,7 @@ def get_sorted_tracks(album: Dict[str, Any]) -> List[str]:
     return tracks
 
 
-def make_gme(oid: int, config: Dict[str, Any], connection) -> int:
+def make_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
     """Create GME file for an album.
 
     Args:
@@ -368,7 +368,7 @@ def make_gme(oid: int, config: Dict[str, Any], connection) -> int:
     return oid
 
 
-def create_oids(oids: List[int], size: int, connection) -> List[Path]:
+def create_oids(oids: List[int], size: int, db_handler) -> List[Path]:
     """Create OID code images.
 
     Args:
@@ -413,7 +413,7 @@ def create_oids(oids: List[int], size: int, connection) -> List[Path]:
     return files
 
 
-def copy_gme(oid: int, config: Dict[str, Any], connection) -> int:
+def copy_gme(oid: int, config: Dict[str, Any], db_handler) -> int:
     """Copy GME file to TipToi device.
 
     Args:
@@ -424,7 +424,7 @@ def copy_gme(oid: int, config: Dict[str, Any], connection) -> int:
     Returns:
         Album OID
     """
-    cursor = connection.cursor()
+    # Using db_handler methods
     cursor.execute("SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,))
     row = cursor.fetchone()
 
@@ -453,7 +453,7 @@ def copy_gme(oid: int, config: Dict[str, Any], connection) -> int:
     return oid
 
 
-def delete_gme_tiptoi(uid: int, connection) -> int:
+def delete_gme_tiptoi(uid: int, db_handler) -> int:
     """Delete GME file from TipToi device.
 
     Args:
@@ -463,7 +463,7 @@ def delete_gme_tiptoi(uid: int, connection) -> int:
     Returns:
         Album OID
     """
-    cursor = connection.cursor()
+    # Using db_handler methods
     cursor.execute("SELECT gme_file FROM gme_library WHERE oid=?", (uid,))
     row = cursor.fetchone()
 
