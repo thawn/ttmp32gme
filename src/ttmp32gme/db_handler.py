@@ -10,6 +10,8 @@ from mutagen.mp3 import MP3
 from PIL import Image
 import io
 
+from pydantic import BaseModel, Field, field_validator
+
 from .build.file_handler import (
     cleanup_filename,
     make_new_album_dir,
@@ -18,6 +20,69 @@ from .build.file_handler import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# Pydantic Models for Input Validation
+
+class AlbumUpdateModel(BaseModel):
+    """Validates album update data from frontend."""
+    oid: Optional[int] = Field(None, description="Album OID")
+    uid: Optional[int] = Field(None, description="Album UID (alias for OID)")
+    old_oid: Optional[int] = Field(None, description="Previous OID if changing")
+    album_title: Optional[str] = Field(None, max_length=255)
+    album_artist: Optional[str] = Field(None, max_length=255)
+    num_tracks: Optional[int] = Field(None, ge=0, le=999)
+    player_mode: Optional[str] = Field(None, pattern="^(single|album)$")
+    cover: Optional[str] = Field(None, description="Cover image path")
+    
+    # Allow dynamic track fields (track1_title, track2_title, etc.)
+    model_config = {"extra": "allow"}
+    
+    @field_validator("oid", "uid", mode="before")
+    @classmethod
+    def convert_to_int(cls, v):
+        """Convert string OIDs to integers."""
+        if v is not None and isinstance(v, str):
+            try:
+                return int(v)
+            except ValueError:
+                raise ValueError(f"Invalid OID/UID: {v}")
+        return v
+
+
+class ConfigUpdateModel(BaseModel):
+    """Validates configuration update data from frontend."""
+    host: Optional[str] = Field(None, pattern="^[a-zA-Z0-9.-]+$")
+    port: Optional[int] = Field(None, ge=1, le=65535)
+    open_browser: Optional[bool] = None
+    audio_format: Optional[str] = Field(None, pattern="^(mp3|ogg)$")
+    pen_language: Optional[str] = Field(None, max_length=50)
+    library_path: Optional[str] = Field(None, max_length=500)
+    
+    # Allow other config fields
+    model_config = {"extra": "allow"}
+
+
+class LibraryActionModel(BaseModel):
+    """Validates library action data (delete, cleanup, make_gme, etc.)."""
+    uid: int = Field(..., description="Album OID/UID (required)")
+    
+    # Optional fields for various actions
+    tiptoi_dir: Optional[str] = None
+    
+    # Allow other action-specific fields
+    model_config = {"extra": "allow"}
+    
+    @field_validator("uid", mode="before")
+    @classmethod
+    def convert_uid_to_int(cls, v):
+        """Convert string UID to integer."""
+        if isinstance(v, str):
+            try:
+                return int(v)
+            except ValueError:
+                raise ValueError(f"Invalid UID: {v}")
+        return v
 
 
 class DBHandler:

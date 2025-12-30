@@ -13,6 +13,7 @@ dependencies = [
     "mutagen>=1.47.0",
     "pillow>=10.0.0",
     "requests>=2.31.0",
+    "pydantic>=2.0.0",
 ]
 
 [project.optional-dependencies]

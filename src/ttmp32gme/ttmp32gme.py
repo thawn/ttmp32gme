@@ -19,8 +19,9 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 from packaging.version import Version
+from pydantic import ValidationError
 
-from .db_handler import DBHandler
+from .db_handler import DBHandler, AlbumUpdateModel, ConfigUpdateModel, LibraryActionModel
 from .build.file_handler import (
     check_config_file,
     get_default_library_path,
@@ -285,42 +286,59 @@ def library_post():
 
         try:
             if action == "update":
-                old_player_mode = data.pop("old_player_mode", None)
-                oid = db.update_album(data)
+                # Validate album update data
+                try:
+                    validated_data = AlbumUpdateModel(**data)
+                    validated_dict = validated_data.model_dump(exclude_none=True)
+                except ValidationError as e:
+                    logger.error(f"Validation error in album update: {e}")
+                    return jsonify({"success": False, "error": str(e)}), 400
+                
+                old_player_mode = validated_dict.pop("old_player_mode", None)
+                oid = db.update_album(validated_dict)
                 album = db.get_album(oid)
 
-                if old_player_mode and old_player_mode != data.get("player_mode"):
+                if old_player_mode and old_player_mode != validated_dict.get("player_mode"):
                     make_gme(oid, config, db)
 
                 return jsonify({"success": True, "element": album})
 
-            elif action == "delete":
-                oid = db.delete_album(data["uid"])
-                return jsonify({"success": True, "element": {"oid": oid}})
+            elif action in ["delete", "cleanup", "make_gme", "copy_gme", "delete_gme_tiptoi"]:
+                # Validate action data (requires uid)
+                try:
+                    validated_data = LibraryActionModel(**data)
+                    uid = validated_data.uid
+                except ValidationError as e:
+                    logger.error(f"Validation error in {action}: {e}")
+                    return jsonify({"success": False, "error": str(e)}), 400
 
-            elif action == "cleanup":
-                oid = db.cleanup_album(data["uid"])
-                album = db.get_album(oid)
-                return jsonify({"success": True, "element": album})
+                if action == "delete":
+                    oid = db.delete_album(uid)
+                    return jsonify({"success": True, "element": {"oid": oid}})
 
-            elif action == "make_gme":
-                oid = make_gme(data["uid"], config, db)
-                album = db.get_album(oid)
-                return jsonify({"success": True, "element": album})
+                elif action == "cleanup":
+                    oid = db.cleanup_album(uid)
+                    album = db.get_album(oid)
+                    return jsonify({"success": True, "element": album})
 
-            elif action == "copy_gme":
-                oid = copy_gme(data["uid"], config, db)
-                album = db.get_album(oid)
-                return jsonify({"success": True, "element": album})
+                elif action == "make_gme":
+                    oid = make_gme(uid, config, db)
+                    album = db.get_album(oid)
+                    return jsonify({"success": True, "element": album})
 
-            elif action == "delete_gme_tiptoi":
-                oid = delete_gme_tiptoi(data["uid"], db)
-                album = db.get_album(oid)
-                return jsonify({"success": True, "element": album})
+                elif action == "copy_gme":
+                    oid = copy_gme(uid, config, db)
+                    album = db.get_album(oid)
+                    return jsonify({"success": True, "element": album})
+
+                elif action == "delete_gme_tiptoi":
+                    oid = delete_gme_tiptoi(uid, db)
+                    album = db.get_album(oid)
+                    return jsonify({"success": True, "element": album})
 
         except Exception as e:
             logger.error(f"Error in library operation: {e}")
-            return jsonify({"success": False}), 500
+            return jsonify({"success": False, "error": str(e)}), 500
 
     elif action == "add_cover":
         uid = request.form.get("uid")
@@ -328,14 +346,20 @@ def library_post():
         file_data = request.files["qqfile"].read()
 
         try:
-            oid = db.replace_cover(int(uid), filename, file_data)
+            # Validate uid
+            try:
+                uid_int = int(uid)
+            except (ValueError, TypeError):
+                return jsonify({"success": False, "error": "Invalid UID"}), 400
+            
+            oid = db.replace_cover(uid_int, filename, file_data)
             album = db.get_album(oid)
             return jsonify({"success": True, "uid": album})
         except Exception as e:
             logger.error(f"Error replacing cover: {e}")
-            return jsonify({"success": False}), 500
+            return jsonify({"success": False, "error": str(e)}), 500
 
-    return jsonify({"success": False}), 400
+    return jsonify({"success": False, "error": "Invalid action"}), 400
 
 
 @app.route("/print")
@@ -369,11 +393,19 @@ def print_post():
         data = json.loads(request.form.get("data", "{}"))
 
         if action == "save_config":
-            new_config, message = save_config(data)
+            # Validate print configuration data
+            try:
+                validated_data = ConfigUpdateModel(**data)
+                validated_dict = validated_data.model_dump(exclude_none=True)
+            except ValidationError as e:
+                logger.error(f"Validation error in print config save: {e}")
+                return jsonify({"success": False, "error": str(e)}), 400
+            
+            new_config, message = save_config(validated_dict)
             if message == "Success.":
                 return jsonify({"success": True, "element": new_config})
             else:
-                return jsonify({"success": False}), 400, message
+                return jsonify({"success": False, "error": message}), 400
 
         elif action == "save_pdf":
             global print_content
@@ -382,9 +414,9 @@ def print_post():
             if pdf_file:
                 return jsonify({"success": True})
             else:
-                return jsonify({"success": False}), 500
+                return jsonify({"success": False, "error": "PDF generation failed"}), 500
 
-    return jsonify({"success": False}), 400
+    return jsonify({"success": False, "error": "Invalid action"}), 400
 
 
 @app.route("/pdf")
@@ -416,7 +448,16 @@ def config_post():
 
     if action == "update":
         data = json.loads(request.form.get("data", "{}"))
-        new_config, message = save_config(data)
+        
+        # Validate configuration data
+        try:
+            validated_data = ConfigUpdateModel(**data)
+            validated_dict = validated_data.model_dump(exclude_none=True)
+        except ValidationError as e:
+            logger.error(f"Validation error in config update: {e}")
+            return jsonify({"success": False, "error": str(e)}), 400
+        
+        new_config, message = save_config(validated_dict)
 
         if message == "Success.":
             return jsonify(
@@ -433,7 +474,7 @@ def config_post():
                 }
             )
         else:
-            return jsonify({"success": False}), 400, message
+            return jsonify({"success": False, "error": message}), 400
 
     elif action == "load":
         return jsonify(
