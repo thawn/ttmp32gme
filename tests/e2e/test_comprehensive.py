@@ -566,11 +566,25 @@ class TestWebInterface:
         track2_title_before = track_items[1].find_element(By.NAME, "title").get_attribute("value")
         
         # Perform drag and drop to swap track 1 and track 2
+        # Use ActionChains with drag_and_drop_by_offset for better compatibility with jQuery UI sortable
         from selenium.webdriver import ActionChains
         actions = ActionChains(driver)
         
-        # Drag track 1 below track 2 (moving track 1 to position 2)
-        actions.drag_and_drop(track_items[0], track_items[1]).perform()
+        # Get the position and size of elements
+        track1_location = track_items[0].location
+        track1_size = track_items[0].size
+        track2_location = track_items[1].location
+        
+        # Calculate offset to move track 1 below track 2
+        # Move down by the height of track 2 plus some padding
+        offset_y = track2_location['y'] - track1_location['y'] + 10
+        
+        # Perform drag and drop with offset
+        actions.click_and_hold(track_items[0]).perform()
+        time.sleep(0.2)
+        actions.move_by_offset(0, offset_y).perform()
+        time.sleep(0.2)
+        actions.release().perform()
         time.sleep(0.5)  # Wait for drag/drop to complete
         
         # Save changes
@@ -594,8 +608,8 @@ class TestWebInterface:
         assert new_tracks[0][0] == 1, "First track should have track number 1"
         assert new_tracks[1][0] == 2, "Second track should have track number 2"
         # Titles should be swapped
-        assert new_tracks[0][1] == track2_title_before, f"Track at position 1 should have title from original track 2"
-        assert new_tracks[1][1] == track1_title_before, f"Track at position 2 should have title from original track 1"
+        assert new_tracks[0][1] == track2_title_before, f"Track at position 1 should have title '{track2_title_before}' from original track 2, got '{new_tracks[0][1]}'"
+        assert new_tracks[1][1] == track1_title_before, f"Track at position 2 should have title '{track1_title_before}' from original track 1, got '{new_tracks[1][1]}'"
 
     def test_edit_album_info_combined(self, driver, base_config_with_album):
         """Test changing OID, title, track order, and track titles all at once."""
@@ -649,10 +663,24 @@ class TestWebInterface:
         track2_title_input.clear()
         track2_title_input.send_keys(new_track2_title)
         
-        # Reorder tracks (swap 1 and 2) using drag and drop
+        # Reorder tracks (swap 1 and 2) using drag and drop with offset
         from selenium.webdriver import ActionChains
         actions = ActionChains(driver)
-        actions.drag_and_drop(track_items[0], track_items[1]).perform()
+        
+        # Get the position and size of elements
+        track1_location = track_items[0].location
+        track1_size = track_items[0].size
+        track2_location = track_items[1].location
+        
+        # Calculate offset to move track 1 below track 2
+        offset_y = track2_location['y'] - track1_location['y'] + 10
+        
+        # Perform drag and drop with offset
+        actions.click_and_hold(track_items[0]).perform()
+        time.sleep(0.2)
+        actions.move_by_offset(0, offset_y).perform()
+        time.sleep(0.2)
+        actions.release().perform()
         time.sleep(0.5)  # Wait for drag/drop to complete
         
         # Save changes
