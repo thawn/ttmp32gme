@@ -326,33 +326,40 @@ def _get_database_value(query, params=()):
     return result
 
 
-def _open_library_element_for_editing(ttmp32gme_server, driver, element_number: int = 0):
+def _open_library_element_for_editing(
+    ttmp32gme_server, driver, element_number: int = 0
+):
     """Open the edit modal of the library element with the given number"""
-    driver.get(f"{ttmp32gme_server}/library") 
+    driver.get(f"{ttmp32gme_server}/library")
     WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
 
     # Look for create GME button and click it
-    library_row = driver.find_element(By.ID, f"el{element_number}") 
-    edit_button = library_row.find_element(By.CLASS_NAME, "edit-button") 
-    edit_button.click() 
-    print(f"DEBUG: Clicked edit button") 
-    WebDriverWait(driver, 5).until( 
-        EC.element_to_be_clickable((By.CLASS_NAME, "make-gme")) 
+    library_row = driver.find_element(By.ID, f"el{element_number}")
+    edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+    edit_button.click()
+    print(f"DEBUG: Clicked edit button")
+    WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
     )
     return library_row
 
 
 def _create_gme(ttmp32gme_server, driver, element_number=0):
-    library_row = _open_library_element_for_editing(ttmp32gme_server, driver, element_number)
+    library_row = _open_library_element_for_editing(
+        ttmp32gme_server, driver, element_number
+    )
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
     create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
     create_button.click()
-    time.sleep(5)  # 
+    time.sleep(5)  #
 
-class TransientConfigChange():
-    def __init__(self, driver, server_url, config:str = "audio_format", value: str = "ogg"):
+
+class TransientConfigChange:
+    def __init__(
+        self, driver, server_url, config: str = "audio_format", value: str = "ogg"
+    ):
         self.driver = driver
         self.server_url = server_url
         self.config = config
@@ -360,7 +367,7 @@ class TransientConfigChange():
         self.old_value = _get_database_value(
             f"SELECT value FROM config WHERE param = '{config}'"
         )[0]
-        
+
     def _get_config_element(self):
         """Helper to get audio format setting element from config."""
         self.driver.get(f"{self.server_url}/config")
@@ -382,8 +389,8 @@ class TransientConfigChange():
     def __enter__(self):
         self._change_config(self.new_value)
 
-    def __exit__(self ,type, value, traceback):
-         self._change_config(self.old_value)
+    def __exit__(self, type, value, traceback):
+        self._change_config(self.old_value)
 
 
 @pytest.mark.e2e
@@ -523,13 +530,11 @@ class TestAudioConversion:
 class TestGMECreation:
     """Test GME file creation with real audio files."""
 
-    def test_gme_creation_with_real_files(
-        self, driver, ttmp32gme_server
-    ):
+    def test_gme_creation_with_real_files(self, driver, ttmp32gme_server):
         """Test that GME files can be created from real MP3 files."""
         # Trigger GME creation
         _create_gme(ttmp32gme_server, driver)
-       
+
         # Check that GME file was created
         library_path = Path.home() / ".ttmp32gme" / "library"
         gme_files = list(library_path.rglob("*.gme"))
@@ -682,7 +687,9 @@ class TestWebInterface:
         time.sleep(0.5)
 
         # Verify at least one checkbox is selected
-        checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox'][name='enabled']")
+        checkboxes = driver.find_elements(
+            By.CSS_SELECTOR, "input[type='checkbox'][name='enabled']"
+        )
         assert len(checkboxes) > 0, "No album checkboxes found"
         assert any(cb.is_selected() for cb in checkboxes), "No checkboxes selected"
 
@@ -770,8 +777,9 @@ class TestWebInterface:
         # Check that the print page is displayed with album content
         body_text = driver.find_element(By.TAG_NAME, "body").text
         # Should have either print-related text or the album name
-        assert "Test Album" in body_text or "print" in body_text.lower(), \
-            f"Expected album or print content, got: {body_text[:200]}"
+        assert (
+            "Test Album" in body_text or "print" in body_text.lower()
+        ), f"Expected album or print content, got: {body_text[:200]}"
 
     def test_config_page_loads(self, driver, ttmp32gme_server):
         """Test that configuration page loads."""
@@ -802,24 +810,28 @@ class TestCleanServerFixture:
     def test_clean_server_starts_with_custom_paths(self, clean_server, driver):
         """Test that server starts with custom database and library paths."""
         server_info = clean_server
-        
+
         # Verify server is accessible
         driver.get(server_info["url"])
         assert "ttmp32gme" in driver.title
-        
+
         # Verify database file exists at custom path
         assert server_info["db_path"].exists(), "Custom database file was not created"
-        
+
         # Verify library directory exists at custom path
-        assert server_info["library_path"].exists(), "Custom library directory was not created"
-        assert server_info["library_path"].is_dir(), "Custom library path is not a directory"
-        
+        assert server_info[
+            "library_path"
+        ].exists(), "Custom library directory was not created"
+        assert server_info[
+            "library_path"
+        ].is_dir(), "Custom library path is not a directory"
+
         # Verify we can access the library page
         driver.get(f"{server_info['url']}/library")
         WebDriverWait(driver, 5).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
-        
+
         # Verify library is initially empty (clean state)
         # The page should load successfully but have no albums
         body_text = driver.find_element(By.TAG_NAME, "body").text
