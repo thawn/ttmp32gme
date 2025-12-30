@@ -281,11 +281,7 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 
 ## ToDo
-* print_handler.py
-  * remove all unused arguments (for example httpd, oid_map) from functions
-  * add type hints to all arguments
-  * update docstrings accordingly
-  * add unit tests for all functions
+
 * make debug command line flag change logger into debug mode
 * fix paths in db when library is moved: write test for this
 * make sure upload supports .ogg files
