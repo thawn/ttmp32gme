@@ -1,15 +1,52 @@
 [project]
-name = "ttmp32gme-tests"
-version = "1.0.0"
-description = "Test suite for ttmp32gme web frontend"
+name = "ttmp32gme"
+dynamic = ["version"]
+description = "TipToi MP3 to GME converter - Python backend"
 requires-python = ">=3.11"
+readme = "README.md"
+license = {file = "LICENSE"}
 
 dependencies = [
-    "pytest>=7.4.0",
-    "pytest-html>=4.0.0",
+    "flask>=3.0.0",
+    "werkzeug>=3.0.0",
+    "packaging>=23.0",
+    "mutagen>=1.47.0",
+    "pillow>=10.0.0",
     "requests>=2.31.0",
+    "pydantic>=2.0.0",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+    "pytest-html>=4.0.0",
+    "selenium>=4.15.0",
+    "pyyaml",
+]
+
+[project.scripts]
+ttmp32gme = "ttmp32gme.ttmp32gme:main"
+
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_file = "src/ttmp32gme/_version.py"
+
+[tool.setuptools.package-data]
+ttmp32gme = ["config.sqlite"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "e2e: End-to-end tests using Selenium (deselect with '-m \"not e2e\"')",
+    "slow: Slow tests (deselect with '-m \"not slow\"')",
+]
+addopts = "-v --strict-markers"
+
+[tool.uv]
+# Using same dependencies as project.optional-dependencies.test

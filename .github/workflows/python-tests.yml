@@ -6,9 +6,16 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
     
     strategy:
       matrix:
@@ -22,32 +29,73 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     
-    - name: Set up Perl
-      uses: shogo82148/actions-setup-perl@v1
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
-        perl-version: '5.38'
-    
-    - name: Install Perl dependencies
-      run: |
-        cpanm --notest EV AnyEvent::HTTPD Path::Class JSON::XS URI::Escape
+        version: "latest"
     
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e .
+        uv pip install --system -e ".[test]"
     
-    - name: Start ttmp32gme server
+    - name: Run unit tests with pytest
       run: |
-        cd src
-        perl ttmp32gme.pl &
-        echo $! > /tmp/ttmp32gme.pid
+        pytest tests/unit/ -v --tb=short --html=unit-report.html --self-contained-html
+    
+    - name: Upload test report
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-test-report-${{ matrix.python-version }}
+        path: unit-report.html
+      if: always()
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+    
+    - name: Install Python dependencies
+      run: |
+        uv pip install --system -e ".[test]"
+    
+    - name: Start ttmp32gme Python server
+      run: |
+        python -m ttmp32gme.ttmp32gme --port 10020 &
+        SERVER_PID=$!
+        echo $SERVER_PID > /tmp/ttmp32gme.pid
+        
+        # Wait for server to start and verify it's running
         sleep 5
-      env:
-        TTMP32GME_PORT: 10020
+        if ! kill -0 $SERVER_PID 2>/dev/null; then
+          echo "Error: Server failed to start"
+          exit 1
+        fi
+        
+        # Check if server is responding
+        curl -f http://localhost:10020/ || { echo "Error: Server not responding"; kill $SERVER_PID; exit 1; }
     
-    - name: Run tests with pytest
+    - name: Run integration tests with pytest
       run: |
-        pytest tests/ -v --tb=short --html=report.html --self-contained-html
+        pytest tests/test_web_frontend.py -v --tb=short --html=integration-report.html --self-contained-html
       env:
         TTMP32GME_URL: http://localhost:10020
     
@@ -61,6 +109,6 @@ jobs:
     - name: Upload test report
       uses: actions/upload-artifact@v4
       with:
-        name: pytest-report-${{ matrix.python-version }}
-        path: report.html
+        name: integration-test-report-${{ matrix.python-version }}
+        path: integration-report.html
       if: always()

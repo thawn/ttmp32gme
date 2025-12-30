@@ -44,3 +44,4 @@ __pycache__/
 *.egg-info/
 report.html
 assets/
+src/ttmp32gme/_version.py

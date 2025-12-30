@@ -200,8 +200,8 @@
 				$track.find('input[name=title]').val(data[i].title)
 				$track.find('input[name=filename]').val(data[i].filename)
 			} else if (i === 'picture_filename') {
-				if (data[i] !== '0') {
-					$id.find('img.cover').prop('src', '/assets/images/'+data['oid']+'/'+data[i]);
+				if (data[i] !== null) {
+					$id.find('img.cover').prop('src', '/images/'+data['oid']+'/'+data[i]);
 				} else {
 					$id.find('img.cover').prop('src', '/assets/images/not_available-generic.png');
 				}
