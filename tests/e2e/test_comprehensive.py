@@ -554,20 +554,24 @@ class TestWebInterface:
         # Open edit modal
         library_element = _open_library_element_for_editing(server_info["url"], driver)
         
-        # Find track inputs - tracks are numbered 1, 2, 3, etc.
-        # We'll swap track 1 and track 2
-        track1_input = library_element.find_element(By.NAME, "track1")
-        track2_input = library_element.find_element(By.NAME, "track2")
+        # Find the track list items - tracks are in <li> elements with class track_N
+        # The order is determined by the DOM order, not by input values
+        track_list = library_element.find_element(By.CSS_SELECTOR, "ol.track-list")
+        track_items = track_list.find_elements(By.CSS_SELECTOR, "li[class*='track_']")
         
-        # Get original values
-        track1_original = track1_input.get_attribute("value")
-        track2_original = track2_input.get_attribute("value")
+        assert len(track_items) >= 2, f"Need at least 2 track items, found {len(track_items)}"
         
-        # Swap track numbers (change track 1 to position 2, track 2 to position 1)
-        track1_input.clear()
-        track1_input.send_keys("2")
-        track2_input.clear()
-        track2_input.send_keys("1")
+        # Get titles before reordering
+        track1_title_before = track_items[0].find_element(By.NAME, "title").get_attribute("value")
+        track2_title_before = track_items[1].find_element(By.NAME, "title").get_attribute("value")
+        
+        # Perform drag and drop to swap track 1 and track 2
+        from selenium.webdriver import ActionChains
+        actions = ActionChains(driver)
+        
+        # Drag track 1 below track 2 (moving track 1 to position 2)
+        actions.drag_and_drop(track_items[0], track_items[1]).perform()
+        time.sleep(0.5)  # Wait for drag/drop to complete
         
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
@@ -590,8 +594,8 @@ class TestWebInterface:
         assert new_tracks[0][0] == 1, "First track should have track number 1"
         assert new_tracks[1][0] == 2, "Second track should have track number 2"
         # Titles should be swapped
-        assert new_tracks[0][1] == original_tracks[1][1], f"Track at position 1 should have title from original track 2"
-        assert new_tracks[1][1] == original_tracks[0][1], f"Track at position 2 should have title from original track 1"
+        assert new_tracks[0][1] == track2_title_before, f"Track at position 1 should have title from original track 2"
+        assert new_tracks[1][1] == track1_title_before, f"Track at position 2 should have title from original track 1"
 
     def test_edit_album_info_combined(self, driver, base_config_with_album):
         """Test changing OID, title, track order, and track titles all at once."""
@@ -630,22 +634,26 @@ class TestWebInterface:
         title_input.clear()
         title_input.send_keys(new_album_title)
         
+        # Find the track list items
+        track_list = library_element.find_element(By.CSS_SELECTOR, "ol.track-list")
+        track_items = track_list.find_elements(By.CSS_SELECTOR, "li[class*='track_']")
+        
+        assert len(track_items) >= 2, f"Need at least 2 track items, found {len(track_items)}"
+        
         # Change track titles
-        track1_title_input = library_element.find_element(By.NAME, "track1_title")
+        track1_title_input = track_items[0].find_element(By.NAME, "title")
         track1_title_input.clear()
         track1_title_input.send_keys(new_track1_title)
         
-        track2_title_input = library_element.find_element(By.NAME, "track2_title")
+        track2_title_input = track_items[1].find_element(By.NAME, "title")
         track2_title_input.clear()
         track2_title_input.send_keys(new_track2_title)
         
-        # Reorder tracks (swap 1 and 2)
-        track1_input = library_element.find_element(By.NAME, "track1")
-        track2_input = library_element.find_element(By.NAME, "track2")
-        track1_input.clear()
-        track1_input.send_keys("2")
-        track2_input.clear()
-        track2_input.send_keys("1")
+        # Reorder tracks (swap 1 and 2) using drag and drop
+        from selenium.webdriver import ActionChains
+        actions = ActionChains(driver)
+        actions.drag_and_drop(track_items[0], track_items[1]).perform()
+        time.sleep(0.5)  # Wait for drag/drop to complete
         
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
