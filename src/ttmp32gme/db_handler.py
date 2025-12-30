@@ -640,19 +640,31 @@ class DBHandler:
 
         # Validate and write tracks to database
         for track in track_data:
-            target_file = album_path / cleanup_filename(track["filename"].name)
+            # First, validate all metadata except filename (which is still a Path)
+            temp_track = track.copy()
+            source_file = temp_track.pop("filename")  # Remove Path object
+            temp_track["filename"] = source_file.name  # Use just the name for validation
+            
+            # Validate track metadata
+            validated_track = TrackMetadataModel(**temp_track)
+            
+            # Now move file to album directory
+            target_file = album_path / cleanup_filename(source_file.name)
             try:
-                track["filename"].rename(target_file)
+                source_file.rename(target_file)
+                logger.info(f"moved track file {source_file} to {target_file}")
+                final_filename = target_file.name
             except Exception as e:
                 logger.error(
-                    f"Error moving track file {track['filename']} to album directory: {e}"
+                    f"Error moving track file {source_file} to album directory: {e}"
                 )
-            logger.info(f"moving track file {track['filename']} to {target_file}")
-            track["filename"] = target_file.name
-
-            # Validate track with Pydantic model
-            validated_track = TrackMetadataModel(**track)
-            self.write_to_database("tracks", validated_track.model_dump())
+                # If move fails, use just the source filename
+                final_filename = source_file.name
+            
+            # Update filename in validated data and write to database
+            validated_data = validated_track.model_dump()
+            validated_data["filename"] = final_filename
+            self.write_to_database("tracks", validated_data)
 
     def create_library_entry(
         self, album_list: List[Dict], library_path: Path, debug: int = 0
