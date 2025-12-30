@@ -67,8 +67,6 @@ pytest tests/unit/ -v
 
 # Run specific test file
 pytest tests/unit/test_library_handler.py -v
-
-# Expected: 17 tests passing
 ```
 
 #### Integration Tests (Requires running server)
@@ -78,25 +76,21 @@ python -m ttmp32gme.ttmp32gme
 
 # Terminal 2: Run integration tests
 pytest tests/test_web_frontend.py -v
-
-# Expected: 8 tests passing
 ```
 
 #### E2E Tests (Selenium, requires full setup)
 ```bash
 # One-time setup (installs Chrome, tttool, etc.)
-./setup_e2e_environment.sh -b
+./ttmp32gme > /tmp/server.log 2>&1 & sleep(2)  # Start server in background
 
 # Run all E2E tests
-./run_e2e_tests.sh
+./pytest tests/e2e/ -v
 
 # Run specific test
-./run_e2e_tests.sh -t test_upload_album_with_files
+pytest tests/e2e/test_upload_album_with_files.py -v
 
 # Run tests matching keyword
-./run_e2e_tests.sh -k upload
-
-# Expected: 26 tests, server starts/stops automatically
+pytest -k upload -v
 ```
 
 **E2E Test Markers**:
@@ -170,8 +164,11 @@ SQLite connection uses `check_same_thread=False` for Flask's multi-threaded envi
 4. Return JSON for AJAX or render template for pages
 
 ### Fixing E2E Test Issues
-1. Run single test: `./run_e2e_tests.sh -s -t test_name`
-2. Check server logs in test output
+1. Before re-running specific test, start the server manually: 
+```bash
+ ./ttmp32gme > /tmp/server.log 2>&1 & sleep(2)  # Start server in background
+```
+2. Check server logs in `/tmp/server.log` for errors
 3. Add debug statements to test for element visibility
 4. Use explicit waits: `WebDriverWait(driver, 5).until(...)`
 
