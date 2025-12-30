@@ -335,3 +335,546 @@ class TestDBHandlerHelperMethods:
         assert album_data is None
         assert track_info is None
         assert picture_data is None
+
+
+class TestDBHandlerCoreMethods:
+    """Test core DBHandler methods."""
+
+    @pytest.fixture
+    def db(self):
+        """Create a temporary database."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+            db_path = f.name
+        
+        db_handler = DBHandler(db_path)
+        db_handler.initialize()
+        yield db_handler
+        
+        db_handler.close()
+        Path(db_path).unlink(missing_ok=True)
+
+    def test_connect_and_close(self):
+        """Test database connection and closing."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+            db_path = f.name
+        
+        try:
+            db = DBHandler(db_path)
+            assert db.conn is None
+            
+            db.connect()
+            assert db.conn is not None
+            
+            db.close()
+            assert db.conn is None
+        finally:
+            Path(db_path).unlink(missing_ok=True)
+
+    def test_execute(self, db):
+        """Test execute method."""
+        cursor = db.execute("SELECT * FROM config WHERE param=?", ("version",))
+        assert cursor is not None
+        result = cursor.fetchone()
+        assert result is not None
+        cursor.close()
+
+    def test_fetchall(self, db):
+        """Test fetchall method."""
+        results = db.fetchall("SELECT * FROM config")
+        assert len(results) > 0
+        assert "param" in results[0].keys()
+
+    def test_fetchone(self, db):
+        """Test fetchone method."""
+        result = db.fetchone("SELECT * FROM config WHERE param=?", ("version",))
+        assert result is not None
+        assert result["param"] == "version"
+
+    def test_fetchone_not_found(self, db):
+        """Test fetchone when no result found."""
+        result = db.fetchone("SELECT * FROM config WHERE param=?", ("nonexistent",))
+        assert result is None
+
+    def test_commit(self, db):
+        """Test commit method."""
+        db.execute("INSERT INTO config (param, value) VALUES (?, ?)", ("test_param", "test_value"))
+        db.commit()
+        
+        result = db.fetchone("SELECT * FROM config WHERE param=?", ("test_param",))
+        assert result is not None
+        assert result["value"] == "test_value"
+
+    def test_write_to_database(self, db):
+        """Test write_to_database method."""
+        data = {
+            "param": "test_write",
+            "value": "test_value_123"
+        }
+        db.write_to_database("config", data)
+        
+        result = db.fetchone("SELECT * FROM config WHERE param=?", ("test_write",))
+        assert result is not None
+        assert result["value"] == "test_value_123"
+
+    def test_get_config(self, db):
+        """Test get_config method."""
+        config = db.get_config()
+        assert isinstance(config, dict)
+        assert "version" in config
+        assert "host" in config
+        assert "port" in config
+
+    def test_get_config_value(self, db):
+        """Test get_config_value method."""
+        version = db.get_config_value("version")
+        assert version is not None
+        assert version == "1.0.0"
+
+    def test_get_config_value_not_found(self, db):
+        """Test get_config_value for non-existent parameter."""
+        value = db.get_config_value("nonexistent_param")
+        assert value is None
+
+    def test_oid_exist(self, db):
+        """Test oid_exist method."""
+        # Initially no albums
+        assert db.oid_exist(920) is False
+        
+        # Add an album
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Test Album",
+            "num_tracks": 1,
+            "path": "/test/path"
+        })
+        
+        # Now it should exist
+        assert db.oid_exist(920) is True
+        assert db.oid_exist(921) is False
+
+    def test_new_oid_empty_database(self, db):
+        """Test new_oid with empty database."""
+        oid = db.new_oid()
+        assert oid == 920  # Default starting OID
+
+    def test_new_oid_with_existing_albums(self, db):
+        """Test new_oid with existing albums."""
+        # Add some albums
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Album 1",
+            "num_tracks": 1,
+            "path": "/test/path1"
+        })
+        db.write_to_database("gme_library", {
+            "oid": 921,
+            "album_title": "Album 2",
+            "num_tracks": 1,
+            "path": "/test/path2"
+        })
+        
+        oid = db.new_oid()
+        assert oid == 922  # Next available OID
+
+    def test_get_tracks(self, db):
+        """Test get_tracks method."""
+        # Add an album and tracks
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Test Album",
+            "num_tracks": 2,
+            "path": "/test/path"
+        })
+        db.write_to_database("tracks", {
+            "parent_oid": 920,
+            "title": "Track 1",
+            "track": 1,
+            "duration": 180000,
+            "filename": "track1.mp3"
+        })
+        db.write_to_database("tracks", {
+            "parent_oid": 920,
+            "title": "Track 2",
+            "track": 2,
+            "duration": 200000,
+            "filename": "track2.mp3"
+        })
+        
+        album = {"oid": 920}
+        tracks = db.get_tracks(album)
+        
+        assert len(tracks) == 2
+        assert 1 in tracks
+        assert 2 in tracks
+        assert tracks[1]["title"] == "Track 1"
+        assert tracks[2]["title"] == "Track 2"
+
+    def test_update_table_entry(self, db):
+        """Test update_table_entry method."""
+        # Add a config entry
+        db.write_to_database("config", {
+            "param": "test_update",
+            "value": "original_value"
+        })
+        
+        # Update it
+        db.update_table_entry("config", "param=?", ["test_update"], {
+            "value": "updated_value"
+        })
+        
+        result = db.fetchone("SELECT * FROM config WHERE param=?", ("test_update",))
+        assert result["value"] == "updated_value"
+
+    def test_db_row_to_album(self, db):
+        """Test db_row_to_album method."""
+        # Add album and tracks
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Test Album",
+            "album_artist": "Test Artist",
+            "num_tracks": 1,
+            "path": "/test/path"
+        })
+        db.write_to_database("tracks", {
+            "parent_oid": 920,
+            "title": "Track 1",
+            "track": 1,
+            "duration": 180000,
+            "filename": "track1.mp3"
+        })
+        
+        row = db.fetchone("SELECT * FROM gme_library WHERE oid=?", (920,))
+        album = db.db_row_to_album(row)
+        
+        assert album["oid"] == 920
+        assert album["album_title"] == "Test Album"
+        assert "track_1" in album
+        assert album["track_1"]["title"] == "Track 1"
+
+    def test_get_album(self, db):
+        """Test get_album method."""
+        # Add album and track
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Test Album",
+            "num_tracks": 1,
+            "path": "/test/path"
+        })
+        db.write_to_database("tracks", {
+            "parent_oid": 920,
+            "title": "Track 1",
+            "track": 1,
+            "duration": 180000,
+            "filename": "track1.mp3"
+        })
+        
+        album = db.get_album(920)
+        assert album is not None
+        assert album["oid"] == 920
+        assert album["album_title"] == "Test Album"
+        assert "track_1" in album
+
+    def test_get_album_not_found(self, db):
+        """Test get_album when album doesn't exist."""
+        album = db.get_album(999)
+        assert album is None
+
+    def test_get_album_list(self, db):
+        """Test get_album_list method."""
+        # Add multiple albums
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Album 1",
+            "num_tracks": 0,
+            "path": "/path1"
+        })
+        db.write_to_database("gme_library", {
+            "oid": 921,
+            "album_title": "Album 2",
+            "num_tracks": 0,
+            "path": "/path2"
+        })
+        
+        albums = db.get_album_list()
+        assert len(albums) == 2
+        assert albums[0]["oid"] == 920
+        assert albums[1]["oid"] == 921
+
+    def test_delete_album_tracks(self, db):
+        """Test delete_album_tracks method."""
+        # Add album and tracks
+        db.write_to_database("gme_library", {
+            "oid": 920,
+            "album_title": "Test Album",
+            "num_tracks": 2,
+            "path": "/test/path"
+        })
+        db.write_to_database("tracks", {
+            "parent_oid": 920,
+            "title": "Track 1",
+            "track": 1,
+            "duration": 180000,
+            "filename": "track1.mp3"
+        })
+        db.write_to_database("tracks", {
+            "parent_oid": 920,
+            "title": "Track 2",
+            "track": 2,
+            "duration": 200000,
+            "filename": "track2.mp3"
+        })
+        
+        # Verify tracks exist
+        tracks = db.get_tracks({"oid": 920})
+        assert len(tracks) == 2
+        
+        # Delete tracks
+        db.delete_album_tracks(920)
+        
+        # Verify tracks are deleted
+        tracks = db.get_tracks({"oid": 920})
+        assert len(tracks) == 0
+
+    def test_context_manager(self):
+        """Test DBHandler as context manager."""
+        with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
+            db_path = f.name
+        
+        try:
+            with DBHandler(db_path) as db:
+                db.initialize()
+                assert db.conn is not None
+                
+                # Use the database
+                config = db.get_config()
+                assert "version" in config
+            
+            # Connection should be closed after exiting context
+            # (we can't directly test this without accessing private state)
+        finally:
+            Path(db_path).unlink(missing_ok=True)
+
+    def test_gme_library_columns(self, db):
+        """Test gme_library_columns property."""
+        columns = db.gme_library_columns
+        assert isinstance(columns, list)
+        assert "oid" in columns
+        assert "album_title" in columns
+        assert "num_tracks" in columns
+        assert "path" in columns
+
+    def test_update_tracks(self, db):
+        """Test update_tracks method."""
+        import tempfile
+        import shutil
+        
+        # Create a temporary directory for album
+        temp_dir = Path(tempfile.mkdtemp())
+        
+        try:
+            # Add album with tracks
+            db.write_to_database("gme_library", {
+                "oid": 920,
+                "album_title": "Test Album",
+                "num_tracks": 2,
+                "path": str(temp_dir)
+            })
+            db.write_to_database("tracks", {
+                "parent_oid": 920,
+                "title": "Track 1",
+                "track": 1,
+                "duration": 180000,
+                "filename": "track1.mp3",
+                "album": "Test Album",
+                "artist": "Test Artist"
+            })
+            db.write_to_database("tracks", {
+                "parent_oid": 920,
+                "title": "Track 2",
+                "track": 2,
+                "duration": 200000,
+                "filename": "track2.mp3",
+                "album": "Test Album",
+                "artist": "Test Artist"
+            })
+            
+            # Update tracks
+            tracks_to_update = [
+                {"old_track": "1", "track": 2, "title": "Updated Track 1"},
+                {"old_track": "2", "track": 1, "title": "Updated Track 2"}
+            ]
+            
+            db.update_tracks(tracks_to_update, 920, 920)
+            
+            # Verify tracks were updated
+            updated_tracks = db.get_tracks({"oid": 920})
+            assert len(updated_tracks) == 2
+            assert updated_tracks[1]["title"] == "Updated Track 2"
+            assert updated_tracks[2]["title"] == "Updated Track 1"
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_update_album(self, db):
+        """Test update_album method."""
+        import tempfile
+        import shutil
+        
+        temp_dir = Path(tempfile.mkdtemp())
+        
+        try:
+            # Add album with track
+            db.write_to_database("gme_library", {
+                "oid": 920,
+                "album_title": "Original Album",
+                "album_artist": "Original Artist",
+                "num_tracks": 1,
+                "path": str(temp_dir)
+            })
+            db.write_to_database("tracks", {
+                "parent_oid": 920,
+                "title": "Track 1",
+                "track": 1,
+                "duration": 180000,
+                "filename": "track1.mp3",
+                "album": "Original Album",
+                "artist": "Original Artist"
+            })
+            
+            # Update album
+            album_data = {
+                "oid": 920,
+                "album_title": "Updated Album",
+                "album_artist": "Updated Artist",
+                "track_1": {
+                    "old_track": "1",
+                    "track": 1,
+                    "title": "Updated Track 1"
+                }
+            }
+            
+            result_oid = db.update_album(album_data)
+            assert result_oid == 920
+            
+            # Verify album was updated
+            album = db.get_album(920)
+            assert album["album_title"] == "Updated Album"
+            assert album["album_artist"] == "Updated Artist"
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_delete_album(self, db):
+        """Test delete_album method."""
+        import tempfile
+        import shutil
+        
+        temp_dir = Path(tempfile.mkdtemp())
+        
+        try:
+            # Add album with track
+            db.write_to_database("gme_library", {
+                "oid": 920,
+                "album_title": "Test Album",
+                "num_tracks": 1,
+                "path": str(temp_dir)
+            })
+            db.write_to_database("tracks", {
+                "parent_oid": 920,
+                "title": "Track 1",
+                "track": 1,
+                "duration": 180000,
+                "filename": "track1.mp3"
+            })
+            
+            # Verify album exists
+            assert db.get_album(920) is not None
+            
+            # Delete album
+            db.delete_album(920)
+            
+            # Verify album is deleted
+            assert db.get_album(920) is None
+            
+            # Verify tracks are also deleted
+            tracks = db.get_tracks({"oid": 920})
+            assert len(tracks) == 0
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_replace_cover(self, db):
+        """Test replace_cover method."""
+        import tempfile
+        import shutil
+        
+        temp_dir = Path(tempfile.mkdtemp())
+        
+        try:
+            # Add album
+            db.write_to_database("gme_library", {
+                "oid": 920,
+                "album_title": "Test Album",
+                "num_tracks": 0,
+                "path": str(temp_dir),
+                "picture_filename": "old_cover.jpg"
+            })
+            
+            # Create old cover file
+            old_cover = temp_dir / "old_cover.jpg"
+            old_cover.write_bytes(b"old image data")
+            
+            # Replace cover
+            new_cover_data = b"new image data"
+            db.replace_cover(920, "new_cover.jpg", new_cover_data)
+            
+            # Verify old cover is removed
+            assert not old_cover.exists()
+            
+            # Verify new cover exists
+            new_cover = temp_dir / "new_cover.jpg"
+            assert new_cover.exists()
+            assert new_cover.read_bytes() == new_cover_data
+            
+            # Verify database is updated
+            album = db.get_album(920)
+            assert album["picture_filename"] == "new_cover.jpg"
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_cleanup_album(self, db):
+        """Test cleanup_album method."""
+        import tempfile
+        import shutil
+        
+        temp_dir = Path(tempfile.mkdtemp())
+        
+        try:
+            # Add album
+            db.write_to_database("gme_library", {
+                "oid": 920,
+                "album_title": "Test Album",
+                "num_tracks": 0,
+                "path": str(temp_dir)
+            })
+            
+            # Create files to be cleaned up
+            yaml_file = temp_dir / "album.yaml"
+            yaml_file.write_text("test yaml content")
+            
+            gme_file = temp_dir / "album.gme"
+            gme_file.write_bytes(b"test gme data")
+            
+            audio_dir = temp_dir / "audio"
+            audio_dir.mkdir()
+            (audio_dir / "track.mp3").write_bytes(b"audio data")
+            
+            # Cleanup album
+            db.cleanup_album(920)
+            
+            # Verify files are cleaned up
+            assert not yaml_file.exists()
+            assert not gme_file.exists()
+            assert not audio_dir.exists()
+            
+            # Verify album still exists in database
+            assert db.get_album(920) is not None
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
