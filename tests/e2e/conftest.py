@@ -166,7 +166,7 @@ def audio_files_context(album_name="Test Album"):
 @contextmanager
 def ogg_audio_files_context(album_name="Test OGG Album"):
     """Context manager to create and cleanup test OGG files with various tags.
-    
+
     Reuses audio_files_context to generate MP3 files with tags, then converts them to OGG
     using ffmpeg with the same arguments as tttool_handler.py. FFmpeg preserves the tags
     during conversion.
@@ -175,12 +175,12 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
     ffmpeg_path = shutil.which("ffmpeg")
     if not ffmpeg_path:
         raise RuntimeError("ffmpeg not found, cannot convert to OGG format")
-    
+
     # Create temporary directory for OGG files
     tmpdir = tempfile.mkdtemp()
     tmp_path = Path(tmpdir)
     ogg_files = []
-    
+
     try:
         # Use the existing audio_files_context to generate MP3 files with tags
         with audio_files_context(album_name=album_name) as mp3_files:
@@ -189,7 +189,7 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
                 if mp3_file.suffix.lower() == ".mp3":
                     # Create OGG file with same base name
                     ogg_file = tmp_path / mp3_file.with_suffix(".ogg").name
-                    
+
                     # Convert MP3 to OGG using ffmpeg with same arguments as tttool_handler.py
                     # From tttool_handler.py lines 141-155
                     cmd = [
@@ -205,7 +205,7 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
                         "1",
                         str(ogg_file),
                     ]
-                    
+
                     subprocess.run(cmd, check=True, capture_output=True)
                     ogg_files.append(ogg_file)
                 elif mp3_file.suffix.lower() in {".jpg", ".jpeg", ".png"}:
@@ -213,9 +213,9 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
                     img_file = tmp_path / mp3_file.name
                     shutil.copy(mp3_file, img_file)
                     ogg_files.append(img_file)
-        
+
         yield ogg_files
-        
+
     finally:
         # Cleanup: remove temporary directory
         try:
@@ -366,7 +366,9 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
     if len(file_inputs) > 0:
         if audio_only:
             # Include both .mp3 and .ogg files (case-insensitive, using set for efficient membership testing)
-            upload_files = [str(f) for f in test_audio_files if f.suffix.lower() in {".mp3", ".ogg"}]
+            upload_files = [
+                str(f) for f in test_audio_files if f.suffix.lower() in {".mp3", ".ogg"}
+            ]
         else:
             upload_files = [str(f) for f in test_audio_files]
         print(f"DEBUG: Uploading {len(upload_files)} files: {upload_files}")
