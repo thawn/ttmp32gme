@@ -45,10 +45,10 @@ Auto-generated from docstrings using `sphinx.ext.autodoc`.
 ```python
 def function(param: str) -> bool:
     """Brief description.
-    
+
     Args:
         param: Description
-        
+
     Returns:
         Description
     """
