@@ -3,6 +3,7 @@
 import io
 import logging
 import shutil
+import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
@@ -12,6 +13,7 @@ import pytest
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import APIC
 from mutagen.mp3 import MP3
+from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -166,9 +168,6 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
     
     Converts MP3 files to OGG using ffmpeg with the same arguments as tttool_handler.py.
     """
-    import subprocess
-    from mutagen.oggvorbis import OggVorbis
-    
     files = []
     
     # Use bundled test audio file

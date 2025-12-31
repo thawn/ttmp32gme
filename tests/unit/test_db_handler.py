@@ -1,11 +1,13 @@
 """Unit tests for db_handler module."""
 
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from mutagen.oggvorbis import OggVorbis
 from pydantic import ValidationError
 
 from ttmp32gme.db_handler import AlbumMetadataModel, DBHandler, TrackMetadataModel
@@ -934,9 +936,6 @@ class TestDBHandlerCoreMethods:
 
     def test_extract_ogg_metadata(self, db):
         """Test extracting metadata from OGG Vorbis files."""
-        import subprocess
-        from mutagen.oggvorbis import OggVorbis
-
         # Get path to test MP3 file
         test_mp3 = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"
         if not test_mp3.exists():
@@ -1000,8 +999,6 @@ class TestDBHandlerCoreMethods:
 
     def test_extract_ogg_metadata_no_tags(self, db):
         """Test extracting metadata from OGG file without tags."""
-        import subprocess
-
         # Get path to test MP3 file
         test_mp3 = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"
         if not test_mp3.exists():

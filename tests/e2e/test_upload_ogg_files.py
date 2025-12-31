@@ -1,7 +1,9 @@
 """End-to-end tests for uploading OGG audio files."""
 
 import logging
+import shutil
 import sqlite3
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -10,7 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 # Import fixtures and helpers from conftest
-from .conftest import _upload_album_files, ogg_audio_files_context
+from .conftest import _upload_album_files, audio_files_context, ogg_audio_files_context
 
 logger = logging.getLogger(__name__)
 
@@ -171,8 +173,6 @@ class TestOggFileUpload:
         with audio_files_context(album_name=album_name) as mp3_files:
             mp3_audio = [f for f in mp3_files if f.suffix.lower() == ".mp3"]
             # Copy MP3 files to a safe location (they'll be cleaned up by context)
-            import tempfile
-            import shutil
             tmpdir = tempfile.mkdtemp()
             tmp_path = Path(tmpdir)
             
