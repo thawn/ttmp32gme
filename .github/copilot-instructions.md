@@ -128,6 +128,40 @@ sphinx-build -b html . _build/html
 
 ## Code Patterns & Conventions
 
+### Code Organization (CRITICAL)
+**Keep ttmp32gme.py clean** - implement business logic in handler files:
+- `ttmp32gme.py` should contain only Flask routes and app configuration
+- Implement helper functions and business logic in the appropriate handler:
+  - `db_handler.py` - Database operations, Pydantic models
+  - `tttool_handler.py` - GME generation, OID code management
+  - `print_handler.py` - Print layouts, PDF generation
+  - `build/file_handler.py` - File system utilities
+
+❌ **NEVER do this** in ttmp32gme.py:
+```python
+@app.route('/process')
+def process():
+    # Complex business logic here
+    result = some_complex_calculation()
+    # More business logic
+    return result
+```
+
+✅ **ALWAYS do this**:
+```python
+# In handler file (e.g., tttool_handler.py)
+def process_data(data):
+    # Complex business logic here
+    return result
+
+# In ttmp32gme.py
+@app.route('/process')
+def process():
+    data = request.get_json()
+    result = process_data(data)
+    return jsonify(result)
+```
+
 ### Database Access (CRITICAL)
 ❌ **NEVER do this**:
 ```python
@@ -172,21 +206,42 @@ SQLite connection uses `check_same_thread=False` for Flask's multi-threaded envi
 
 ## Common Tasks
 
+### Code Organization Best Practices
+
+**Keep ttmp32gme.py Clean**:
+- The main `ttmp32gme.py` file should primarily contain Flask routes and application setup
+- Implement business logic and helper functions in the respective handler files:
+  - `db_handler.py` - Database operations and data models
+  - `tttool_handler.py` - GME/OID code generation and tttool interactions
+  - `print_handler.py` - Print layout and PDF generation
+  - `build/file_handler.py` - File system operations and utilities
+- Keep route handlers in `ttmp32gme.py` focused on request/response handling, validation, and calling handler functions
+
+**Testing Requirements**:
+- When adding new functions to handler files, **always add corresponding unit tests** in `tests/unit/test_<handler_name>.py`
+- When adding new frontend features, **always add corresponding E2E tests** in `tests/e2e/`
+- Run the E2E tests after implementation to ensure everything works correctly
+- Follow existing test patterns and use appropriate fixtures
+
 ### Adding a New Database Operation
 1. Add method to `DBHandler` class in `src/ttmp32gme/db_handler.py`
 2. Use `self.execute()`, `self.fetchone()`, `self.commit()` internally
 3. Call from Flask route: `db.new_method()`
+4. **Add unit tests** in `tests/unit/test_db_handler.py`
 
 ### Adding Input Validation
 1. Create/extend Pydantic model in `db_handler.py`
 2. Add field constraints (`Field()`, regex patterns, value ranges)
 3. Validate in Flask route before calling DBHandler
+4. **Add unit tests** to verify validation logic
 
 ### Adding a New Route
 1. Add route in `src/ttmp32gme/ttmp32gme.py`
 2. Validate input with Pydantic
 3. Use `db` (DBHandler instance) for database operations
 4. Return JSON for AJAX or render template for pages
+5. **Add integration tests** in `tests/test_web_frontend.py` for API routes
+6. **Add E2E tests** in `tests/e2e/` for user-facing features
 
 ### Fixing E2E Test Issues
 1. Before re-running specific test, start the server manually:
