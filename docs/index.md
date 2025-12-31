@@ -1,6 +1,6 @@
 # ttmp32gme Documentation
 
-Welcome to the documentation for **ttmp32gme**, a cross-platform tool that converts MP3/audio files into TipToi GME (Game Music Engine) files playable on the TipToi pen.
+Welcome to the documentation for **ttmp32gme**, a cross-platform tool that converts MP3/audio files into TipToi GME (for Ravensburger tiptoi®) files playable on the TipToi pen.
 
 ## What is ttmp32gme?
 

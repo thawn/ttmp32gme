@@ -4,7 +4,7 @@ This guide will help you get started with ttmp32gme quickly.
 
 ## Overview
 
-ttmp32gme is a tool that converts MP3/audio files into TipToi GME (Game Music Engine) files. The process involves four main steps:
+ttmp32gme is a tool that converts MP3/audio files into TipToi GME (for Ravensburger tiptoi®) files. The process involves four main steps:
 
 1. Upload MP3/audio files
 2. Configure album information
