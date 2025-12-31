@@ -696,7 +696,11 @@ class DBHandler:
             track_no = 1
 
             # Process all files in the album
-            for file_id in sorted(album.keys()):
+            # Sort by filename (not UUID) for predictable track order
+            sorted_file_ids = sorted(
+                album.keys(), key=lambda fid: Path(album[fid]).name
+            )
+            for file_id in sorted_file_ids:
                 file_path = Path(album[file_id])
 
                 if file_path.suffix.lower() in [".mp3", ".ogg"]:
