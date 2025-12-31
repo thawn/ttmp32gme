@@ -300,21 +300,12 @@ make html
 
 ## ToDo
 
-* change the docker setup in build/docker/ to work with the new python backend
-  * base image: ignore ttmp32gme-deps, it is for the old perl setup. Instead use a modern, slim python container
-  * set up the dependencies like it is done in .github/workflows/e2e-tests.yml but without the selenium testing dependencies (chrome and chromedriver)
-  * take into account these pull requests for the perl installation:
-    * https://github.com/thawn/ttmp32gme/pull/70
-    * https://github.com/thawn/ttmp32gme/pull/68
-  * test the docker container if possible
-* add pre-commit hooks that run code linter (ruff) and formatter (black)
-* make sure upload supports .ogg files
-* integrate ~~wkhtml2pdf~~ pdf creation by selenium + browser into frontend (via the save PDF button that is already on the print page) make sure the PDFs created by the browser version used work for OID printing (ideally PNG images are not changed in the PDF)
+* PDF generation: create reproducible working PDFs irrespective of the browser that the user is using. The PDF generation needs a browser engine that runs headless and supports JavaScript. make sure the PDFs created by the browser version used work for OID printing (ideally PNG images are not changed in the PDF)
+  - selenium + browser is a good option because it allows us to try several different browsers we can first check with a live browser if the PDFs generate working codes. also, we already use sodium for the end-to-end tests so the additional packaging overhead is minimal
+  - if selenium and browsers fail, try [playwright] (https://www.checklyhq.com/docs/learn/playwright/generating-pdfs/)
+  - wkhtml2pdf works for Windows but development is stale and PDFs only work in a very old version with known vulnerabilities
 * save last selected albums in the browsers local storage
 * import/migrate library from one computer to another - can already be done manually, needs documentation. GUI for this will not be done.
-
-
-
 
 ### Maybe later
 * add and remove music files from library page
