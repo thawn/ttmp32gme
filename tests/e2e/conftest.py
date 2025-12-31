@@ -3,6 +3,7 @@
 import io
 import logging
 import shutil
+import sqlite3
 import subprocess
 import tempfile
 import time
@@ -320,8 +321,6 @@ def clean_server(tmp_path, driver):
 
 def _get_database_value(query, params=(), db_path=None):
     """Helper to query database directly."""
-    import sqlite3
-    
     if db_path is None:
         db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
     if not db_path.exists():

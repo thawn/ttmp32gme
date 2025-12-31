@@ -2,6 +2,7 @@
 
 import logging
 import shutil
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -98,7 +99,6 @@ class TestOggFileUpload:
         assert result[0] == album_name, f"Expected album title '{album_name}', got '{result[0]}'"
 
         # Check track metadata in database
-        import sqlite3
         conn = sqlite3.connect(str(server_info["db_path"]))
         cursor = conn.cursor()
         cursor.execute(
@@ -112,10 +112,11 @@ class TestOggFileUpload:
         assert len(tracks) == 3, f"Expected 3 tracks, got {len(tracks)}"
         
         # Expected tag values based on audio_files_context fixture
+        # Note: OGG files are converted from MP3, so filenames become .ogg
         expected_tracks = [
             {"title": "Test Track 1", "artist": "Test Artist", "track": 1},
             {"title": "Test Track 2", "artist": "", "track": 2},  # Minimal tags - no artist
-            {"title": "track3_no_tags.mp3", "artist": "", "track": 3},  # No tags - filename as title
+            {"title": "track3_no_tags.ogg", "artist": "", "track": 3},  # No tags - OGG filename as title
         ]
         
         # Verify all tracks have correct metadata
