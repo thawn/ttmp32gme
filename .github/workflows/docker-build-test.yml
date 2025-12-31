@@ -84,11 +84,11 @@ jobs:
           --name ttmp32gme-test \
           -p 8080:8080 \
           ttmp32gme:test
-        
+
         # Wait for container to start
         echo "Waiting for container to start..."
         sleep 10
-        
+
         # Check container is running
         if ! docker ps | grep ttmp32gme-test; then
           echo "Error: Container failed to start"
@@ -102,7 +102,7 @@ jobs:
         echo "Checking application health..."
         max_attempts=30
         attempt=0
-        
+
         while [ $attempt -lt $max_attempts ]; do
           if curl -f http://localhost:8080/ > /dev/null 2>&1; then
             echo "Application is responding!"
@@ -112,7 +112,7 @@ jobs:
           echo "Attempt $attempt/$max_attempts - waiting..."
           sleep 2
         done
-        
+
         if [ $attempt -eq $max_attempts ]; then
           echo "Error: Application failed to respond after $max_attempts attempts"
           docker logs ttmp32gme-test
@@ -127,13 +127,13 @@ jobs:
           echo "Error: Main page doesn't contain expected content"
           exit 1
         }
-        
+
         # Test that static assets are served
         echo "Testing static assets..."
         curl -f http://localhost:8080/assets/css/style.css > /dev/null || {
           echo "Warning: Could not load static CSS (may not exist yet)"
         }
-        
+
         echo "Basic functionality tests passed!"
 
     - name: Show container logs
