@@ -39,7 +39,7 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 ENV APPDATA=/var/lib/
 RUN mkdir -p ${APPDATA}/ttmp32gme/library /mnt/tiptoi && \
     cp /app/src/ttmp32gme/config.sqlite ${APPDATA}/ttmp32gme/ && \
-    chmod -R 777 ${APPDATA}/ttmp32gme
+    chmod -R 777 ${APPDATA}/ttmp32gme/library
 
 # Expose port 8080
 EXPOSE 8080
