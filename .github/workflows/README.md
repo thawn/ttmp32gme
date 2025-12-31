@@ -37,12 +37,24 @@ For the release workflow to push images to Docker Hub, you need to configure the
 
 ### Testing Strategy
 
-The workflows perform the following tests on the Docker container:
+The Dockerfile uses a **multi-stage build** with a dedicated test stage:
 
-1. **Build Test**: Ensures the Docker image builds successfully
-2. **Container Start Test**: Verifies the container starts without errors
-3. **Health Check**: Confirms the web application responds on port 8080
-4. **Basic Functionality**: Tests that the main page loads with expected content
+1. **Test Stage**: Runs unit tests during the Docker build process
+   - Installs test dependencies
+   - Runs pytest unit tests (`tests/unit/`)
+   - Build fails if tests fail
+
+2. **Production Stage**: Creates the final production image
+   - Does not include test dependencies
+   - Smaller final image size
+
+The workflows perform the following tests:
+
+1. **Build and Test**: Builds the test stage which runs unit tests
+2. **Build Production**: Builds the production stage for the final image
+3. **Container Start Test**: Verifies the container starts without errors
+4. **Health Check**: Confirms the web application responds on port 8080
+5. **Basic Functionality**: Tests that the main page loads with expected content
 
 ### Triggering Workflows
 

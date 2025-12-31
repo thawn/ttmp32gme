@@ -1,5 +1,5 @@
 # Use modern Python 3.12 slim image as base
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 # Set working directory
 WORKDIR /app
@@ -34,6 +34,18 @@ COPY . /app/
 # This is a known issue with intermediate certificates in Docker builds.
 # For production builds with proper certificate setup, these flags can be removed.
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -e .
+
+# Test stage - runs unit and integration tests
+FROM base AS test
+
+# Install test dependencies
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -e ".[test]"
+
+# Run tests
+RUN pytest tests/unit/ -v --tb=short
+
+# Production stage - final image
+FROM base AS production
 
 # Create a non-root user for running the application
 # Using UID/GID 1000 which is common for the first user on most Linux systems
