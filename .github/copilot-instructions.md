@@ -11,6 +11,7 @@
 - **Database**: SQLite with custom DBHandler class
 - **Python Version**: 3.11+ required
 - **Testing**: 80+ tests (unit, integration, E2E with Selenium); coverage target 75%+
+- **Documentation**: Sphinx-based documentation in `docs/` folder with API reference
 
 ### Architecture
 - **Backend**: Python Flask application migrated from Perl
@@ -103,6 +104,28 @@ pytest -k upload -v
 
 **No build step required** - Python source runs directly.
 
+### Building Documentation
+
+Documentation is built using Sphinx:
+
+```bash
+# Install documentation dependencies
+pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+
+# Build HTML documentation
+cd docs/
+sphinx-build -b html . _build/html
+
+# View documentation
+# Open docs/_build/html/index.html in browser
+```
+
+**Documentation Structure**:
+- User guides: `docs/*.md` (getting-started, installation, usage, etc.)
+- API reference: `docs/api/*.md` (module documentation)
+- Configuration: `docs/conf.py`
+- Built output: `docs/_build/html/`
+
 ## Code Patterns & Conventions
 
 ### Database Access (CRITICAL)
@@ -181,6 +204,7 @@ SQLite connection uses `check_same_thread=False` for Flask's multi-threaded envi
 - **Tests**: `tests/unit/`, `tests/e2e/`, `tests/test_web_frontend.py`
 - **Static files**: `resources/assets/` (CSS, JS, images)
 - **Config**: `pyproject.toml` (dependencies, pytest config)
+- **Documentation**: `docs/` (Sphinx documentation)
 
 ## Quick Reference Commands
 
@@ -199,6 +223,9 @@ pytest tests/unit/ -v
 
 # Run E2E tests (takes about 1-2 minutes)
 pytest tests/e2e/ -v
+
+# Build documentation
+cd docs/ && sphinx-build -b html . _build/html
 ```
 
 ## CI/CD

@@ -280,6 +280,34 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 * [TipToi Fahrzeugerkundung der Kinderfeuerwehr](https://www.ffrh.de/tiptoi-projekt/)
 
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` folder:
+
+* **Getting Started**: Quick introduction and basic workflow
+* **Installation**: Detailed installation instructions for all platforms
+* **Usage Guide**: Complete guide to using all features
+* **Print Configuration**: Detailed printing setup and troubleshooting
+* **Troubleshooting**: Solutions to common problems
+* **Development Guide**: Information for contributors
+* **API Reference**: Auto-generated API documentation
+
+### Building Documentation
+
+To build the documentation locally:
+
+```bash
+# Install documentation dependencies
+pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+
+# Build HTML documentation
+cd docs/
+make html
+
+# View documentation
+# Open docs/_build/html/index.html in your browser
+```
+
 ## ToDo
 
 * change the docker setup in build/docker/ to work with the new python backend
@@ -290,10 +318,6 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
     * https://github.com/thawn/ttmp32gme/pull/68
   * test the docker container if possible
 * add pre-commit hooks that run code linter (ruff) and formatter (black)
-* add sphinx documentation
-  * auto-generate API documentation from docstrings in the code
-  * thoroughly analyze README.md, the frontend help page and the entire code then write the documentation in a docs/ folder using markdown files
-  * after you are done update the copilot-instructions.md file to reflect the current status of the project
 * make sure upload supports .ogg files
 * integrate ~~wkhtml2pdf~~ pdf creation by selenium + browser into frontend (via the save PDF button that is already on the print page) make sure the PDFs created by the browser version used work for OID printing (ideally PNG images are not changed in the PDF)
 * save last selected albums in the browsers local storage
