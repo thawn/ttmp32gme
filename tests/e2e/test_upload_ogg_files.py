@@ -168,51 +168,54 @@ class TestOggFileUpload:
         
         # Collect both MP3 and OGG files
         all_files = []
+        tmpdir = None
         
-        # Get MP3 files
-        with audio_files_context(album_name=album_name) as mp3_files:
-            mp3_audio = [f for f in mp3_files if f.suffix.lower() == ".mp3"]
-            # Copy MP3 files to a safe location (they'll be cleaned up by context)
+        try:
+            # Create temp directory inside try block for proper cleanup
             tmpdir = tempfile.mkdtemp()
             tmp_path = Path(tmpdir)
             
-            for mp3 in mp3_audio[:1]:  # Just take one MP3 file
-                safe_mp3 = tmp_path / f"mp3_{mp3.name}"
-                shutil.copy(mp3, safe_mp3)
-                all_files.append(safe_mp3)
-        
-        # Get OGG files
-        with ogg_audio_files_context(album_name=album_name) as ogg_files:
-            ogg_audio = [f for f in ogg_files if f.suffix.lower() == ".ogg"]
-            for ogg in ogg_audio[:1]:  # Just take one OGG file
-                safe_ogg = tmp_path / f"ogg_{ogg.name}"
-                shutil.copy(ogg, safe_ogg)
-                all_files.append(safe_ogg)
+            # Get MP3 files
+            with audio_files_context(album_name=album_name) as mp3_files:
+                mp3_audio = [f for f in mp3_files if f.suffix.lower() == ".mp3"]
+                # Copy MP3 files to a safe location (they'll be cleaned up by context)
+                for mp3 in mp3_audio[:1]:  # Just take one MP3 file
+                    safe_mp3 = tmp_path / f"mp3_{mp3.name}"
+                    shutil.copy(mp3, safe_mp3)
+                    all_files.append(safe_mp3)
             
-            try:
-                # Upload mixed files
-                _upload_album_files(driver, server_info["url"], all_files, audio_only=True)
-                
-                # Verify upload
-                if "/library" not in driver.current_url:
-                    driver.get(f"{server_info['url']}/library")
-                
-                WebDriverWait(driver, 5).until(
-                    lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
-                )
-                
-                # Check files were uploaded
-                library_path = server_info["library_path"] / album_name.replace(" ", "_")
-                assert library_path.exists(), "Album directory not found"
-                
-                mp3_count = len(list(library_path.glob("*.mp3")))
-                ogg_count = len(list(library_path.glob("*.ogg")))
-                
-                # Should have both types
-                assert mp3_count > 0 or ogg_count > 0, "No audio files found after mixed upload"
-                
-            finally:
-                # Cleanup temp directory
+            # Get OGG files
+            with ogg_audio_files_context(album_name=album_name) as ogg_files:
+                ogg_audio = [f for f in ogg_files if f.suffix.lower() == ".ogg"]
+                for ogg in ogg_audio[:1]:  # Just take one OGG file
+                    safe_ogg = tmp_path / f"ogg_{ogg.name}"
+                    shutil.copy(ogg, safe_ogg)
+                    all_files.append(safe_ogg)
+            
+            # Upload mixed files
+            _upload_album_files(driver, server_info["url"], all_files, audio_only=True)
+            
+            # Verify upload
+            if "/library" not in driver.current_url:
+                driver.get(f"{server_info['url']}/library")
+            
+            WebDriverWait(driver, 5).until(
+                lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
+            )
+            
+            # Check files were uploaded
+            library_path = server_info["library_path"] / album_name.replace(" ", "_")
+            assert library_path.exists(), "Album directory not found"
+            
+            mp3_count = len(list(library_path.glob("*.mp3")))
+            ogg_count = len(list(library_path.glob("*.ogg")))
+            
+            # Should have both types
+            assert mp3_count > 0 or ogg_count > 0, "No audio files found after mixed upload"
+            
+        finally:
+            # Cleanup temp directory
+            if tmpdir:
                 try:
                     shutil.rmtree(tmpdir)
                 except Exception as e:
