@@ -74,9 +74,10 @@ class TestOIDImagesDownload:
 
         This test verifies:
         1. Upload an album with audio files
-        2. Create GME file (which triggers OID image generation)
-        3. Download OID images as ZIP
-        4. Verify ZIP contains multiple PNG files
+        2. Create GME file
+        3. Generate print page (which creates OID images)
+        4. Download OID images as ZIP
+        5. Verify ZIP contains multiple PNG files
         """
         server_info = clean_server
 
@@ -85,10 +86,39 @@ class TestOIDImagesDownload:
         with audio_files_context(album_name=album_name) as test_files:
             _upload_album_files(driver, server_info["url"], test_files)
 
-        # Step 2: Create GME file which generates OID images
+        # Step 2: Create GME file
         _create_gme_for_test(server_info["url"], driver, element_number=0)
 
-        # Verify OID images were created in the cache
+        # Step 3: Generate print page to create OID images
+        driver.get(f"{server_info['url']}/library")
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+
+        # Select the album
+        select_menu = driver.find_element(By.ID, "dropdownMenu1")
+        select_menu.click()
+        time.sleep(0.1)
+        select_all_option = driver.find_element(By.ID, "select-all")
+        select_all_option.click()
+        time.sleep(0.5)
+
+        # Click "Print selected" button to trigger OID generation
+        print_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, "print-selected"))
+        )
+        print_button.click()
+
+        # Wait for redirect to /print page (this generates OID images)
+        WebDriverWait(driver, 5).until(lambda d: "/print" in d.current_url)
+
+        # Wait for print page to fully load and generate OIDs
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        time.sleep(2)  # Give time for OID generation to complete
+
+        # Step 4: Verify OID images were created in the cache
         # OID cache is now in library_path/.oid_cache
         oid_cache = server_info["library_path"] / ".oid_cache"
         assert oid_cache.exists(), "OID cache directory should exist"
@@ -98,7 +128,7 @@ class TestOIDImagesDownload:
 
         logger.info(f"Found {len(png_files)} OID images in cache at {oid_cache}")
 
-        # Step 3: Test downloading via the endpoint
+        # Step 5: Test downloading via the endpoint
         download_url = f"{server_info['url']}/download_oid_images"
 
         response = requests.get(download_url)
