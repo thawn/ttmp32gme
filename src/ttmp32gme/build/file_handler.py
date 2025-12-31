@@ -1,11 +1,13 @@
 """Build and file handling utilities for ttmp32gme."""
 
+import io
 import logging
 import os
 import platform
 import re
 import shutil
 import subprocess
+import zipfile
 from pathlib import Path
 from typing import List, Optional
 
@@ -370,3 +372,29 @@ def open_browser(host: str, port: int) -> bool:
     except Exception as e:
         logger.error(f"Could not open browser: {e}")
         return False
+
+
+def create_oid_images_zip() -> Optional[io.BytesIO]:
+    """Create a ZIP file containing all OID images from the cache.
+
+    Returns:
+        BytesIO object containing the ZIP file, or None if no images found
+    """
+    oid_cache = get_oid_cache()
+
+    # Get all PNG files in the OID cache
+    png_files = list(oid_cache.glob("*.png"))
+
+    if not png_files:
+        logger.warning("No OID images found in cache")
+        return None
+
+    # Create ZIP file in memory
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for png_file in png_files:
+            zipf.write(png_file, png_file.name)
+
+    memory_file.seek(0)
+    logger.info(f"Created ZIP with {len(png_files)} OID images")
+    return memory_file

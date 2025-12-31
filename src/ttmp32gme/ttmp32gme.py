@@ -1,11 +1,9 @@
 """Main ttmp32gme Flask application."""
 
 import argparse
-import io
 import json
 import logging
 import os
-import zipfile
 from pathlib import Path
 from typing import Any, Dict
 
@@ -617,28 +615,15 @@ def download_gme(oid):
 def download_oid_images():
     """Download all OID images as a ZIP file."""
     try:
-        from .build.file_handler import get_oid_cache
+        from .build.file_handler import create_oid_images_zip
 
-        oid_cache = get_oid_cache()
+        zip_file = create_oid_images_zip()
 
-        # Get all PNG files in the OID cache
-        png_files = list(oid_cache.glob("*.png"))
-
-        if not png_files:
-            logger.warning("No OID images found in cache")
+        if zip_file is None:
             return "No OID images available", 404
 
-        # Create ZIP file in memory
-        memory_file = io.BytesIO()
-        with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zipf:
-            for png_file in png_files:
-                zipf.write(png_file, png_file.name)
-
-        memory_file.seek(0)
-
-        logger.info(f"Serving ZIP with {len(png_files)} OID images")
         return send_file(
-            memory_file,
+            zip_file,
             mimetype="application/zip",
             as_attachment=True,
             download_name="oid_images.zip",
