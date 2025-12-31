@@ -91,7 +91,11 @@ jobs:
 
     - name: Install Python dependencies
       run: |
-        uv pip install --system -e ".[test]"
+        uv pip install --system -e ".[dev,test]"
+
+    - name: Install pre-commit hooks
+      run: |
+        pre-commit install
 
     - name: Prepare test fixtures
       run: |
