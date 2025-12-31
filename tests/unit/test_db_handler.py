@@ -838,13 +838,18 @@ class TestDBHandlerCoreMethods:
         temp_dir = Path(tempfile.mkdtemp())
         
         try:
-            # Add album
+            # Add album with gme_file set
             db.write_to_database("gme_library", {
                 "oid": 920,
                 "album_title": "Test Album",
                 "num_tracks": 0,
-                "path": str(temp_dir)
+                "path": str(temp_dir),
+                "gme_file": "album.gme"
             })
+            
+            # Verify gme_file is set before cleanup
+            album_before = db.get_album(920)
+            assert album_before["gme_file"] == "album.gme"
             
             # Create files to be cleaned up
             yaml_file = temp_dir / "album.yaml"
@@ -866,6 +871,10 @@ class TestDBHandlerCoreMethods:
             assert not audio_dir.exists()
             
             # Verify album still exists in database
-            assert db.get_album(920) is not None
+            album_after = db.get_album(920)
+            assert album_after is not None
+            
+            # Verify gme_file column is set to NULL
+            assert album_after["gme_file"] is None
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)

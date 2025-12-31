@@ -953,6 +953,9 @@ class DBHandler:
                 import shutil
 
                 shutil.rmtree(audio_dir)
+            
+            # Update database to set gme_file to NULL since GME files were deleted
+            self.update_table_entry("gme_library", "oid=?", [uid], {"gme_file": None})
 
         return uid
 
