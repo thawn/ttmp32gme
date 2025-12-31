@@ -569,15 +569,13 @@ def download_gme(oid):
     """Download GME file for an album."""
     try:
         db = get_db()
-        row = db.fetchone(
-            "SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,)
-        )
+        result = db.get_gme_file_info(oid)
         
-        if not row:
+        if not result:
             logger.error(f"Album with OID {oid} not found")
             return "Album not found", 404
         
-        album_path, gme_filename = row
+        album_path, gme_filename = result
         
         if not gme_filename:
             logger.error(f"No GME file for album {oid}")
