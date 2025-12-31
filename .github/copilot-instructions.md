@@ -25,7 +25,6 @@
 ## Development Workflow
 
 ### Bootstrap & Setup
-
 The setup is performed for you by `.github/workflows/copilot-setup-steps.yml`
 
 **Verification**: `python -m ttmp32gme.ttmp32gme --help` should show usage info.
@@ -48,13 +47,9 @@ ttmp32gme --host 0.0.0.0 --port 8080
 **Verification**: `curl http://localhost:10020/` should return HTML.
 
 ### Testing
-
 **Always run all necessary tests before finishing up.**
 
 #### Unit Tests (Fast, no dependencies)
-
-should always be run when any code was changed.
-
 ```bash
 # Run all unit tests
 pytest tests/unit/ -v
@@ -64,15 +59,11 @@ pytest tests/unit/test_library_handler.py -v
 ```
 
 #### Integration Tests
-
-should always be run when the flask app was changed.
-
 ```bash
 pytest tests/test_web_frontend.py -v
 ```
 
 #### E2E Tests (Selenium)
-
 should always be run if non-trivial changes were made to the frontend or backend. the necessary dependencies are already preinstalled in your environment.
 
 ```bash
