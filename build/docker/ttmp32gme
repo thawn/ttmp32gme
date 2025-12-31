@@ -27,7 +27,7 @@ if [ "$1" = "start" ]; then
     	--name ttmp32gme \
     	thawn/ttmp32gme:latest && \
     echo "Successfully started ttmp32gme. Open http://localhost:8080 in your browser to continue."
-else 
+else
 	docker stop ttmp32gme && \
 	echo "Successfully stopped ttmp32gme."
 fi

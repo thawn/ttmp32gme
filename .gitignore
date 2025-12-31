@@ -52,3 +52,6 @@ report.html
 assets/
 src/ttmp32gme/_version.py
 google-chrome-stable_current_amd64.deb
+
+# Pre-commit
+.pre-commit-config.yaml.bak

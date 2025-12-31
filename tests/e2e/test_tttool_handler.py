@@ -1,21 +1,20 @@
 """Tests for tttool_handler module (requires tttool to be installed)."""
 
-import pytest
 import sqlite3
-from pathlib import Path
 import tempfile
-import shutil
-from unittest.mock import Mock, patch, MagicMock
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pytest
 import yaml
 
+from ttmp32gme.db_handler import DBHandler
 from ttmp32gme.tttool_handler import (
-    generate_codes_yaml,
     convert_tracks,
+    generate_codes_yaml,
     get_tttool_parameters,
-    run_tttool,
     make_gme,
 )
-from ttmp32gme.db_handler import DBHandler
 
 
 @pytest.fixture

@@ -1,13 +1,13 @@
 """Build and file handling utilities for ttmp32gme."""
 
+import logging
 import os
-import re
 import platform
+import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Dict, List
-import logging
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 

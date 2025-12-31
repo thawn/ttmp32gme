@@ -3,12 +3,12 @@ Integration tests for ttmp32gme web frontend
 These tests verify that the web pages load correctly
 """
 
-import pytest
-import requests
+import logging
 import subprocess
 import time
-import logging
-from pathlib import Path
+
+import pytest
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -16,18 +16,18 @@ logger = logging.getLogger(__name__)
 @pytest.fixture(scope="function")
 def clean_server_http(tmp_path):
     """Start a new server with clean database and library in temporary directories.
-    
+
     This is a lightweight version for HTTP-based tests (without Selenium).
     """
     # Create temporary paths
     test_db = tmp_path / "test_config.sqlite"
     test_library = tmp_path / "test_library"
     test_library.mkdir(parents=True, exist_ok=True)
-    
+
     # Find an available port (use a different port from default to avoid conflicts)
     test_port = 10022
     test_host = "127.0.0.1"
-    
+
     # Start server with custom paths in background
     server_cmd = [
         "python",
@@ -43,9 +43,9 @@ def clean_server_http(tmp_path):
         str(test_port),
         "--no-browser",
     ]
-    
+
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
-    
+
     # Start the server process in the background
     server_process = subprocess.Popen(
         server_cmd,
@@ -54,13 +54,13 @@ def clean_server_http(tmp_path):
         text=True,
         start_new_session=True,
     )
-    
+
     # Wait for server to start using requests
     server_url = f"http://{test_host}:{test_port}"
     max_wait = 10  # seconds
     start_time = time.time()
     server_ready = False
-    
+
     while time.time() - start_time < max_wait:
         try:
             response = requests.get(server_url, timeout=1)
@@ -71,7 +71,7 @@ def clean_server_http(tmp_path):
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             pass
         time.sleep(0.5)
-    
+
     if not server_ready:
         server_process.terminate()
         stdout, stderr = server_process.communicate(timeout=5)
@@ -79,7 +79,7 @@ def clean_server_http(tmp_path):
             f"Server failed to start within {max_wait} seconds.\n"
             f"Stdout: {stdout}\nStderr: {stderr}"
         )
-    
+
     # Yield fixture data
     yield {
         "url": server_url,
@@ -88,7 +88,7 @@ def clean_server_http(tmp_path):
         "port": test_port,
         "host": test_host,
     }
-    
+
     # Cleanup: stop server
     logger.info("Stopping test server")
     server_process.terminate()
@@ -98,7 +98,7 @@ def clean_server_http(tmp_path):
         logger.warning("Server did not stop gracefully, killing it")
         server_process.kill()
         server_process.wait()
-    
+
     logger.info("Test server cleanup complete")
 
 

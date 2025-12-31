@@ -251,7 +251,7 @@ var changeTileSize = function($id) {
 var resetTracks = function($ul) {
     $ul.removeClass('row');
     $ul.find('li').removeClass().addClass('list-group-item');
-    $ul.find('.track-title').css({'overflow':'visible', 'text-overflow': 'clip', 'white-space': 'normal'});    
+    $ul.find('.track-title').css({'overflow':'visible', 'text-overflow': 'clip', 'white-space': 'normal'});
 }
 
 var changeNumberOfColumns = function($id) {
@@ -297,13 +297,13 @@ var savePDF = function() {
 				notify($('#pdf-save'), '', 'Connection error', 'bg-danger',
 						4000);
 			});
-	
+
 }
 
 $(function() {
 	// fetch the configuration from the database
 	getConfig();
-	
+
 	tileStyle = (function() {
 		// Create the <style> tag
 		var style = document.createElement("style");

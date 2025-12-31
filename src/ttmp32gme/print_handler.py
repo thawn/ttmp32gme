@@ -1,20 +1,23 @@
 """Print handling module for ttmp32gme - creates print layouts."""
 
-import subprocess
 import logging
+import platform
+import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from flask import render_template
 
-from .build.file_handler import get_executable_path, get_default_library_path
-from .tttool_handler import get_sorted_tracks, create_oids
+from .build.file_handler import get_default_library_path, get_executable_path
 from .db_handler import DBHandler
-import platform
+from .tttool_handler import create_oids, get_sorted_tracks
 
 logger = logging.getLogger(__name__)
 
 
-def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
+def format_tracks(
+    album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
+) -> str:
     """Format track list with OID codes for printing.
 
     Args:
@@ -42,7 +45,7 @@ def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_
 
         content += '<li class="list-group-item">'
         content += (
-            f'<table width="100%"><tr><td><div class="img-6mm track-img-container">'
+            '<table width="100%"><tr><td><div class="img-6mm track-img-container">'
         )
         content += (
             f'<img class="img-24mm" src="{oid_path}" alt="oid {oid_code}"></div></td>'
@@ -51,8 +54,11 @@ def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_
         duration_min = track.get("duration", 0) // 60000
         duration_sec = (track.get("duration", 0) // 1000) % 60
 
-        content += f'<td class="track-title">{i+1}. {track.get("title", "")}</td>'
-        content += f'<td class="runtime">(<strong>{duration_min:02d}:{duration_sec:02d}</strong>)</td>'
+        content += f'<td class="track-title">{i + 1}. {track.get("title", "")}</td>'
+        content += (
+            f'<td class="runtime">(<strong>{duration_min:02d}:{duration_sec:02d}'
+            f"</strong>)</td>"
+        )
         content += "</tr></table></li>\n"
 
     return content
@@ -81,7 +87,7 @@ def format_controls(oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -
     )
 
     content = ""
-    for i, (oid_file, oid, icon) in enumerate(zip(oid_files, oids, icons)):
+    for _i, (oid_file, oid, icon) in enumerate(zip(oid_files, oids, icons)):
         oid_path = f"/images/{oid_file.name}"
         # File is automatically served via Flask route in ttmp32gme.py
         content += template.format(oid_path, oid, icon)
@@ -89,7 +95,9 @@ def format_controls(oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -
     return content
 
 
-def format_track_control(track_no: int, oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
+def format_track_control(
+    track_no: int, oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
+) -> str:
     """Format a single track control button.
 
     Args:
@@ -155,10 +163,7 @@ def format_cover(album: Dict[str, Any]) -> str:
 
 
 def create_print_layout(
-    oids: List[int], 
-    template: Any, 
-    config: Dict[str, Any], 
-    db_handler: DBHandler
+    oids: List[int], template: Any, config: Dict[str, Any], db_handler: DBHandler
 ) -> str:
     """Create print layout for selected albums.
 

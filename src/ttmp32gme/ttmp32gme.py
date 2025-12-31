@@ -1,38 +1,34 @@
 """Main ttmp32gme Flask application."""
 
-import os
-import sys
-import sqlite3
-import logging
 import argparse
-from pathlib import Path
-from typing import Dict, Any, Optional
 import json
+import logging
+import os
+from pathlib import Path
+from typing import Any, Dict
 
-from flask import (
-    Flask,
-    request,
-    jsonify,
-    render_template,
-    send_from_directory,
-    Response,
-)
-from werkzeug.utils import secure_filename
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from packaging.version import Version
 from pydantic import ValidationError
+from werkzeug.utils import secure_filename
 
-from .db_handler import DBHandler, AlbumUpdateModel, ConfigUpdateModel, LibraryActionModel
+from . import __version__
 from .build.file_handler import (
     check_config_file,
     get_default_library_path,
-    make_temp_album_dir,
-    get_tiptoi_dir,
-    open_browser,
     get_executable_path,
+    get_tiptoi_dir,
+    make_temp_album_dir,
+    open_browser,
 )
-from .tttool_handler import make_gme, copy_gme, delete_gme_tiptoi
-from .print_handler import create_print_layout, create_pdf, format_print_button
-from . import __version__
+from .db_handler import (
+    AlbumUpdateModel,
+    ConfigUpdateModel,
+    DBHandler,
+    LibraryActionModel,
+)
+from .print_handler import create_pdf, create_print_layout, format_print_button
+from .tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
 # Configure logging
 logging.basicConfig(
@@ -68,7 +64,7 @@ custom_library_path = None
 
 def get_db():
     """Get database handler."""
-    global db_handler, custom_db_path
+    global db_handler
     if db_handler is None:
         if custom_db_path:
             config_file = Path(custom_db_path)
@@ -79,6 +75,7 @@ def get_db():
                 default_config = Path(__file__).parent / "config.sqlite"
                 if default_config.exists():
                     import shutil
+
                     shutil.copy(default_config, config_file)
         else:
             config_file = check_config_file()
@@ -89,9 +86,8 @@ def get_db():
 
 def fetch_config() -> Dict[str, Any]:
     """Fetch configuration from database."""
-    global custom_library_path
     db = get_db()
-    
+
     temp_config = db.get_config()
 
     if not temp_config.get("library_path"):
@@ -137,8 +133,8 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
             from .build.file_handler import copy_library
 
             try:
-                copied = copy_library(Path(config["library_path"]), new_path)
-                db_updated = db.change_library_path(config["library_path"], new_path)
+                copy_library(Path(config["library_path"]), new_path)
+                db.change_library_path(config["library_path"], new_path)
             except Exception as e:
                 answer = f"Error moving library: {e}\nReverting to old path: {config['library_path']}"
                 config_params["library_path"] = config["library_path"]
@@ -212,7 +208,7 @@ def index():
 @app.route("/", methods=["POST"])
 def upload_post():
     """Handle file uploads."""
-    global file_count, album_list, file_list, album_count, current_album
+    global file_count, album_count, current_album
 
     if "qquuid" in request.form:
         if "_method" in request.form:
@@ -315,17 +311,25 @@ def library_post():
                 except ValidationError as e:
                     logger.error(f"Validation error in album update: {e}")
                     return jsonify({"success": False, "error": str(e)}), 400
-                
+
                 old_player_mode = validated_dict.pop("old_player_mode", None)
                 oid = db.update_album(validated_dict)
                 album = db.get_album(oid)
 
-                if old_player_mode and old_player_mode != validated_dict.get("player_mode"):
+                if old_player_mode and old_player_mode != validated_dict.get(
+                    "player_mode"
+                ):
                     make_gme(oid, config, db)
 
                 return jsonify({"success": True, "element": album})
 
-            elif action in ["delete", "cleanup", "make_gme", "copy_gme", "delete_gme_tiptoi"]:
+            elif action in [
+                "delete",
+                "cleanup",
+                "make_gme",
+                "copy_gme",
+                "delete_gme_tiptoi",
+            ]:
                 # Validate action data (requires uid)
                 try:
                     validated_data = LibraryActionModel(**data)
@@ -373,7 +377,7 @@ def library_post():
                 uid_int = int(uid)
             except (ValueError, TypeError):
                 return jsonify({"success": False, "error": "Invalid UID"}), 400
-            
+
             oid = db.replace_cover(uid_int, filename, file_data)
             album = db.get_album(oid)
             return jsonify({"success": True, "uid": album})
@@ -422,7 +426,7 @@ def print_post():
             except ValidationError as e:
                 logger.error(f"Validation error in print config save: {e}")
                 return jsonify({"success": False, "error": str(e)}), 400
-            
+
             new_config, message = save_config(validated_dict)
             if message == "Success.":
                 return jsonify({"success": True, "element": new_config})
@@ -436,7 +440,10 @@ def print_post():
             if pdf_file:
                 return jsonify({"success": True})
             else:
-                return jsonify({"success": False, "error": "PDF generation failed"}), 500
+                return (
+                    jsonify({"success": False, "error": "PDF generation failed"}),
+                    500,
+                )
 
     return jsonify({"success": False, "error": "Invalid action"}), 400
 
@@ -470,7 +477,7 @@ def config_post():
 
     if action == "update":
         data = json.loads(request.form.get("data", "{}"))
-        
+
         # Validate configuration data
         try:
             validated_data = ConfigUpdateModel(**data)
@@ -478,7 +485,7 @@ def config_post():
         except ValidationError as e:
             logger.error(f"Validation error in config update: {e}")
             return jsonify({"success": False, "error": str(e)}), 400
-        
+
         new_config, message = save_config(validated_dict)
 
         if message == "Success.":
@@ -535,7 +542,7 @@ def help_page():
 @app.route("/images/<path:filename>")
 def serve_dynamic_image(filename):
     """Serve dynamically generated images (OID codes, covers, etc.)."""
-    from .build.file_handler import get_oid_cache, get_default_library_path
+    from .build.file_handler import get_oid_cache
 
     # Check OID cache first
     oid_cache = get_oid_cache()
@@ -557,7 +564,7 @@ def serve_dynamic_image(filename):
                 cover_path = album_path / cover_filename
                 if cover_path.exists():
                     return send_from_directory(album_path, cover_filename)
-        except (ValueError, Exception) as e:
+        except Exception as e:
             logger.error(f"Error serving album cover: {e}")
 
     # Return 404 if file not found
@@ -570,30 +577,27 @@ def download_gme(oid):
     try:
         db = get_db()
         result = db.get_gme_file_info(oid)
-        
+
         if not result:
             logger.error(f"Album with OID {oid} not found")
             return "Album not found", 404
-        
+
         album_path, gme_filename = result
-        
+
         if not gme_filename:
             logger.error(f"No GME file for album {oid}")
             return "GME file not created yet", 404
-        
+
         album_dir = Path(album_path)
         gme_path = album_dir / gme_filename
-        
+
         if not gme_path.exists():
             logger.error(f"GME file not found at {gme_path}")
             return "GME file not found on filesystem", 404
-        
+
         logger.info(f"Serving GME file: {gme_filename} from {album_dir}")
         return send_from_directory(
-            album_dir,
-            gme_filename,
-            as_attachment=True,
-            download_name=gme_filename
+            album_dir, gme_filename, as_attachment=True, download_name=gme_filename
         )
     except Exception as e:
         logger.error(f"Error downloading GME file: {e}")
@@ -640,7 +644,7 @@ def main():
         logger.info(f"Using custom library path: {custom_library_path}")
 
     # Initialize database and config
-    config_file = check_config_file() if not custom_db_path else custom_db_path
+    check_config_file() if not custom_db_path else custom_db_path
     db = get_db()
     config = fetch_config()
 

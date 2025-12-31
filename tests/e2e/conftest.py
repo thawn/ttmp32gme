@@ -1,22 +1,22 @@
 """Pytest configuration for end-to-end tests."""
 
-import pytest
-import subprocess
-import time
-import logging
-import tempfile
-import shutil
-from pathlib import Path
-from contextlib import contextmanager
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import WebDriverException, TimeoutException
-from mutagen.easyid3 import EasyID3
-from mutagen.mp3 import MP3
-from mutagen.id3 import APIC
-from PIL import Image
 import io
+import logging
+import shutil
+import tempfile
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+import pytest
+from mutagen.easyid3 import EasyID3
+from mutagen.id3 import APIC
+from mutagen.mp3 import MP3
+from PIL import Image
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def audio_files_context(album_name="Test Album"):
     # Create temporary directory for test files (will be cleaned up by this context manager)
     tmpdir = tempfile.mkdtemp()
     tmp_path = Path(tmpdir)
-    
+
     try:
         # Create multiple copies with different ID3 tags
         test_cases = [
@@ -168,9 +168,7 @@ def clean_server(tmp_path, driver):
     those paths, and cleans up everything after the test completes.
     """
     import subprocess
-    import time
-    import signal
-    import os
+
     from selenium.common.exceptions import WebDriverException
 
     # Create temporary paths

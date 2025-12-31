@@ -1,13 +1,11 @@
 """TtTool handling module for ttmp32gme - creates GME files."""
 
-import os
-import subprocess
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+import os
 import shutil
-
-from ttmp32gme.db_handler import DBHandler
+import subprocess
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from ttmp32gme.build.file_handler import (
     cleanup_filename,
@@ -15,6 +13,7 @@ from ttmp32gme.build.file_handler import (
     get_oid_cache,
     get_tiptoi_dir,
 )
+from ttmp32gme.db_handler import DBHandler
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,7 @@ def generate_codes_yaml(yaml_file: Path, db_handler: DBHandler) -> Path:
 
     Returns:
         Path to generated codes YAML file (.codes.yaml)
-    
+
     Raises:
         RuntimeError: If all script codes (1001-14999) are exhausted
     """
@@ -61,10 +60,10 @@ def generate_codes_yaml(yaml_file: Path, db_handler: DBHandler) -> Path:
             """# This file contains a mapping from script names to oid codes.
 # This way the existing scripts are always assigned to the
 # same codes, even if you add further scripts.
-# 
+#
 # You can copy the contents of this file into the main .yaml file,
 # if you want to have both together.
-# 
+#
 # If you delete this file, the next run of "tttool assemble" might
 # use different codes for your scripts, and you might have to re-
 # create the images for your product.
@@ -118,7 +117,7 @@ def convert_tracks(
 
     Returns:
         Path to media directory containing converted audio files
-        
+
     Raises:
         RuntimeError: If ffmpeg is not found when OGG conversion is requested
     """
@@ -168,25 +167,27 @@ def convert_tracks(
     prev_script = "  prev:\n"
     track_scripts = ""
 
-    for i, track_key in enumerate(tracks):
+    for i, _track_key in enumerate(tracks):
         if i < len(tracks) - 1:
             play_script += f"  - $current=={i}? P({i})"
             play_script += (
-                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i+1})\n"
+                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i + 1})\n"
             )
 
             if i < len(tracks) - 2:
-                next_script += f"  - $current=={i}? $current:={i+1} P({i+1})"
+                next_script += f"  - $current=={i}? $current:={i + 1} P({i + 1})"
                 next_script += (
-                    " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i+2})\n"
+                    " C\n"
+                    if album.get("player_mode") == "tiptoi"
+                    else f" J(t{i + 2})\n"
                 )
             else:
-                next_script += f"  - $current=={i}? $current:={i+1} P({i+1}) C\n"
+                next_script += f"  - $current=={i}? $current:={i + 1} P({i + 1}) C\n"
         else:
             play_script += f"  - $current=={i}? P({i}) C\n"
 
         if i > 0:
-            prev_script += f"  - $current=={i}? $current:={i-1} P({i-1})"
+            prev_script += f"  - $current=={i}? $current:={i - 1} P({i - 1})"
             prev_script += (
                 " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i})\n"
             )
@@ -194,7 +195,7 @@ def convert_tracks(
         if i < len(tracks) - 1:
             track_scripts += f"  t{i}:\n  - $current:={i} P({i})"
             track_scripts += (
-                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i+1})\n"
+                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i + 1})\n"
             )
         else:
             track_scripts += f"  t{i}:\n  - $current:={i} P({i}) C\n"
@@ -252,7 +253,7 @@ def get_tttool_parameters(db_handler: DBHandler) -> Dict[str, str]:
 
     Args:
         db_handler: Database handler instance for accessing configuration
-        
+
     Returns:
         Dictionary mapping parameter names to values (e.g., {'dpi': '1200', 'pixel-size': '2'})
     """
@@ -274,10 +275,10 @@ def get_tttool_command(db_handler: DBHandler) -> List[str]:
 
     Args:
         db_handler: Database handler instance for accessing configuration
-        
+
     Returns:
         Command as list of arguments ready for subprocess execution
-        
+
     Raises:
         RuntimeError: If tttool executable is not found in system PATH
     """
@@ -360,7 +361,7 @@ def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
 
     Returns:
         Album OID
-        
+
     Raises:
         ValueError: If album with specified OID is not found
         RuntimeError: If required tools (tttool, ffmpeg) are not found
@@ -384,7 +385,7 @@ def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     media_path = convert_tracks(album, yaml_file, config, db_handler)
 
     # Generate codes file
-    codes_file = generate_codes_yaml(yaml_file, db_handler)
+    generate_codes_yaml(yaml_file, db_handler)
 
     # Run tttool to assemble GME
     yaml_basename = yaml_file.name

@@ -1,0 +1,21 @@
+[flake8]
+max-line-length = 88
+# Black-compatible options
+# E203: Whitespace before ':' (conflicts with Black)
+# E501: Line too long (handled by Black where possible)
+# W503: Line break before binary operator (conflicts with Black)
+extend-ignore = E203,E501,W503
+
+# Enforce all other errors
+select = E,W,F,B,C
+
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    .eggs,
+    *.egg,
+    .venv,
+    venv,
+    node_modules,

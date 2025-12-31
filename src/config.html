@@ -1,6 +1,6 @@
 <script type="text/javascript">
 var updateConfig = function(caller){
-	
+
 	var configVars = {
 						'host' : $('#host').val(),
 					  'port' : $('#port').val(),
@@ -38,7 +38,7 @@ var fillInElement = function($id, data) {
 }
 
 var loadConfig = function(){
-	
+
 	$.post('/config', 'action=load')
 		   .done( function(data,textStatus,jqXHR) {
 			   if ( data.success ) {

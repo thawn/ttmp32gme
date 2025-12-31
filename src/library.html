@@ -92,7 +92,7 @@
 	var sortBy = 'album_artist';
   var sortBy2 = 'album_title';
 	var elementCount = 0;
-	
+
 	var sortList = function(listA,listB) {
 		var a = '' + listA[sortBy] + listA[sortBy2];
 		var b = '' + listB[sortBy] + listB[sortBy2];
@@ -133,7 +133,7 @@
 
 	var getElementValues = function($id) {
 		var filterVars = {};
-		
+
 		$id.find('li[class*=track_]').each( function(index) {
 			var classList = $(this).attr('class').split(/\s+/);
 			for (var i = 0; i < classList.length; i++) {
@@ -248,7 +248,7 @@
 		$id.find('[data-toggle="tooltip"]').tooltip();
 		$id.find('input.player_mode_' + data['player_mode']).prop('checked', true);
 	}
-	
+
 	function pad(n, width, z) {
 	  z = z || '0';
 	  n = n + '';
@@ -264,13 +264,13 @@
        return results[1] || 0;
     }
 	}
-	
+
 	var hasGME = function($id) {
 		if ($id.find('input[name=gme_file]').val()){
 			return true;
 		} else {return}
 	}
-	
+
 	var triggerElementAction = function(action,$id,uid) {
 		var filterVars = {
 			'uid' : uid
@@ -345,10 +345,10 @@
 		var url = "print?data=" + encodeURIComponent(JSON.stringify({'oids': oids}));
 		window.open(url, '_self');
 	}
-	
+
 	var copyProgress = 0;
 	var totalFilesCopying = 0;
-	
+
 	var setProgress = function() {
 		$('#progress-container').show();
 		var $progressBar = $('#progress').find('.progress-bar');
@@ -364,9 +364,9 @@
 		}
 		$progressBar.attr('aria-valuenow',percentage);
 		$progressBar.css({width: percentage + '%'});
-		$progressBar.find('.sr-only').text(percentage+'% Complete');		
+		$progressBar.find('.sr-only').text(percentage+'% Complete');
 	}
-	
+
 	$( function() {
 		$('[data-toggle="tooltip"]').tooltip();
 
@@ -416,7 +416,7 @@
 		});
 		// Grab the list of albums.
 		listElements();
-		
+
 		if ($.urlParam('oid')) {
 			toggleShow($('#albums').find('input[value="'+$.urlParam('oid')+'"]').parents('div.edit'));
 		}

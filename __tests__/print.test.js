@@ -71,9 +71,9 @@ describe('print.js utility functions', () => {
       global.$ = jest.fn(() => ({
         is: mockIs
       }));
-      
+
       const result = testCheckBox('input[type="checkbox"]');
-      
+
       expect(result).toBe('TRUE');
       expect(mockIs).toHaveBeenCalledWith(':checked');
     });
@@ -84,9 +84,9 @@ describe('print.js utility functions', () => {
       global.$ = jest.fn(() => ({
         is: mockIs
       }));
-      
+
       const result = testCheckBox('input[type="checkbox"]');
-      
+
       expect(result).toBe('FALSE');
       expect(mockIs).toHaveBeenCalledWith(':checked');
     });
@@ -101,15 +101,15 @@ describe('print.js utility functions', () => {
       const mockNext = jest.fn().mockReturnValue(mockPopover);
       const mockAttr = jest.fn();
       const mockPopoverFunc = jest.fn();
-      
+
       const mockCaller = {
         attr: mockAttr,
         popover: mockPopoverFunc,
         next: mockNext
       };
-      
+
       notify(mockCaller, 'Test Title', 'Test Message', 'bg-success', 1000);
-      
+
       expect(mockAttr).toHaveBeenCalledWith({
         'title': 'Test Title',
         'data-content': 'Test Message'
@@ -127,19 +127,19 @@ describe('print.js utility functions', () => {
       const mockNext = jest.fn().mockReturnValue(mockPopover);
       const mockAttr = jest.fn();
       const mockPopoverFunc = jest.fn();
-      
+
       const mockCaller = {
         attr: mockAttr,
         popover: mockPopoverFunc,
         next: mockNext
       };
-      
+
       notify(mockCaller, '', 'Test', 'bg-info', 2000);
-      
+
       expect(mockPopoverFunc).toHaveBeenCalledWith('show');
-      
+
       jest.advanceTimersByTime(2000);
-      
+
       expect(mockPopoverFunc).toHaveBeenCalledWith('destroy');
     });
   });
@@ -152,13 +152,13 @@ describe('print.js utility functions', () => {
         not: mockNot,
         each: mockEach
       }));
-      
+
       const mockId = {
         find: mockFind
       };
-      
+
       getElementValues(mockId);
-      
+
       expect(mockFind).toHaveBeenCalledWith('input');
       expect(mockNot).toHaveBeenCalledWith(':button');
     });
@@ -170,7 +170,7 @@ describe('print.js utility functions', () => {
       const mockStyle = {
         innerHTML: ''
       };
-      
+
       // Simulate what the function does
       const cssPagedMedia = function(rule) {
         mockStyle.innerHTML = rule;
