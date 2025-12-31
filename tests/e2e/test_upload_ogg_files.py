@@ -2,8 +2,6 @@
 
 import logging
 import shutil
-import sqlite3
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -12,24 +10,14 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 # Import fixtures and helpers from conftest
-from .conftest import _upload_album_files, audio_files_context, ogg_audio_files_context
+from .conftest import (
+    _get_database_value,
+    _upload_album_files,
+    audio_files_context,
+    ogg_audio_files_context,
+)
 
 logger = logging.getLogger(__name__)
-
-
-def _get_database_value(query, params=(), db_path=None):
-    """Helper to query database directly."""
-    if db_path is None:
-        db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
-    if not db_path.exists():
-        return None
-
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    result = cursor.fetchone()
-    conn.close()
-    return result
 
 
 @pytest.mark.e2e
@@ -110,31 +98,40 @@ class TestOggFileUpload:
         assert result[0] == album_name, f"Expected album title '{album_name}', got '{result[0]}'"
 
         # Check track metadata in database
+        import sqlite3
         conn = sqlite3.connect(str(server_info["db_path"]))
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT title, artist FROM tracks WHERE album = ? ORDER BY track",
+            "SELECT title, artist, track FROM tracks WHERE album = ? ORDER BY track",
             (album_name,),
         )
         tracks = cursor.fetchall()
         conn.close()
 
         # Verify we have tracks
-        assert len(tracks) >= 1, "No tracks found in database"
+        assert len(tracks) == 3, f"Expected 3 tracks, got {len(tracks)}"
         
-        # Verify first track has correct metadata
-        first_track_title = tracks[0][0]
-        first_track_artist = tracks[0][1]
+        # Expected tag values based on audio_files_context fixture
+        expected_tracks = [
+            {"title": "Test Track 1", "artist": "Test Artist", "track": 1},
+            {"title": "Test Track 2", "artist": "", "track": 2},  # Minimal tags - no artist
+            {"title": "track3_no_tags.mp3", "artist": "", "track": 3},  # No tags - filename as title
+        ]
         
-        # First track should have full tags (using values from audio_files_context)
-        assert first_track_title, "Track title should not be empty"
-        assert "Test Track 1" in first_track_title, (
-            f"Expected track title to contain 'Test Track 1', got '{first_track_title}'"
-        )
-        assert first_track_artist, "Track artist should not be empty"
-        assert "Test Artist" in first_track_artist, (
-            f"Expected artist to contain 'Test Artist', got '{first_track_artist}'"
-        )
+        # Verify all tracks have correct metadata
+        for i, (title, artist, track_num) in enumerate(tracks):
+            expected = expected_tracks[i]
+            assert track_num == expected["track"], (
+                f"Track {i+1}: Expected track number {expected['track']}, got {track_num}"
+            )
+            assert title, f"Track {i+1}: Title should not be empty"
+            assert expected["title"] in title, (
+                f"Track {i+1}: Expected title to contain '{expected['title']}', got '{title}'"
+            )
+            if expected["artist"]:
+                assert expected["artist"] in artist, (
+                    f"Track {i+1}: Expected artist to contain '{expected['artist']}', got '{artist}'"
+                )
 
         # Check metadata in UI
         driver.get(f"{server_info['url']}/library")
@@ -161,62 +158,48 @@ class TestOggFileUpload:
         cover_files = list(library_path.rglob("*.jpg"))
         assert len(cover_files) > 0, "Cover image not uploaded with OGG files"
 
-    def test_mixed_ogg_and_mp3_upload(self, driver, clean_server):
+    def test_mixed_ogg_and_mp3_upload(self, driver, clean_server, tmp_path):
         """Test uploading album with both OGG and MP3 files."""
         server_info = clean_server
         album_name = "Mixed Audio Album"
         
         # Collect both MP3 and OGG files
         all_files = []
-        tmpdir = None
         
-        try:
-            # Create temp directory inside try block for proper cleanup
-            tmpdir = tempfile.mkdtemp()
-            tmp_path = Path(tmpdir)
-            
-            # Get MP3 files
-            with audio_files_context(album_name=album_name) as mp3_files:
-                mp3_audio = [f for f in mp3_files if f.suffix.lower() == ".mp3"]
-                # Copy MP3 files to a safe location (they'll be cleaned up by context)
-                for mp3 in mp3_audio[:1]:  # Just take one MP3 file
-                    safe_mp3 = tmp_path / f"mp3_{mp3.name}"
-                    shutil.copy(mp3, safe_mp3)
-                    all_files.append(safe_mp3)
-            
-            # Get OGG files
-            with ogg_audio_files_context(album_name=album_name) as ogg_files:
-                ogg_audio = [f for f in ogg_files if f.suffix.lower() == ".ogg"]
-                for ogg in ogg_audio[:1]:  # Just take one OGG file
-                    safe_ogg = tmp_path / f"ogg_{ogg.name}"
-                    shutil.copy(ogg, safe_ogg)
-                    all_files.append(safe_ogg)
-            
-            # Upload mixed files
-            _upload_album_files(driver, server_info["url"], all_files, audio_only=True)
-            
-            # Verify upload
-            if "/library" not in driver.current_url:
-                driver.get(f"{server_info['url']}/library")
-            
-            WebDriverWait(driver, 5).until(
-                lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
-            )
-            
-            # Check files were uploaded
-            library_path = server_info["library_path"] / album_name.replace(" ", "_")
-            assert library_path.exists(), "Album directory not found"
-            
-            mp3_count = len(list(library_path.glob("*.mp3")))
-            ogg_count = len(list(library_path.glob("*.ogg")))
-            
-            # Should have both types
-            assert mp3_count > 0 or ogg_count > 0, "No audio files found after mixed upload"
-            
-        finally:
-            # Cleanup temp directory
-            if tmpdir:
-                try:
-                    shutil.rmtree(tmpdir)
-                except Exception as e:
-                    print(f"Warning: Could not cleanup temp dir: {e}")
+        # Get MP3 files
+        with audio_files_context(album_name=album_name) as mp3_files:
+            mp3_audio = [f for f in mp3_files if f.suffix.lower() == ".mp3"]
+            # Copy MP3 files to a safe location (they'll be cleaned up by pytest)
+            for mp3 in mp3_audio[:1]:  # Just take one MP3 file
+                safe_mp3 = tmp_path / f"mp3_{mp3.name}"
+                shutil.copy(mp3, safe_mp3)
+                all_files.append(safe_mp3)
+        
+        # Get OGG files
+        with ogg_audio_files_context(album_name=album_name) as ogg_files:
+            ogg_audio = [f for f in ogg_files if f.suffix.lower() == ".ogg"]
+            for ogg in ogg_audio[:1]:  # Just take one OGG file
+                safe_ogg = tmp_path / f"ogg_{ogg.name}"
+                shutil.copy(ogg, safe_ogg)
+                all_files.append(safe_ogg)
+        
+        # Upload mixed files
+        _upload_album_files(driver, server_info["url"], all_files, audio_only=True)
+        
+        # Verify upload
+        if "/library" not in driver.current_url:
+            driver.get(f"{server_info['url']}/library")
+        
+        WebDriverWait(driver, 5).until(
+            lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
+        )
+        
+        # Check files were uploaded
+        library_path = server_info["library_path"] / album_name.replace(" ", "_")
+        assert library_path.exists(), "Album directory not found"
+        
+        mp3_count = len(list(library_path.glob("*.mp3")))
+        ogg_count = len(list(library_path.glob("*.ogg")))
+        
+        # Should have both types
+        assert mp3_count > 0 or ogg_count > 0, "No audio files found after mixed upload"

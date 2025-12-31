@@ -318,6 +318,23 @@ def clean_server(tmp_path, driver):
     logger.info("Test server cleanup complete")
 
 
+def _get_database_value(query, params=(), db_path=None):
+    """Helper to query database directly."""
+    import sqlite3
+    
+    if db_path is None:
+        db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
+    if not db_path.exists():
+        return None
+
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
+
 def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
     """Helper to upload album files through UI."""
     print(f"DEBUG: Navigating to {server_url}")

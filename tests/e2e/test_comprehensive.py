@@ -14,24 +14,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 # Import fixtures and helpers from conftest
-from .conftest import _upload_album_files, audio_files_context
+from .conftest import _get_database_value, _upload_album_files, audio_files_context
 
 logger = logging.getLogger(__name__)
-
-
-def _get_database_value(query, params=(), db_path=None):
-    """Helper to query database directly."""
-    if db_path is None:
-        db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
-    if not db_path.exists():
-        return None
-
-    conn = sqlite3.connect(str(db_path))
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    result = cursor.fetchone()
-    conn.close()
-    return result
 
 
 def _open_library_element_for_editing(server_url, driver, element_number: int = 0):
