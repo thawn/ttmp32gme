@@ -282,8 +282,6 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 
 ## ToDo
 
-* add a download button to the web frontend that allows downloading the gme files if they were created
-  * add a corresponding end-to-end test that first creates the gme and then downloads it
 * change the docker setup in build/docker/ to work with the new python backend
   * base image: ignore ttmp32gme-deps, it is for the old perl setup. Instead use a modern, slim python container
   * set up the dependencies like it is done in .github/workflows/e2e-tests.yml but without the selenium testing dependencies (chrome and chromedriver)
