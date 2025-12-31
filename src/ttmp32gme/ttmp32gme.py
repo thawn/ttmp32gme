@@ -4,14 +4,11 @@ import argparse
 import json
 import logging
 import os
-import sqlite3
-import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from flask import (
     Flask,
-    Response,
     jsonify,
     render_template,
     request,
@@ -73,7 +70,7 @@ custom_library_path = None
 
 def get_db():
     """Get database handler."""
-    global db_handler, custom_db_path
+    global db_handler
     if db_handler is None:
         if custom_db_path:
             config_file = Path(custom_db_path)
@@ -95,7 +92,6 @@ def get_db():
 
 def fetch_config() -> Dict[str, Any]:
     """Fetch configuration from database."""
-    global custom_library_path
     db = get_db()
 
     temp_config = db.get_config()
@@ -143,8 +139,8 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
             from .build.file_handler import copy_library
 
             try:
-                copied = copy_library(Path(config["library_path"]), new_path)
-                db_updated = db.change_library_path(config["library_path"], new_path)
+                copy_library(Path(config["library_path"]), new_path)
+                db.change_library_path(config["library_path"], new_path)
             except Exception as e:
                 answer = f"Error moving library: {e}\nReverting to old path: {config['library_path']}"
                 config_params["library_path"] = config["library_path"]
@@ -218,7 +214,7 @@ def index():
 @app.route("/", methods=["POST"])
 def upload_post():
     """Handle file uploads."""
-    global file_count, album_list, file_list, album_count, current_album
+    global file_count, album_count, current_album
 
     if "qquuid" in request.form:
         if "_method" in request.form:
@@ -552,7 +548,7 @@ def help_page():
 @app.route("/images/<path:filename>")
 def serve_dynamic_image(filename):
     """Serve dynamically generated images (OID codes, covers, etc.)."""
-    from .build.file_handler import get_default_library_path, get_oid_cache
+    from .build.file_handler import get_oid_cache
 
     # Check OID cache first
     oid_cache = get_oid_cache()
@@ -574,7 +570,7 @@ def serve_dynamic_image(filename):
                 cover_path = album_path / cover_filename
                 if cover_path.exists():
                     return send_from_directory(album_path, cover_filename)
-        except (ValueError, Exception) as e:
+        except Exception as e:
             logger.error(f"Error serving album cover: {e}")
 
     # Return 404 if file not found
@@ -654,7 +650,7 @@ def main():
         logger.info(f"Using custom library path: {custom_library_path}")
 
     # Initialize database and config
-    config_file = check_config_file() if not custom_db_path else custom_db_path
+    check_config_file() if not custom_db_path else custom_db_path
     db = get_db()
     config = fetch_config()
 

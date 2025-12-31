@@ -5,7 +5,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from ttmp32gme.build.file_handler import (
     cleanup_filename,
@@ -167,25 +167,27 @@ def convert_tracks(
     prev_script = "  prev:\n"
     track_scripts = ""
 
-    for i, track_key in enumerate(tracks):
+    for i, _track_key in enumerate(tracks):
         if i < len(tracks) - 1:
             play_script += f"  - $current=={i}? P({i})"
             play_script += (
-                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i+1})\n"
+                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i + 1})\n"
             )
 
             if i < len(tracks) - 2:
-                next_script += f"  - $current=={i}? $current:={i+1} P({i+1})"
+                next_script += f"  - $current=={i}? $current:={i + 1} P({i + 1})"
                 next_script += (
-                    " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i+2})\n"
+                    " C\n"
+                    if album.get("player_mode") == "tiptoi"
+                    else f" J(t{i + 2})\n"
                 )
             else:
-                next_script += f"  - $current=={i}? $current:={i+1} P({i+1}) C\n"
+                next_script += f"  - $current=={i}? $current:={i + 1} P({i + 1}) C\n"
         else:
             play_script += f"  - $current=={i}? P({i}) C\n"
 
         if i > 0:
-            prev_script += f"  - $current=={i}? $current:={i-1} P({i-1})"
+            prev_script += f"  - $current=={i}? $current:={i - 1} P({i - 1})"
             prev_script += (
                 " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i})\n"
             )
@@ -193,7 +195,7 @@ def convert_tracks(
         if i < len(tracks) - 1:
             track_scripts += f"  t{i}:\n  - $current:={i} P({i})"
             track_scripts += (
-                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i+1})\n"
+                " C\n" if album.get("player_mode") == "tiptoi" else f" J(t{i + 1})\n"
             )
         else:
             track_scripts += f"  t{i}:\n  - $current:={i} P({i}) C\n"
@@ -383,7 +385,7 @@ def make_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     media_path = convert_tracks(album, yaml_file, config, db_handler)
 
     # Generate codes file
-    codes_file = generate_codes_yaml(yaml_file, db_handler)
+    generate_codes_yaml(yaml_file, db_handler)
 
     # Run tttool to assemble GME
     yaml_basename = yaml_file.name

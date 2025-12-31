@@ -1,10 +1,9 @@
 """Tests for tttool_handler module (requires tttool to be installed)."""
 
-import shutil
 import sqlite3
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import yaml
@@ -15,7 +14,6 @@ from ttmp32gme.tttool_handler import (
     generate_codes_yaml,
     get_tttool_parameters,
     make_gme,
-    run_tttool,
 )
 
 

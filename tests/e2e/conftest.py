@@ -3,7 +3,6 @@
 import io
 import logging
 import shutil
-import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
@@ -14,7 +13,7 @@ from mutagen.easyid3 import EasyID3
 from mutagen.id3 import APIC
 from mutagen.mp3 import MP3
 from PIL import Image
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -168,10 +167,7 @@ def clean_server(tmp_path, driver):
     This fixture creates temporary database and library paths, starts a server with
     those paths, and cleans up everything after the test completes.
     """
-    import os
-    import signal
     import subprocess
-    import time
 
     from selenium.common.exceptions import WebDriverException
 

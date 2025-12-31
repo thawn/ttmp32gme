@@ -1,15 +1,13 @@
 """Comprehensive end-to-end tests for ttmp32gme with real audio files."""
 
 import logging
-import shutil
 import sqlite3
 import subprocess
-import tempfile
 import time
 from pathlib import Path
 
 import pytest
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
@@ -55,7 +53,6 @@ def _open_library_element_for_editing(server_url, driver, element_number: int = 
 
 def _create_gme(server_url, driver, element_number=0):
     library_row = _open_library_element_for_editing(server_url, driver, element_number)
-    edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
     create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
     create_button.click()
     time.sleep(5)  #
@@ -130,11 +127,12 @@ class TestRealFileUpload:
                 lambda d: album_name in d.find_element(By.TAG_NAME, "body").text
             )
             print("DEBUG: Album found in library page")
-        except:
+        except Exception:
             # If timeout, print debug info
             body_text = driver.find_element(By.TAG_NAME, "body").text
             print(
-                f"DEBUG: Timeout waiting for album. Library page text: {body_text[:500]}"
+                f"DEBUG: Timeout waiting for album. "
+                f"Library page text: {body_text[:500]}"
             )
             raise
 
@@ -318,11 +316,13 @@ class TestWebInterface:
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
-        old_value = _get_database_value(
+        # Use opposite of current value for testing
+        # old_value is stored but not used in this simplified test
+        _get_database_value(
             "SELECT value FROM config WHERE param ='audio_format'",
             db_path=server_info["db_path"],
         )[0]
-        new_value = "ogg" if old_value == "mp3" else "mp3"
+        # new_value = "ogg" if old_value == "mp3" else "mp3"
 
         # Change configuration options and save
         # Example: change audio format
@@ -349,8 +349,9 @@ class TestWebInterface:
         _create_gme(server_info["url"], driver)
         time.sleep(2)  # Wait for GME creation to complete
 
-        # Get original library path and album info from database
-        old_library_path = _get_database_value(
+        # Get album info from database
+        # old_library_path is not used but kept for reference
+        _get_database_value(
             "SELECT value FROM config WHERE param = 'library_path'",
             db_path=server_info["db_path"],
         )[0]
@@ -398,25 +399,29 @@ class TestWebInterface:
             "SELECT value FROM config WHERE param = 'library_path'",
             db_path=server_info["db_path"],
         )[0]
-        assert new_config_path == str(
-            new_library_path
-        ), f"Library path not updated in config. Expected {new_library_path}, got {new_config_path}"
+        assert new_config_path == str(new_library_path), (
+            f"Library path not updated in config. "
+            f"Expected {new_library_path}, got {new_config_path}"
+        )
 
         # Verify album path updated in gme_library table
-        new_album_path_from_db = _get_database_value(
+        # Store but don't use yet - may be needed for debugging
+        _get_database_value(
             "SELECT path FROM gme_library WHERE oid = ?",
             params=(album_oid,),
             db_path=server_info["db_path"],
         )[0]
 
-        # The files are copied to the new library location with directory structure preserved
-        # The album directory name should be the same as before
+        # The files are copied to the new library location with directory structure
+        # preserved. The album directory name should be the same as before
         album_dir_name = Path(album_path).name
         new_album_dir = new_library_path / album_dir_name
+        # Check if files exist in new location
         if new_album_dir.exists():
-            all_files = list(new_album_dir.glob("*"))
+            list(new_album_dir.glob("*"))
 
-        # The database path may not be correct due to a bug, but files should still be moved
+        # The database path may not be correct due to a bug, but files should still
+        # be moved
         assert (
             new_album_dir.exists()
         ), f"Album directory not found at new location: {new_album_dir}"
@@ -434,10 +439,10 @@ class TestWebInterface:
         # Note: We skip checking if the database path is perfectly correct as there may be a bug in change_library_path
         # The important thing is that files are moved and the application still works
 
-        # Verify old location doesn't have the files anymore (they were copied, so original may still exist)
-        # Just log this for information
+        # Verify old location doesn't have the files anymore (they were copied, so
+        # original may still exist). Just log this for information
         if old_album_dir.exists():
-            old_remaining_files = list(old_album_dir.glob("*"))
+            list(old_album_dir.glob("*"))
 
         # Test that GME can still be created after move
         # First update the database to point to the correct album directory
@@ -857,14 +862,17 @@ class TestWebInterface:
         def _check_layout(
             album_element: WebElement,
             layout: str = "list",
-            class_name: list[str] = [
-                "cover",
-                "album-info",
-                "album-controls",
-                "tracks",
-                "general-controls",
-            ],
+            class_name: list | None = None,
         ):
+            if class_name is None:
+                class_name = [
+                    "cover",
+                    "album-info",
+                    "album-controls",
+                    "tracks",
+                    "general-controls",
+                ]
+
             if layout == "list":
                 # Default list layout: cover, album-info, album-controls and tracks visible
                 should_be_hidden = [False, False, False, False, True]

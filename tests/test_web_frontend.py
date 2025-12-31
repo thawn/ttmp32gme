@@ -6,7 +6,6 @@ These tests verify that the web pages load correctly
 import logging
 import subprocess
 import time
-from pathlib import Path
 
 import pytest
 import requests

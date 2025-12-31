@@ -45,7 +45,7 @@ def format_tracks(
 
         content += '<li class="list-group-item">'
         content += (
-            f'<table width="100%"><tr><td><div class="img-6mm track-img-container">'
+            '<table width="100%"><tr><td><div class="img-6mm track-img-container">'
         )
         content += (
             f'<img class="img-24mm" src="{oid_path}" alt="oid {oid_code}"></div></td>'
@@ -54,8 +54,11 @@ def format_tracks(
         duration_min = track.get("duration", 0) // 60000
         duration_sec = (track.get("duration", 0) // 1000) % 60
 
-        content += f'<td class="track-title">{i+1}. {track.get("title", "")}</td>'
-        content += f'<td class="runtime">(<strong>{duration_min:02d}:{duration_sec:02d}</strong>)</td>'
+        content += f'<td class="track-title">{i + 1}. {track.get("title", "")}</td>'
+        content += (
+            f'<td class="runtime">(<strong>{duration_min:02d}:{duration_sec:02d}'
+            f"</strong>)</td>"
+        )
         content += "</tr></table></li>\n"
 
     return content
@@ -84,7 +87,7 @@ def format_controls(oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -
     )
 
     content = ""
-    for i, (oid_file, oid, icon) in enumerate(zip(oid_files, oids, icons)):
+    for _i, (oid_file, oid, icon) in enumerate(zip(oid_files, oids, icons)):
         oid_path = f"/images/{oid_file.name}"
         # File is automatically served via Flask route in ttmp32gme.py
         content += template.format(oid_path, oid, icon)

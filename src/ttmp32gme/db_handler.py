@@ -14,7 +14,6 @@ from pydantic import BaseModel, Field, field_validator
 
 from .build.file_handler import (
     cleanup_filename,
-    clear_album,
     make_new_album_dir,
     remove_album,
 )
@@ -775,10 +774,10 @@ class DBHandler:
                 album_data, track_data, picture_data, album_path
             )
 
-            logger.info(f"Album {album_idx}: Successfully written to database")
+            logger.info("Album %s: Successfully written to database", album_idx)
             shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)
 
-        logger.info(f"create_library_entry: Completed processing all albums")
+        logger.info("create_library_entry: Completed processing all albums")
         return True
 
     def db_row_to_album(self, row: sqlite3.Row) -> Dict[str, Any]:

@@ -1,12 +1,8 @@
 """Unit tests for build.file_handler module."""
 
-import os
-import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import patch
 
 from ttmp32gme.build.file_handler import (
     cleanup_filename,

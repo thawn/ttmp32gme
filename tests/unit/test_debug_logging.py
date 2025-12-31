@@ -4,8 +4,6 @@ import logging
 import sys
 from pathlib import Path
 
-import pytest
-
 # Add src to path to import ttmp32gme
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
@@ -90,7 +88,7 @@ def test_logger_used_in_fetch_config(caplog):
 
             # Fetch config (should log debug message)
             with caplog.at_level(logging.DEBUG, logger="ttmp32gme.ttmp32gme"):
-                config = ttmp32gme.fetch_config()
+                ttmp32gme.fetch_config()
 
             # Should see debug message about fetched config
             assert any("Fetched config" in record.message for record in caplog.records)
