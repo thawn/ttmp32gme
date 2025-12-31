@@ -1,0 +1,25 @@
+name: Docker Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag (e.g., v1.2.3 or latest)'
+        required: true
+        default: 'latest'
+
+permissions:
+  contents: read
+
+jobs:
+  docker-build-test-push:
+    name: Build, Test, and Push to Docker Hub
+    uses: ./.github/workflows/docker-build-test.yml
+    with:
+      push_to_registry: true
+      image_tag: ${{ github.event.release.tag_name || github.event.inputs.tag || 'latest' }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
