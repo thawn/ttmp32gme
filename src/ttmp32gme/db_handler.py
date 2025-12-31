@@ -818,6 +818,24 @@ class DBHandler:
 
         return albums
 
+    def get_gme_file_info(self, oid: int) -> Optional[Tuple[str, str]]:
+        """Get GME file path and filename for an album.
+
+        Args:
+            oid: Album OID
+
+        Returns:
+            Tuple of (album_path, gme_filename) or None if album not found
+        """
+        query = "SELECT path, gme_file FROM gme_library WHERE oid=?"
+        params = (oid,)
+        row = self.fetchone(query, params)
+
+        if not row:
+            return None
+
+        return (row[0], row[1])
+
     def update_tracks(
         self, tracks: List[Dict[str, Any]], parent_oid: int, new_parent_oid: int
     ) -> bool:

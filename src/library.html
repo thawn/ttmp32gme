@@ -218,8 +218,10 @@
 		}
 		if (data.gme_file) {
 			$id.find('button.print').show();
+			$id.find('button.download-gme').prop('disabled', false).addClass('active');
 		} else {
 			$id.find('button.print').hide();
+			$id.find('button.download-gme').prop('disabled', true).removeClass('active');
 		}
 		$id.find('input[name=old_oid]').val(data.oid);
 		$id.find('button').data('item-id', $id);
@@ -393,6 +395,10 @@
 		});
 		$('#albums').on('click','button.print',function() {
 			printAlbums([$(this).data('item-id').find('input[name=old_oid]').val()]);
+		});
+		$('#albums').on('click','button.download-gme',function() {
+			var oid = $(this).data('item-id').find('input[name=old_oid]').val();
+			window.location.href = '/download_gme/' + oid;
 		});
 		$('#albums').on('click', 'button.cancel', function() {
 			toggleShow($(this).data('item-id'));
@@ -669,7 +675,13 @@
 										</div>
 
 										<div class="form-group">
-											<label for="gme_file">GME file:</label> <input type="text" name="gme_file" class="form-control" disabled>
+											<label for="gme_file">GME file:</label>
+											<div class="input-group">
+												<input type="text" name="gme_file" class="form-control" disabled>
+												<span class="input-group-btn">
+													<button type="button" class="btn btn-info download-gme" disabled>Download</button>
+												</span>
+											</div>
 										</div>
 										<div class="form-group">
 											<label for="path">Path:</label> <input type="text" name="path" class="form-control" disabled>
