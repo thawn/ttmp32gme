@@ -1,0 +1,162 @@
+name: Docker Build and Test (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      push_to_registry:
+        description: 'Whether to push the image to Docker Hub'
+        required: false
+        type: boolean
+        default: false
+      image_tag:
+        description: 'Docker image tag to use'
+        required: false
+        type: string
+        default: 'test'
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: false
+      DOCKERHUB_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  docker-build-test:
+    name: Build and Test Docker Image
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for setuptools-scm version detection
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: ${{ inputs.push_to_registry }}
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: thawn/ttmp32gme
+        tags: |
+          type=raw,value=${{ inputs.image_tag }}
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=sha,prefix=git-
+
+    - name: Build and test Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./build/docker/Dockerfile
+        target: test
+        push: false
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Build production Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./build/docker/Dockerfile
+        target: production
+        push: false
+        load: true
+        tags: ttmp32gme:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker container - Start container
+      run: |
+        # Start container in background
+        docker run -d \
+          --name ttmp32gme-test \
+          -p 8080:8080 \
+          ttmp32gme:test
+
+        # Wait for container to start
+        echo "Waiting for container to start..."
+        sleep 10
+
+        # Check container is running
+        if ! docker ps | grep ttmp32gme-test; then
+          echo "Error: Container failed to start"
+          docker logs ttmp32gme-test
+          exit 1
+        fi
+
+    - name: Test Docker container - Health check
+      run: |
+        # Wait for application to be ready
+        echo "Checking application health..."
+        max_attempts=30
+        attempt=0
+
+        while [ $attempt -lt $max_attempts ]; do
+          if curl -f http://localhost:8080/ > /dev/null 2>&1; then
+            echo "Application is responding!"
+            break
+          fi
+          attempt=$((attempt + 1))
+          echo "Attempt $attempt/$max_attempts - waiting..."
+          sleep 2
+        done
+
+        if [ $attempt -eq $max_attempts ]; then
+          echo "Error: Application failed to respond after $max_attempts attempts"
+          docker logs ttmp32gme-test
+          exit 1
+        fi
+
+    - name: Test Docker container - Basic functionality
+      run: |
+        # Test that the main page loads
+        echo "Testing main page..."
+        curl -f http://localhost:8080/ | grep -q "ttmp32gme" || {
+          echo "Error: Main page doesn't contain expected content"
+          exit 1
+        }
+
+        # Test that static assets are served
+        echo "Testing static assets..."
+        curl -f http://localhost:8080/assets/css/style.css > /dev/null || {
+          echo "Warning: Could not load static CSS (may not exist yet)"
+        }
+
+        echo "Basic functionality tests passed!"
+
+    - name: Show container logs
+      if: always()
+      run: |
+        echo "=== Container logs ==="
+        docker logs ttmp32gme-test || true
+
+    - name: Stop test container
+      if: always()
+      run: |
+        docker stop ttmp32gme-test || true
+        docker rm ttmp32gme-test || true
+
+    - name: Build and push to Docker Hub
+      if: ${{ inputs.push_to_registry }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./build/docker/Dockerfile
+        target: production
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

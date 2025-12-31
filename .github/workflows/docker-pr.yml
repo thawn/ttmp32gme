@@ -1,0 +1,24 @@
+name: Docker PR Build
+
+on:
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'build/docker/**'
+      - 'docker-compose.yml'
+      - 'build-docker.sh'
+      - 'docker-push.sh'
+      - 'src/**'
+      - 'pyproject.toml'
+      - '.github/workflows/docker-*.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  docker-build-and-test:
+    name: Build and Test Docker Image
+    uses: ./.github/workflows/docker-build-test.yml
+    with:
+      push_to_registry: false
+      image_tag: pr-${{ github.event.pull_request.number }}

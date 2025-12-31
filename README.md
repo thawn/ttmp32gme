@@ -268,6 +268,7 @@ pytest tests/ -v --html=report.html --self-contained-html
 All tests run automatically on GitHub Actions for pull requests and pushes to main branches:
 - **JavaScript tests**: Run on Node.js 18.x and 20.x
 - **Python tests**: Run on Python 3.11, 3.12, and 3.13
+- **Docker builds**: Automatically build and test Docker images on PRs; push to Docker Hub on releases
 
 
 ## Web Links
