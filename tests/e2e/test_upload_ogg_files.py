@@ -80,7 +80,7 @@ class TestOggFileUpload:
         # Verify album appears in library - check for album name or any track title
         body_text = driver.find_element(By.TAG_NAME, "body").text
         assert (
-            album_name in body_text or "Test OGG Track 1" in body_text or "Test OGG Track 2" in body_text
+            album_name in body_text or "Test Track 1" in body_text or "Test Track 2" in body_text
         ), f"Album not found in library. Page text: {body_text[:200]}"
         
         library_path = server_info["library_path"]
@@ -126,14 +126,14 @@ class TestOggFileUpload:
         first_track_title = tracks[0][0]
         first_track_artist = tracks[0][1]
         
-        # First track should have full tags (be more explicit about what we're checking)
+        # First track should have full tags (using values from audio_files_context)
         assert first_track_title, "Track title should not be empty"
-        assert "Test OGG Track 1" in first_track_title, (
-            f"Expected track title to contain 'Test OGG Track 1', got '{first_track_title}'"
+        assert "Test Track 1" in first_track_title, (
+            f"Expected track title to contain 'Test Track 1', got '{first_track_title}'"
         )
         assert first_track_artist, "Track artist should not be empty"
-        assert "Test OGG Artist" in first_track_artist, (
-            f"Expected artist to contain 'Test OGG Artist', got '{first_track_artist}'"
+        assert "Test Artist" in first_track_artist, (
+            f"Expected artist to contain 'Test Artist', got '{first_track_artist}'"
         )
 
         # Check metadata in UI
@@ -144,7 +144,7 @@ class TestOggFileUpload:
 
         body_text = driver.find_element(By.TAG_NAME, "body").text
         assert album_name in body_text, f"Album name '{album_name}' not found in UI"
-        assert "Test OGG Artist" in body_text, "Artist name not found in UI"
+        assert "Test Artist" in body_text, "Artist name not found in UI"
 
     def test_ogg_separate_cover_upload(self, driver, clean_server):
         """Test uploading separate cover image files with OGG files."""
