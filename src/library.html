@@ -636,7 +636,6 @@
 										<button type="button" class="btn btn-success make-gme">Create GME</button>
 										<button type="button" class="btn btn-success needs-tiptoi" style="display: none;">Copy GME to TipToi</button>
 										<button type="button" class="btn btn-success print" style="display: none;">Print</button>
-										<button type="button" class="btn btn-info download-gme" style="display: none;">Download GME</button>
 										<button type="button" class="btn btn-warning cleanup" style="display: none;">CleanUp</button>
 										<button type="button" class="btn btn-danger delete">Delete</button>
 										<button type="button" class="btn btn-info cancel">Cancel</button>
@@ -676,7 +675,13 @@
 										</div>
 
 										<div class="form-group">
-											<label for="gme_file">GME file:</label> <input type="text" name="gme_file" class="form-control" disabled>
+											<label for="gme_file">GME file:</label>
+											<div class="input-group">
+												<input type="text" name="gme_file" class="form-control" disabled>
+												<span class="input-group-btn">
+													<button type="button" class="btn btn-info download-gme" style="display: none;">Download</button>
+												</span>
+											</div>
 										</div>
 										<div class="form-group">
 											<label for="path">Path:</label> <input type="text" name="path" class="form-control" disabled>
