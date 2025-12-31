@@ -408,8 +408,8 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
 
     if len(file_inputs) > 0:
         if audio_only:
-            # Include both .mp3 and .ogg files (using set for efficient membership testing)
-            upload_files = [str(f) for f in test_audio_files if f.suffix in {".mp3", ".ogg"}]
+            # Include both .mp3 and .ogg files (case-insensitive, using set for efficient membership testing)
+            upload_files = [str(f) for f in test_audio_files if f.suffix.lower() in {".mp3", ".ogg"}]
         else:
             upload_files = [str(f) for f in test_audio_files]
         print(f"DEBUG: Uploading {len(upload_files)} files: {upload_files}")

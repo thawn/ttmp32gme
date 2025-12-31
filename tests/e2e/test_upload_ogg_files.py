@@ -77,10 +77,10 @@ class TestOggFileUpload:
             )
             raise
 
-        # Verify album appears in library
+        # Verify album appears in library - check for album name or any track title
         body_text = driver.find_element(By.TAG_NAME, "body").text
         assert (
-            album_name in body_text or "Test OGG Track" in body_text
+            album_name in body_text or "Test OGG Track 1" in body_text or "Test OGG Track 2" in body_text
         ), f"Album not found in library. Page text: {body_text[:200]}"
         
         library_path = server_info["library_path"]

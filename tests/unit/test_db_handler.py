@@ -1034,10 +1034,12 @@ class TestDBHandlerCoreMethods:
                 test_ogg, 920, 1
             )
 
-            # Album data should be None or empty dict (no tags means no album metadata)
-            # The function returns None when there's no album info, or an empty dict if tags exist but are empty
-            if album_data is not None:
-                assert album_data == {}, f"Expected empty album data, got {album_data}"
+            # Album data handling: When an OGG file has no tags, the _extract_audio_metadata function
+            # returns None for album_data (since there are no album-level tags to extract).
+            # We explicitly check for None here as that's the expected behavior.
+            assert album_data is None or album_data == {}, (
+                f"Expected None or empty album data for tagless OGG file, got {album_data}"
+            )
 
             # Track info should have filename as title
             assert track_info is not None
