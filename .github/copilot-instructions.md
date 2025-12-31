@@ -135,15 +135,6 @@ except ValidationError as e:
     return jsonify({"success": False, "error": str(e)}), 400
 ```
 
-### Test Fixtures
-Use context managers for test file management:
-```python
-with test_audio_files_context() as test_files:
-    # Files created automatically
-    driver.find_element(...).send_keys(test_files[0])
-    # Files cleaned up automatically on exit
-```
-
 ### Tests
 
 - Tests use pytest framework with fixtures for setup/teardown. E2E tests use Selenium WebDriver (Chrome).
@@ -165,10 +156,11 @@ with test_audio_files_context() as test_files:
 
 ### Fixing E2E Test Issues
 1. attempt to fix the problem
-2. Run the failing tests locally: `pytest tests/e2e/<failing tests>
+2. Run only the failing tests locally: `pytest tests/e2e/<failing tests>
 3. Check server logs in `/tmp/server.log` for errors
 4. Add debug statements to test for element visibility
 5. repeat until the problem is solved and the tests are passing.
+6. only after the failing tests are passing, run other tests.
 
 ## File Locations
 
