@@ -3,7 +3,6 @@
 import logging
 import shutil
 import sqlite3
-from pathlib import Path
 
 import pytest
 from selenium.webdriver.common.by import By
@@ -140,15 +139,15 @@ class TestOggFileUpload:
             expected = expected_tracks[i]
             assert (
                 track_num == expected["track"]
-            ), f"Track {i+1}: Expected track number {expected['track']}, got {track_num}"
-            assert title, f"Track {i+1}: Title should not be empty"
+            ), f"Track {i + 1}: Expected track number {expected['track']}, got {track_num}"
+            assert title, f"Track {i + 1}: Title should not be empty"
             assert (
                 expected["title"] in title
-            ), f"Track {i+1}: Expected title to contain '{expected['title']}', got '{title}'"
+            ), f"Track {i + 1}: Expected title to contain '{expected['title']}', got '{title}'"
             if expected["artist"]:
                 assert (
                     expected["artist"] in artist
-                ), f"Track {i+1}: Expected artist to contain '{expected['artist']}', got '{artist}'"
+                ), f"Track {i + 1}: Expected artist to contain '{expected['artist']}', got '{artist}'"
 
         # Check metadata in UI
         driver.get(f"{server_info['url']}/library")

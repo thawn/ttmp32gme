@@ -14,7 +14,6 @@ import pytest
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import APIC
 from mutagen.mp3 import MP3
-from mutagen.oggvorbis import OggVorbis
 from PIL import Image
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
