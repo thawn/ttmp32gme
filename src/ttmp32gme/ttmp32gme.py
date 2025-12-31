@@ -7,13 +7,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-from flask import (
-    Flask,
-    jsonify,
-    render_template,
-    request,
-    send_from_directory,
-)
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from packaging.version import Version
 from pydantic import ValidationError
 from werkzeug.utils import secure_filename

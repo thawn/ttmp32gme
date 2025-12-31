@@ -12,11 +12,7 @@ from packaging.version import Version
 from PIL import Image
 from pydantic import BaseModel, Field, field_validator
 
-from .build.file_handler import (
-    cleanup_filename,
-    make_new_album_dir,
-    remove_album,
-)
+from .build.file_handler import cleanup_filename, make_new_album_dir, remove_album
 
 logger = logging.getLogger(__name__)
 
