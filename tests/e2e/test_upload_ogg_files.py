@@ -126,11 +126,13 @@ class TestOggFileUpload:
         first_track_title = tracks[0][0]
         first_track_artist = tracks[0][1]
         
-        # First track should have full tags
-        assert "Test OGG Track 1" in first_track_title or first_track_title, (
+        # First track should have full tags (be more explicit about what we're checking)
+        assert first_track_title, "Track title should not be empty"
+        assert "Test OGG Track 1" in first_track_title, (
             f"Expected track title to contain 'Test OGG Track 1', got '{first_track_title}'"
         )
-        assert "Test OGG Artist" in first_track_artist or first_track_artist, (
+        assert first_track_artist, "Track artist should not be empty"
+        assert "Test OGG Artist" in first_track_artist, (
             f"Expected artist to contain 'Test OGG Artist', got '{first_track_artist}'"
         )
 
@@ -161,8 +163,6 @@ class TestOggFileUpload:
 
     def test_mixed_ogg_and_mp3_upload(self, driver, clean_server):
         """Test uploading album with both OGG and MP3 files."""
-        from .conftest import audio_files_context
-        
         server_info = clean_server
         album_name = "Mixed Audio Album"
         

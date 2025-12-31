@@ -1034,8 +1034,10 @@ class TestDBHandlerCoreMethods:
                 test_ogg, 920, 1
             )
 
-            # Album data should be None (no tags)
-            assert album_data is None or album_data == {}
+            # Album data should be None or empty dict (no tags means no album metadata)
+            # The function returns None when there's no album info, or an empty dict if tags exist but are empty
+            if album_data is not None:
+                assert album_data == {}, f"Expected empty album data, got {album_data}"
 
             # Track info should have filename as title
             assert track_info is not None
