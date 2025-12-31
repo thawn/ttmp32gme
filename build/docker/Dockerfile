@@ -35,15 +35,17 @@ COPY . /app/
 # For production builds with proper certificate setup, these flags can be removed.
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -e .
 
-# Set up directories
+# Set up directories and copy config
 ENV APPDATA=/var/lib/
-RUN mkdir -p ${APPDATA}/ttmp32gme /mnt/tiptoi
+RUN mkdir -p ${APPDATA}/ttmp32gme/library /mnt/tiptoi && \
+    cp /app/src/ttmp32gme/config.sqlite ${APPDATA}/ttmp32gme/ && \
+    chmod -R 777 ${APPDATA}/ttmp32gme
 
 # Expose port 8080
 EXPOSE 8080
 
 # Run the Python backend
-CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080"]
+CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080", "--database=/var/lib/ttmp32gme/config.sqlite", "--library=/var/lib/ttmp32gme/library"]
 
 # Optional health check
 HEALTHCHECK --interval=5m --timeout=3s \
