@@ -55,6 +55,16 @@ class TestOIDImagesDownload:
         """
         server_info = clean_server
 
+        # Clean OID cache before test to ensure clean state
+        # The OID cache is stored in user's home directory, not in test library
+        from ttmp32gme.build.file_handler import get_oid_cache
+
+        oid_cache = get_oid_cache()
+        # Remove all PNG files from cache
+        for png_file in oid_cache.glob("*.png"):
+            png_file.unlink()
+        logger.info(f"Cleaned OID cache at {oid_cache}")
+
         # Try to download directly via URL without creating any albums/OIDs
         download_url = f"{server_info['url']}/download_oid_images"
 
@@ -80,6 +90,15 @@ class TestOIDImagesDownload:
         """
         server_info = clean_server
 
+        # Clean OID cache before test to ensure clean state
+        from ttmp32gme.build.file_handler import get_oid_cache
+
+        oid_cache = get_oid_cache()
+        # Remove all PNG files from cache before test
+        for png_file in oid_cache.glob("*.png"):
+            png_file.unlink()
+        logger.info(f"Cleaned OID cache at {oid_cache} before test")
+
         # Step 1: Upload an album
         album_name = "OID Test Album"
         with audio_files_context(album_name=album_name) as test_files:
@@ -89,9 +108,7 @@ class TestOIDImagesDownload:
         _create_gme_for_test(server_info["url"], driver, element_number=0)
 
         # Verify OID images were created in the cache
-        oid_cache = server_info["library_path"].parent / "oid_cache"
-        assert oid_cache.exists(), "OID cache directory should exist"
-
+        # Note: OID cache is in user's home directory, not in test library
         png_files = list(oid_cache.glob("*.png"))
         assert len(png_files) > 0, "OID images should have been created"
 
@@ -128,6 +145,15 @@ class TestOIDImagesDownload:
 
         # Step 6: Verify count matches
         # Note: The actual count might differ slightly from filesystem count
+        # due to caching or generation differences, but should be > 0
+        assert len(file_list) > 0, "Should have at least one OID image in ZIP"
+
+        logger.info("✓ Download successful after GME creation")
+
+        # Cleanup: Remove OID images created during test
+        for png_file in oid_cache.glob("*.png"):
+            png_file.unlink()
+        logger.info("Cleaned up OID cache after test")
         # due to caching or generation differences, but should be > 0
         assert len(file_list) > 0, "Should have at least one OID image in ZIP"
 
