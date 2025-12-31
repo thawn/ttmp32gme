@@ -25,7 +25,6 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
-    'sphinx.ext.intersphinx',
     'sphinx_autodoc_typehints',
     'myst_parser',
 ]
@@ -37,13 +36,13 @@ myst_enable_extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'README.md']
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_static_path = []
 
 # -- Options for autodoc -----------------------------------------------------
 autodoc_default_options = {
@@ -52,12 +51,6 @@ autodoc_default_options = {
     'special-members': '__init__',
     'undoc-members': True,
     'exclude-members': '__weakref__'
-}
-
-# -- Options for intersphinx -------------------------------------------------
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'flask': ('https://flask.palletsprojects.com/', None),
 }
 
 # Napoleon settings for Google/NumPy style docstrings
