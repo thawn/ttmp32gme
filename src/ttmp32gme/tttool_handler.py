@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 from ttmp32gme.build.file_handler import (
     cleanup_filename,
     get_executable_path,
-    get_oid_cache,
     get_tiptoi_dir,
 )
 from ttmp32gme.db_handler import DBHandler
@@ -411,11 +410,8 @@ def create_oids(oids: List[int], size: int, db_handler: DBHandler) -> List[Path]
     Returns:
         List of paths to generated OID image files
     """
-    # Get library path from database config
-    library_path_str = db_handler.get_config_value("library_path")
-    library_path = Path(library_path_str) if library_path_str else None
-
-    target_path = get_oid_cache(library_path)
+    # Get OID cache from database handler
+    target_path = db_handler.get_oid_cache()
     parameters = get_tttool_parameters(db_handler)
     dpi = parameters.get("dpi", "1200")
     pixel_size = parameters.get("pixel-size", "2")

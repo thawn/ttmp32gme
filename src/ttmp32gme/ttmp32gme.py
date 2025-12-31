@@ -97,14 +97,29 @@ def fetch_config() -> Dict[str, Any]:
 
     temp_config = db.get_config()
 
-    if not temp_config.get("library_path"):
-        if custom_library_path:
-            temp_config["library_path"] = str(custom_library_path)
-        else:
-            temp_config["library_path"] = str(get_default_library_path())
-    elif custom_library_path:
-        # Override database library path with custom path if provided
-        temp_config["library_path"] = str(custom_library_path)
+    # Handle custom library path from command line
+    if custom_library_path:
+        custom_path_str = str(custom_library_path)
+        # Save to database if it's different from what's stored
+        if temp_config.get("library_path") != custom_path_str:
+            db.execute(
+                "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)",
+                ("library_path", custom_path_str),
+            )
+            db.commit()
+            logger.info(f"Updated library_path in database to: {custom_path_str}")
+        temp_config["library_path"] = custom_path_str
+    elif not temp_config.get("library_path"):
+        # No custom path and no path in database, use default
+        default_path = str(get_default_library_path())
+        temp_config["library_path"] = default_path
+        # Save default to database
+        db.execute(
+            "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)",
+            ("library_path", default_path),
+        )
+        db.commit()
+        logger.info(f"Set default library_path in database: {default_path}")
 
     # convert strings to numeric types where appropriate
     if "port" in temp_config:
@@ -549,10 +564,10 @@ def help_page():
 @app.route("/images/<path:filename>")
 def serve_dynamic_image(filename):
     """Serve dynamically generated images (OID codes, covers, etc.)."""
-    from .build.file_handler import get_oid_cache
+    db = get_db()
 
     # Check OID cache first
-    oid_cache = get_oid_cache()
+    oid_cache = db.get_oid_cache()
     image_path = oid_cache / filename
     if image_path.exists():
         return send_from_directory(oid_cache, filename)
@@ -615,11 +630,8 @@ def download_gme(oid):
 def download_oid_images():
     """Download all OID images as a ZIP file."""
     try:
-        from .build.file_handler import create_oid_images_zip
-
-        # Get library path from config
-        library_path = Path(config.get("library_path", ""))
-        zip_file = create_oid_images_zip(library_path)
+        db = get_db()
+        zip_file = db.create_oid_images_zip()
 
         if zip_file is None:
             return "No OID images available", 404

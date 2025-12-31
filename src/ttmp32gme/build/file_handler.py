@@ -1,13 +1,11 @@
 """Build and file handling utilities for ttmp32gme."""
 
-import io
 import logging
 import os
 import platform
 import re
 import shutil
 import subprocess
-import zipfile
 from pathlib import Path
 from typing import List, Optional
 
@@ -235,24 +233,6 @@ def get_executable_path(executable_name: str) -> Optional[str]:
     return None
 
 
-def get_oid_cache(library_path: Optional[Path] = None) -> Path:
-    """Get the OID cache directory.
-
-    Args:
-        library_path: Optional library path. If provided, cache will be placed
-                     in library/.oid_cache. Otherwise uses default library path.
-
-    Returns:
-        Path to OID cache directory
-    """
-    if library_path is None:
-        library_path = get_default_library_path()
-
-    cache_dir = library_path / ".oid_cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
-
-
 def get_tiptoi_dir() -> Optional[Path]:
     """Find the TipToi device mount point.
 
@@ -379,32 +359,3 @@ def open_browser(host: str, port: int) -> bool:
     except Exception as e:
         logger.error(f"Could not open browser: {e}")
         return False
-
-
-def create_oid_images_zip(library_path: Optional[Path] = None) -> Optional[io.BytesIO]:
-    """Create a ZIP file containing all OID images from the cache.
-
-    Args:
-        library_path: Optional library path to locate the OID cache
-
-    Returns:
-        BytesIO object containing the ZIP file, or None if no images found
-    """
-    oid_cache = get_oid_cache(library_path)
-
-    # Get all PNG files in the OID cache
-    png_files = list(oid_cache.glob("*.png"))
-
-    if not png_files:
-        logger.warning("No OID images found in cache")
-        return None
-
-    # Create ZIP file in memory
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for png_file in png_files:
-            zipf.write(png_file, png_file.name)
-
-    memory_file.seek(0)
-    logger.info(f"Created ZIP with {len(png_files)} OID images")
-    return memory_file

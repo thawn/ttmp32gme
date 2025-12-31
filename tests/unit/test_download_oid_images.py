@@ -12,7 +12,7 @@ def test_download_oid_images_route_empty_cache(tmp_path):
     from ttmp32gme.ttmp32gme import app
 
     # Mock get_oid_cache to return empty temp directory
-    with patch("ttmp32gme.build.file_handler.get_oid_cache") as mock_get_oid_cache:
+    with patch("ttmp32gme.db_handler.DBHandler.get_oid_cache") as mock_get_oid_cache:
         empty_cache = tmp_path / "empty_oid_cache"
         empty_cache.mkdir()
         mock_get_oid_cache.return_value = empty_cache
@@ -41,7 +41,7 @@ def test_download_oid_images_route_with_images(tmp_path):
         test_files.append(img_path)
 
     # Mock get_oid_cache to return our test cache
-    with patch("ttmp32gme.build.file_handler.get_oid_cache") as mock_get_oid_cache:
+    with patch("ttmp32gme.db_handler.DBHandler.get_oid_cache") as mock_get_oid_cache:
         mock_get_oid_cache.return_value = test_cache
 
         # Test the endpoint
@@ -82,7 +82,7 @@ def test_download_oid_images_route_filters_non_png(tmp_path):
     (test_cache / "config.yaml").write_text("test: true")
 
     # Mock get_oid_cache
-    with patch("ttmp32gme.build.file_handler.get_oid_cache") as mock_get_oid_cache:
+    with patch("ttmp32gme.db_handler.DBHandler.get_oid_cache") as mock_get_oid_cache:
         mock_get_oid_cache.return_value = test_cache
 
         # Test the endpoint

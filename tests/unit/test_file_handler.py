@@ -12,7 +12,6 @@ from ttmp32gme.build.file_handler import (
     get_executable_path,
     get_gmes_already_on_tiptoi,
     get_local_storage,
-    get_oid_cache,
     make_new_album_dir,
     make_temp_album_dir,
     move_to_album,
@@ -164,14 +163,6 @@ class TestFileHandler:
 
             assert result is True
             assert not album_dir.exists()
-
-    def test_get_oid_cache(self):
-        """Test getting OID cache directory."""
-        cache_dir = get_oid_cache()
-
-        assert isinstance(cache_dir, Path)
-        assert cache_dir.exists()
-        assert cache_dir.is_dir()
 
     @patch("ttmp32gme.build.file_handler.get_tiptoi_dir")
     def test_get_gmes_already_on_tiptoi(self, mock_get_tiptoi):
