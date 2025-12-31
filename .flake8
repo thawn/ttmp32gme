@@ -9,7 +9,7 @@ max-line-length = 88
 # F401: Module imported but unused (can be cleaned up later)
 # F811: Redefinition of unused (can be cleaned up later)
 # F841: Local variable assigned but never used (can be cleaned up later)
-# F541: F-string is missing placeholders (can be cleaned up later)
+# F541: f-string is missing placeholders (can be cleaned up later)
 # B001: Bare except (can be cleaned up later)
 # B006: Mutable argument defaults (can be cleaned up later)
 # B007: Loop variable not used (can be cleaned up later)
