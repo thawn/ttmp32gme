@@ -16,6 +16,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Install tttool (from releases)
+# Note: --no-check-certificate is required in some build environments due to SSL certificate chain issues.
+# This is a known issue with intermediate certificates in Docker builds.
+# For production builds with proper certificate setup, this flag can be removed.
 RUN TTTOOL_VERSION="1.8.1" && \
     wget --no-check-certificate "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip" && \
     unzip -o -q "tttool-${TTTOOL_VERSION}.zip" && \
@@ -27,6 +30,9 @@ RUN TTTOOL_VERSION="1.8.1" && \
 COPY . /app/
 
 # Install Python dependencies
+# Note: --trusted-host flags are required in some build environments due to SSL certificate chain issues.
+# This is a known issue with intermediate certificates in Docker builds.
+# For production builds with proper certificate setup, these flags can be removed.
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -e .
 
 # Set up directories
