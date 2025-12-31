@@ -931,3 +931,121 @@ class TestDBHandlerCoreMethods:
             assert album_after["gme_file"] is None
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_extract_ogg_metadata(self, db):
+        """Test extracting metadata from OGG Vorbis files."""
+        import subprocess
+        from mutagen.oggvorbis import OggVorbis
+
+        # Get path to test MP3 file
+        test_mp3 = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"
+        if not test_mp3.exists():
+            pytest.skip("Test audio file not available")
+
+        # Check if ffmpeg is available
+        if not shutil.which("ffmpeg"):
+            pytest.skip("ffmpeg not found")
+
+        # Create temp directory for test OGG file
+        temp_dir = Path(tempfile.mkdtemp())
+        try:
+            test_ogg = temp_dir / "test_with_tags.ogg"
+
+            # Convert MP3 to OGG using ffmpeg (same args as tttool_handler.py)
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(test_mp3),
+                "-map",
+                "0:a",
+                "-ar",
+                "22050",
+                "-ac",
+                "1",
+                str(test_ogg),
+            ]
+            subprocess.run(cmd, check=True, capture_output=True)
+
+            # Add Vorbis tags
+            audio = OggVorbis(str(test_ogg))
+            audio["title"] = "Test OGG Title"
+            audio["artist"] = "Test OGG Artist"
+            audio["album"] = "Test OGG Album"
+            audio["date"] = "2024"
+            audio["tracknumber"] = "1"
+            audio.save()
+
+            # Test metadata extraction
+            album_data, track_info, picture_data = db._extract_audio_metadata(
+                test_ogg, 920, 1
+            )
+
+            # Verify album data
+            assert album_data is not None
+            assert album_data["album_title"] == "Test OGG Album"
+            assert album_data["album_artist"] == "Test OGG Artist"
+            assert album_data["album_year"] == "2024"
+
+            # Verify track info
+            assert track_info is not None
+            assert track_info["title"] == "Test OGG Title"
+            assert track_info["artist"] == "Test OGG Artist"
+            assert track_info["album"] == "Test OGG Album"
+            assert track_info["track"] == 1
+            assert track_info["duration"] > 0
+
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_extract_ogg_metadata_no_tags(self, db):
+        """Test extracting metadata from OGG file without tags."""
+        import subprocess
+
+        # Get path to test MP3 file
+        test_mp3 = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"
+        if not test_mp3.exists():
+            pytest.skip("Test audio file not available")
+
+        # Check if ffmpeg is available
+        if not shutil.which("ffmpeg"):
+            pytest.skip("ffmpeg not found")
+
+        # Create temp directory for test OGG file
+        temp_dir = Path(tempfile.mkdtemp())
+        try:
+            test_ogg = temp_dir / "test_no_tags.ogg"
+
+            # Convert MP3 to OGG without adding tags
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(test_mp3),
+                "-map",
+                "0:a",
+                "-ar",
+                "22050",
+                "-ac",
+                "1",
+                str(test_ogg),
+            ]
+            subprocess.run(cmd, check=True, capture_output=True)
+
+            # Test metadata extraction
+            album_data, track_info, picture_data = db._extract_audio_metadata(
+                test_ogg, 920, 1
+            )
+
+            # Album data should be None (no tags)
+            assert album_data is None or album_data == {}
+
+            # Track info should have filename as title
+            assert track_info is not None
+            assert track_info["title"] == "test_no_tags.ogg"
+            assert track_info["artist"] == ""
+            assert track_info["album"] == ""
+            assert track_info["duration"] > 0
+
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
