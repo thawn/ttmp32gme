@@ -1,0 +1,12 @@
+# Sphinx build outputs
+_build/
+_static/
+_templates/
+
+# Sphinx auto-generated files
+*.doctree
+
+# Generated documentation
+*.html
+*.pdf
+*.epub

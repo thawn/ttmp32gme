@@ -248,7 +248,7 @@ def convert_tracks(
 def get_tttool_parameters(db_handler: DBHandler) -> Dict[str, str]:
     """Get tttool parameters from database configuration.
 
-    Retrieves all configuration parameters that start with 'tt_' prefix
+    Retrieves all configuration parameters that start with ``tt_`` prefix
     and returns them with the prefix removed.
 
     Args:
