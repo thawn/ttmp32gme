@@ -1,22 +1,22 @@
+import io
+import logging
 import shutil
 import sqlite3
-import logging
-from typing import Any, Dict, List, Tuple, Optional
-from packaging.version import Version
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 from mutagen import File as MutagenFile
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
+from packaging.version import Version
 from PIL import Image
-import io
-
 from pydantic import BaseModel, Field, field_validator
 
 from .build.file_handler import (
     cleanup_filename,
+    clear_album,
     make_new_album_dir,
     remove_album,
-    clear_album,
 )
 
 logger = logging.getLogger(__name__)
@@ -94,10 +94,14 @@ class AlbumMetadataModel(BaseModel):
 
     oid: int = Field(..., description="Album OID", ge=0, le=1000)
     album_title: str = Field(..., max_length=255, description="Album title")
-    album_artist: Optional[str] = Field(None, max_length=255, description="Album artist")
+    album_artist: Optional[str] = Field(
+        None, max_length=255, description="Album artist"
+    )
     album_year: Optional[str] = Field(None, max_length=10, description="Album year")
     num_tracks: int = Field(..., ge=0, le=999, description="Number of tracks")
-    picture_filename: Optional[str] = Field(None, max_length=255, description="Cover image filename")
+    picture_filename: Optional[str] = Field(
+        None, max_length=255, description="Cover image filename"
+    )
     path: str = Field(..., max_length=500, description="Album directory path")
 
     @field_validator("album_title", mode="before")
@@ -193,23 +197,23 @@ class DBHandler:
         cursor.execute(
             """
         CREATE TABLE IF NOT EXISTS config (
-	        param	TEXT NOT NULL UNIQUE,
-	        value	TEXT,
-    	    PRIMARY KEY(param)
+            param TEXT NOT NULL UNIQUE,
+            value TEXT,
+            PRIMARY KEY(param)
         );
         """
         )
         cursor.execute(
             """
         CREATE TABLE IF NOT EXISTS gme_library (
-	        oid	INTEGER NOT NULL UNIQUE,
-	        album_title	TEXT,
-            album_artist	TEXT,
-            album_year	INTEGER,
-            num_tracks	INTEGER NOT NULL DEFAULT 0,
-            picture_filename	TEXT,
-            gme_file	TEXT,
-            path	TEXT, 
+            oid INTEGER NOT NULL UNIQUE,
+            album_title TEXT,
+            album_artist TEXT,
+            album_year INTEGER,
+            num_tracks INTEGER NOT NULL DEFAULT 0,
+            picture_filename TEXT,
+            gme_file TEXT,
+            path TEXT,
             player_mode TEXT DEFAULT 'music',
             PRIMARY KEY(`oid`)
         );
@@ -218,8 +222,8 @@ class DBHandler:
         cursor.execute(
             """
         CREATE TABLE IF NOT EXISTS script_codes (
-	        script	TEXT NOT NULL UNIQUE,
-            code	INTEGER NOT NULL,
+            script TEXT NOT NULL UNIQUE,
+            code INTEGER NOT NULL,
             PRIMARY KEY(script)
         );
         """
@@ -547,7 +551,9 @@ class DBHandler:
             logger.error(f"Error processing audio file {file_path}: {e}")
             return None, None, None
 
-    def _process_cover_image(self, file_path: Path) -> Tuple[Optional[str], Optional[bytes]]:
+    def _process_cover_image(
+        self, file_path: Path
+    ) -> Tuple[Optional[str], Optional[bytes]]:
         """Process cover image file.
 
         Args:
@@ -643,11 +649,13 @@ class DBHandler:
             # First, validate all metadata except filename (which is still a Path)
             temp_track = track.copy()
             source_file = temp_track.pop("filename")  # Remove Path object
-            temp_track["filename"] = source_file.name  # Use just the name for validation
-            
+            temp_track["filename"] = (
+                source_file.name
+            )  # Use just the name for validation
+
             # Validate track metadata
             validated_track = TrackMetadataModel(**temp_track)
-            
+
             # Now move file to album directory
             target_file = album_path / cleanup_filename(source_file.name)
             try:
@@ -660,15 +668,13 @@ class DBHandler:
                 )
                 # If move fails, use just the source filename
                 final_filename = source_file.name
-            
+
             # Update filename in validated data and write to database
             validated_data = validated_track.model_dump()
             validated_data["filename"] = final_filename
             self.write_to_database("tracks", validated_data)
 
-    def create_library_entry(
-        self, album_list: List[Dict], library_path: Path
-    ) -> bool:
+    def create_library_entry(self, album_list: List[Dict], library_path: Path) -> bool:
         """Create a new library entry from uploaded files.
 
         Args:
@@ -688,7 +694,7 @@ class DBHandler:
             logger.info(f"Album {album_idx} has {len(album)} files")
             oid = self.new_oid()
             logger.info(f"Generated OID {oid} for album {album_idx}")
-            
+
             album_data = {}
             track_data = []
             picture_data = None
@@ -703,20 +709,32 @@ class DBHandler:
                     audio_album_data, track_info, audio_picture_data = (
                         self._extract_audio_metadata(file_path, oid, track_no)
                     )
-                    
+
                     if track_info:
                         # Merge album data (first file wins for album-level metadata)
-                        if not album_data.get("album_title") and audio_album_data.get("album_title"):
+                        if not album_data.get("album_title") and audio_album_data.get(
+                            "album_title"
+                        ):
                             album_data["album_title"] = audio_album_data["album_title"]
                             album_data["path"] = audio_album_data["path"]
-                        if not album_data.get("album_artist") and audio_album_data.get("album_artist"):
-                            album_data["album_artist"] = audio_album_data["album_artist"]
-                        if not album_data.get("album_year") and audio_album_data.get("album_year"):
+                        if not album_data.get("album_artist") and audio_album_data.get(
+                            "album_artist"
+                        ):
+                            album_data["album_artist"] = audio_album_data[
+                                "album_artist"
+                            ]
+                        if not album_data.get("album_year") and audio_album_data.get(
+                            "album_year"
+                        ):
                             album_data["album_year"] = audio_album_data["album_year"]
-                        if not album_data.get("picture_filename") and audio_album_data.get("picture_filename"):
-                            album_data["picture_filename"] = audio_album_data["picture_filename"]
+                        if not album_data.get(
+                            "picture_filename"
+                        ) and audio_album_data.get("picture_filename"):
+                            album_data["picture_filename"] = audio_album_data[
+                                "picture_filename"
+                            ]
                             picture_data = audio_picture_data
-                        
+
                         track_data.append(track_info)
                         track_no += 1
 
@@ -753,8 +771,10 @@ class DBHandler:
             logger.info(
                 f"Album {album_idx}: Writing to database - {album_data['album_title']} with {len(track_data)} tracks"
             )
-            self._save_album_to_database(album_data, track_data, picture_data, album_path)
-            
+            self._save_album_to_database(
+                album_data, track_data, picture_data, album_path
+            )
+
             logger.info(f"Album {album_idx}: Successfully written to database")
             shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)
 
@@ -953,7 +973,7 @@ class DBHandler:
                 import shutil
 
                 shutil.rmtree(audio_dir)
-            
+
             # Update database to set gme_file to NULL since GME files were deleted
             self.update_table_entry("gme_library", "oid=?", [uid], {"gme_file": None})
 

@@ -1,0 +1,31 @@
+[flake8]
+max-line-length = 88
+# Extend default ignore with Black-compatible options
+# E203: Whitespace before ':' (conflicts with Black)
+# E226: Missing whitespace around arithmetic operator (existing code style)
+# E501: Line too long (handled by Black)
+# E722: Bare except (can be cleaned up later)
+# W503: Line break before binary operator (conflicts with Black)
+# F401: Module imported but unused (can be cleaned up later)
+# F811: Redefinition of unused (can be cleaned up later)
+# F841: Local variable assigned but never used (can be cleaned up later)
+# F541: F-string is missing placeholders (can be cleaned up later)
+# B001: Bare except (can be cleaned up later)
+# B006: Mutable argument defaults (can be cleaned up later)
+# B007: Loop variable not used (can be cleaned up later)
+# B014: Redundant exception types (can be cleaned up later)
+extend-ignore = E203,E226,E501,E722,W503,F401,F811,F841,F541,B001,B006,B007,B014
+
+# Enforce these critical errors
+select = E,W,F,B,C
+
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    .eggs,
+    *.egg,
+    .venv,
+    venv,
+    node_modules,

@@ -13,7 +13,7 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
 
 ## Installation
 * Mac/Win: download the executables from the [releases page](https://github.com/thawn/ttmp32gme/releases). Put them somewhere and run them. Open localhost:10020 with a browser of your choice (except Internet Explorer).
-* linux: 
+* linux:
   * **Python (Recommended)**:
      * Install Python 3.11 or higher
      * Clone this repository: `git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme`
@@ -22,17 +22,17 @@ a platform independent tool (inspired by the [windows tool ttaudio](https://gith
      * Run: `ttmp32gme` or `python -m ttmp32gme.ttmp32gme`
      * Open http://localhost:10020 in your browser
   * docker (also recommended):
-     * Using the provided installer: download (right click and save as...) [install.sh](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/install.sh) and [ttmp32gme](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/ttmp32gme) into the same directory on our computer. 
-       Run `sudo bash install.sh` in a terminal in the same directory where you saved the files. 
-       Afterwards, you can start ttmp32gme with `ttmp32gme start` and stop it with `ttmp32gme stop`. 
+     * Using the provided installer: download (right click and save as...) [install.sh](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/install.sh) and [ttmp32gme](https://raw.githubusercontent.com/thawn/ttmp32gme/master/build/docker/ttmp32gme) into the same directory on our computer.
+       Run `sudo bash install.sh` in a terminal in the same directory where you saved the files.
+       Afterwards, you can start ttmp32gme with `ttmp32gme start` and stop it with `ttmp32gme stop`.
        If your tiptoi is mounted but not recognized, you can add the tiptoi path to the start command: `ttmp32gme start /path/to/tiptoi`
-     * Using docker directly: There is [a docker image on the docker hub](https://hub.docker.com/r/thawn/ttmp32gme). 
-       Open the port to the ttmp32gme web interface by adding `--publish 8080:8080` to your `docker run` command. 
-       You can specify where the library should be stored by adding `--volume ~/.ttmp32gme:/var/lib/ttmp32gme`. 
-       Also, you can make a mounted tiptoi accessible by adding `--volume /tiptoi/mount/point:/mnt/tiptoi`. 
-       
+     * Using docker directly: There is [a docker image on the docker hub](https://hub.docker.com/r/thawn/ttmp32gme).
+       Open the port to the ttmp32gme web interface by adding `--publish 8080:8080` to your `docker run` command.
+       You can specify where the library should be stored by adding `--volume ~/.ttmp32gme:/var/lib/ttmp32gme`.
+       Also, you can make a mounted tiptoi accessible by adding `--volume /tiptoi/mount/point:/mnt/tiptoi`.
+
        A complete docker run command could look like this: `docker run -d --rm --publish 8080:8080 --volume ~/.ttmp32gme:/var/lib/ttmp32gme --volume /media/${USER}/tiptoi:/mnt/tiptoi --name ttmp32gme thawn/ttmp32gme:latest`
-    
+
        Alternatively you can use [docker compose](https://docs.docker.com/compose/) and startup ttmp32gme with `docker-compse up` using the [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml).
 
 ## Command Line Options
@@ -114,13 +114,13 @@ change the resolution setting.
 
 It is a known (and sad) fact that the oid codes do not work with all printers. This is because the oid codes are very fine detailed patterns and need to be reproduced exactly by the printer. Many printers simply do not have a good enough resolution or their drivers mess around with the patterns during image processing. In the latter case, this can sometimes be circumvented by playing around with the print settings but sometimes, it simply does not work.
 
-* Make sure to print at 100% scale. Do not use the "autoscaling" or "fit to paper" settings in your print dialog. 
+* Make sure to print at 100% scale. Do not use the "autoscaling" or "fit to paper" settings in your print dialog.
 * print in 1200dpi if possible, sometimes 600dpi seem to work, too
 * play around with the quality settings, resolution, contrast
 * use different paper
 * try black-and-white versus color prints
 * Try to set your print driver to Graphic/Image mode (some drivers mess up the oid patterns in text mode).
-* If your driver does not have such a setting, try to convert the PDF to a 1200 dpi png and print that. 
+* If your driver does not have such a setting, try to convert the PDF to a 1200 dpi png and print that.
 
 Before [reporting any problem with the pen not recognizing printed pages](https://github.com/thawn/ttmp32gme/issues/11), please read the wiki page on printer support for tttool:
 https://github.com/entropia/tip-toi-reveng/wiki/Printing
@@ -179,7 +179,7 @@ ttmp32gme now includes a Python backend as an alternative to the Perl implementa
    ```bash
    # Using uv (recommended - faster)
    uv pip install -e .
-   
+
    # Or using pip
    pip install -e .
    ```
@@ -190,7 +190,7 @@ ttmp32gme now includes a Python backend as an alternative to the Perl implementa
    ```bash
    # On Ubuntu/Debian
    sudo apt-get install ffmpeg
-   
+
    # On macOS
    brew install ffmpeg
    ```
@@ -285,7 +285,7 @@ All tests run automatically on GitHub Actions for pull requests and pushes to ma
 * change the docker setup in build/docker/ to work with the new python backend
   * base image: ignore ttmp32gme-deps, it is for the old perl setup. Instead use a modern, slim python container
   * set up the dependencies like it is done in .github/workflows/e2e-tests.yml but without the selenium testing dependencies (chrome and chromedriver)
-  * take into account these pull requests for the perl installation: 
+  * take into account these pull requests for the perl installation:
     * https://github.com/thawn/ttmp32gme/pull/70
     * https://github.com/thawn/ttmp32gme/pull/68
   * test the docker container if possible

@@ -13,35 +13,35 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
-    
+
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
         version: "latest"
-    
+
     - name: Install Python dependencies
       run: |
         uv pip install --system -e ".[test]"
-    
+
     - name: Run unit tests with pytest
       run: |
         pytest tests/unit/ -v --tb=short --html=unit-report.html --self-contained-html
-    
+
     - name: Upload test report
       uses: actions/upload-artifact@v4
       with:
@@ -52,60 +52,60 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
-    
+
     strategy:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
         version: "latest"
-    
+
     - name: Install Python dependencies
       run: |
         uv pip install --system -e ".[test]"
-    
+
     - name: Start ttmp32gme Python server
       run: |
         python -m ttmp32gme.ttmp32gme --port 10020 &
         SERVER_PID=$!
         echo $SERVER_PID > /tmp/ttmp32gme.pid
-        
+
         # Wait for server to start and verify it's running
         sleep 5
         if ! kill -0 $SERVER_PID 2>/dev/null; then
           echo "Error: Server failed to start"
           exit 1
         fi
-        
+
         # Check if server is responding
         curl -f http://localhost:10020/ || { echo "Error: Server not responding"; kill $SERVER_PID; exit 1; }
-    
+
     - name: Run integration tests with pytest
       run: |
         pytest tests/test_web_frontend.py -v --tb=short --html=integration-report.html --self-contained-html
       env:
         TTMP32GME_URL: http://localhost:10020
-    
+
     - name: Stop ttmp32gme server
       run: |
         if [ -f /tmp/ttmp32gme.pid ]; then
           kill $(cat /tmp/ttmp32gme.pid) || true
         fi
       if: always()
-    
+
     - name: Upload test report
       uses: actions/upload-artifact@v4
       with:

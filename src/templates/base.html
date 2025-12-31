@@ -79,7 +79,7 @@ var updateElement = function($id) {
 
 var postUpdate = function($id,elementVars) {
 	$.post(
-		document.baseURI, 
+		document.baseURI,
 		'action=update&data=' + encodeURIComponent(JSON.stringify(elementVars)),
 		function(data,textStatus,jqXHR) {
 			if (data.success) {

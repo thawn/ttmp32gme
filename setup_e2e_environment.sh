@@ -82,7 +82,7 @@ print_success "System dependencies installed"
 
 if [ "$INSTALL_BROWSER" = true ]; then
     print_step "Step 2: Installing Chromium and ChromeDriver"
-    
+
     # Install ChromeDriver - use system package for simplicity and reliability
     echo "Installing ChromeDriver..."
     if ! command -v chromedriver &> /dev/null; then

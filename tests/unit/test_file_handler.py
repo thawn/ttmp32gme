@@ -4,25 +4,25 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
 from ttmp32gme.build.file_handler import (
-    get_local_storage,
-    get_default_library_path,
-    make_temp_album_dir,
-    make_new_album_dir,
     cleanup_filename,
-    get_executable_path,
-    move_to_album,
-    remove_temp_dir,
     clear_album,
-    remove_album,
-    get_oid_cache,
     delete_gme_tiptoi,
+    get_default_library_path,
+    get_executable_path,
     get_gmes_already_on_tiptoi,
+    get_local_storage,
+    get_oid_cache,
+    make_new_album_dir,
+    make_temp_album_dir,
+    move_to_album,
     open_browser,
+    remove_album,
+    remove_temp_dir,
 )
 
 
@@ -105,16 +105,16 @@ class TestFileHandler:
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_dir = Path(tmpdir) / "temp"
             album_dir = Path(tmpdir) / "album"
-            
+
             temp_dir.mkdir()
             album_dir.mkdir()
-            
+
             # Create some files in temp dir
             (temp_dir / "file1.txt").write_text("content1")
             (temp_dir / "file2.txt").write_text("content2")
-            
+
             result = move_to_album(temp_dir, album_dir)
-            
+
             assert result is True
             assert (album_dir / "file1.txt").exists()
             assert (album_dir / "file2.txt").exists()
@@ -127,11 +127,11 @@ class TestFileHandler:
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_dir = Path(tmpdir) / "temp_test"
             temp_dir.mkdir()
-            
+
             (temp_dir / "file.txt").write_text("test")
-            
+
             result = remove_temp_dir(temp_dir)
-            
+
             assert result is True
             assert not temp_dir.exists()
 
@@ -145,13 +145,13 @@ class TestFileHandler:
         with tempfile.TemporaryDirectory() as tmpdir:
             album_dir = Path(tmpdir) / "album"
             album_dir.mkdir()
-            
+
             # Create some files
             (album_dir / "file1.txt").write_text("content")
             (album_dir / "file2.txt").write_text("content")
-            
+
             result = clear_album(album_dir)
-            
+
             assert result is True
             assert album_dir.exists()  # Directory still exists
             assert len(list(album_dir.iterdir())) == 0  # But is empty
@@ -161,96 +161,95 @@ class TestFileHandler:
         with tempfile.TemporaryDirectory() as tmpdir:
             album_dir = Path(tmpdir) / "album_to_remove"
             album_dir.mkdir()
-            
+
             (album_dir / "file.txt").write_text("content")
-            
+
             result = remove_album(album_dir)
-            
+
             assert result is True
             assert not album_dir.exists()
 
     def test_get_oid_cache(self):
         """Test getting OID cache directory."""
         cache_dir = get_oid_cache()
-        
+
         assert isinstance(cache_dir, Path)
         assert cache_dir.exists()
         assert cache_dir.is_dir()
 
-    @patch('ttmp32gme.build.file_handler.get_tiptoi_dir')
+    @patch("ttmp32gme.build.file_handler.get_tiptoi_dir")
     def test_get_gmes_already_on_tiptoi(self, mock_get_tiptoi):
         """Test getting list of GMEs on TipToi."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tiptoi_dir = Path(tmpdir)
             mock_get_tiptoi.return_value = tiptoi_dir
-            
+
             # Create some GME files
             (tiptoi_dir / "album1.gme").write_bytes(b"fake gme")
             (tiptoi_dir / "album2.gme").write_bytes(b"fake gme")
             (tiptoi_dir / "readme.txt").write_text("not a gme")
-            
+
             result = get_gmes_already_on_tiptoi()
-            
+
             assert len(result) == 2
             assert "album1.gme" in result
             assert "album2.gme" in result
             assert "readme.txt" not in result
 
-    @patch('ttmp32gme.build.file_handler.get_tiptoi_dir')
+    @patch("ttmp32gme.build.file_handler.get_tiptoi_dir")
     def test_get_gmes_no_tiptoi(self, mock_get_tiptoi):
         """Test getting GMEs when TipToi not found."""
         mock_get_tiptoi.return_value = None
-        
+
         result = get_gmes_already_on_tiptoi()
-        
+
         assert result == []
 
-    @patch('ttmp32gme.build.file_handler.get_tiptoi_dir')
+    @patch("ttmp32gme.build.file_handler.get_tiptoi_dir")
     def test_delete_gme_tiptoi_success(self, mock_get_tiptoi):
         """Test deleting GME from TipToi."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tiptoi_dir = Path(tmpdir)
             mock_get_tiptoi.return_value = tiptoi_dir
-            
+
             gme_file = tiptoi_dir / "album.gme"
             gme_file.write_bytes(b"fake gme")
-            
+
             result = delete_gme_tiptoi("album.gme")
-            
+
             assert result is True
             assert not gme_file.exists()
 
-    @patch('ttmp32gme.build.file_handler.get_tiptoi_dir')
+    @patch("ttmp32gme.build.file_handler.get_tiptoi_dir")
     def test_delete_gme_tiptoi_not_found(self, mock_get_tiptoi):
         """Test deleting GME when TipToi not found."""
         mock_get_tiptoi.return_value = None
-        
+
         result = delete_gme_tiptoi("album.gme")
-        
+
         assert result is False
 
-    @patch('ttmp32gme.build.file_handler.subprocess.run')
-    @patch('ttmp32gme.build.file_handler.platform.system')
+    @patch("ttmp32gme.build.file_handler.subprocess.run")
+    @patch("ttmp32gme.build.file_handler.platform.system")
     def test_open_browser_linux(self, mock_system, mock_run):
         """Test opening browser on Linux."""
         mock_system.return_value = "Linux"
-        
+
         result = open_browser("localhost", 8080)
-        
+
         assert result is True
         mock_run.assert_called_once()
         args = mock_run.call_args[0][0]
         assert "xdg-open" in args
         assert "http://localhost:8080/" in args
 
-    @patch('ttmp32gme.build.file_handler.subprocess.run')
-    @patch('ttmp32gme.build.file_handler.platform.system')
+    @patch("ttmp32gme.build.file_handler.subprocess.run")
+    @patch("ttmp32gme.build.file_handler.platform.system")
     def test_open_browser_failure(self, mock_system, mock_run):
         """Test browser opening failure."""
         mock_system.return_value = "Linux"
         mock_run.side_effect = Exception("Failed")
-        
-        result = open_browser("localhost", 8080)
-        
-        assert result is False
 
+        result = open_browser("localhost", 8080)
+
+        assert result is False

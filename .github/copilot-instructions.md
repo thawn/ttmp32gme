@@ -166,7 +166,7 @@ SQLite connection uses `check_same_thread=False` for Flask's multi-threaded envi
 4. Return JSON for AJAX or render template for pages
 
 ### Fixing E2E Test Issues
-1. Before re-running specific test, start the server manually: 
+1. Before re-running specific test, start the server manually:
 ```bash
  ./ttmp32gme > /tmp/server.log 2>&1 & sleep(2)  # Start server in background
 ```

@@ -1,20 +1,23 @@
 """Print handling module for ttmp32gme - creates print layouts."""
 
-import subprocess
 import logging
+import platform
+import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from flask import render_template
 
-from .build.file_handler import get_executable_path, get_default_library_path
-from .tttool_handler import get_sorted_tracks, create_oids
+from .build.file_handler import get_default_library_path, get_executable_path
 from .db_handler import DBHandler
-import platform
+from .tttool_handler import create_oids, get_sorted_tracks
 
 logger = logging.getLogger(__name__)
 
 
-def format_tracks(album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
+def format_tracks(
+    album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
+) -> str:
     """Format track list with OID codes for printing.
 
     Args:
@@ -89,7 +92,9 @@ def format_controls(oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -
     return content
 
 
-def format_track_control(track_no: int, oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler) -> str:
+def format_track_control(
+    track_no: int, oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
+) -> str:
     """Format a single track control button.
 
     Args:
@@ -155,10 +160,7 @@ def format_cover(album: Dict[str, Any]) -> str:
 
 
 def create_print_layout(
-    oids: List[int], 
-    template: Any, 
-    config: Dict[str, Any], 
-    db_handler: DBHandler
+    oids: List[int], template: Any, config: Dict[str, Any], db_handler: DBHandler
 ) -> str:
     """Create print layout for selected albums.
 

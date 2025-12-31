@@ -41,13 +41,13 @@ podman run -d \
 - **`/data`**: Application data (database, generated library files)
   - First run: Container initializes this directory with default config
   - Subsequent runs: Uses existing data for persistence
-  
+
 - **`/mnt/tiptoi`**: TipToi pen mount point
   - Mount your TipToi device here to directly write generated files
 
 ## User Permissions
 
-The container runs as user `ttmp32gme` (UID 1000, GID 1000). 
+The container runs as user `ttmp32gme` (UID 1000, GID 1000).
 
 ### For Podman Users
 
