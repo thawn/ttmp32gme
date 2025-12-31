@@ -73,7 +73,7 @@ pytest tests/test_web_frontend.py -v
 
 #### E2E Tests (Selenium)
 
-should always be run if non-trivial changes were made to the frontend or backend. the necessary dependencies are already preinstalled in your environment. 
+should always be run if non-trivial changes were made to the frontend or backend. the necessary dependencies are already preinstalled in your environment.
 
 ```bash
 # Run all E2E tests
