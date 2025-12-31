@@ -233,17 +233,6 @@ def get_executable_path(executable_name: str) -> Optional[str]:
     return None
 
 
-def get_oid_cache() -> Path:
-    """Get the OID cache directory.
-
-    Returns:
-        Path to OID cache directory
-    """
-    cache_dir = get_local_storage() / "oid_cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
-
-
 def get_tiptoi_dir() -> Optional[Path]:
     """Find the TipToi device mount point.
 

@@ -25,20 +25,7 @@
 ## Development Workflow
 
 ### Bootstrap & Setup
-
-```bash
-# Clone repository
-git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme
-
-# Install Python dependencies (recommended: use uv)
-uv pip install -e ".[test]"
-# OR
-pip install -e ".[test]"
-
-# Install external dependencies
-# - tttool: https://github.com/entropia/tip-toi-reveng#installation
-# - ffmpeg: sudo apt-get install ffmpeg (Ubuntu) or brew install ffmpeg (macOS)
-```
+The setup is performed for you by `.github/workflows/copilot-setup-steps.yml`
 
 **Verification**: `python -m ttmp32gme.ttmp32gme --help` should show usage info.
 
@@ -60,10 +47,7 @@ ttmp32gme --host 0.0.0.0 --port 8080
 **Verification**: `curl http://localhost:10020/` should return HTML.
 
 ### Testing
-
-#### Test Coverage
-
-Aim for test coverage >75%.
+**Always run all necessary tests before finishing up.**
 
 #### Unit Tests (Fast, no dependencies)
 ```bash
@@ -80,6 +64,8 @@ pytest tests/test_web_frontend.py -v
 ```
 
 #### E2E Tests (Selenium)
+should always be run if non-trivial changes were made to the frontend or backend. the necessary dependencies are already preinstalled in your environment.
+
 ```bash
 # Run all E2E tests
 ./pytest tests/e2e/ -v
@@ -91,16 +77,22 @@ pytest tests/e2e/test_upload_album_with_files.py -v
 pytest -k upload -v
 ```
 
-**E2E Test Markers**:
+#### Test Markers
+
 - Skip E2E tests: `pytest -m "not e2e"`
 - Skip slow tests: `pytest -m "not slow"`
 
+#### Test Coverage
+
+Aim for test coverage >75%.
+
 ### Building & Linting
 
-**No formal linting configured** - follow existing code style:
-- 4-space indentation
-- Type hints encouraged (especially with Pydantic)
-- Descriptive variable names
+Pre-commit hooks perform the following steps:
+
+- trailing white spaces
+- flake8
+- black
 
 **No build step required** - Python source runs directly.
 
@@ -129,16 +121,6 @@ sphinx-build -b html . _build/html
 ## Code Patterns & Conventions
 
 ### Database Access (CRITICAL)
-❌ **NEVER do this**:
-```python
-cursor = db.cursor()
-cursor.execute("SELECT ...")
-```
-
-✅ **ALWAYS do this**:
-```python
-result = db.fetchone("SELECT ...")  # or db.fetchall()
-```
 All database operations MUST go through DBHandler methods (except in unit tests).
 
 ### Input Validation
@@ -153,22 +135,10 @@ except ValidationError as e:
     return jsonify({"success": False, "error": str(e)}), 400
 ```
 
-### Test Fixtures
-Use context managers for test file management:
-```python
-with test_audio_files_context() as test_files:
-    # Files created automatically
-    driver.find_element(...).send_keys(test_files[0])
-    # Files cleaned up automatically on exit
-```
-
 ### Tests
 
 - Tests use pytest framework with fixtures for setup/teardown. E2E tests use Selenium WebDriver (Chrome).
 - Write tests to be strict and fail early on errors.
-
-### Threading
-SQLite connection uses `check_same_thread=False` for Flask's multi-threaded environment. DBHandler is safe to use across request threads.
 
 ## Common Tasks
 
@@ -177,25 +147,20 @@ SQLite connection uses `check_same_thread=False` for Flask's multi-threaded envi
 2. Use `self.execute()`, `self.fetchone()`, `self.commit()` internally
 3. Call from Flask route: `db.new_method()`
 
-### Adding Input Validation
-1. Create/extend Pydantic model in `db_handler.py`
-2. Add field constraints (`Field()`, regex patterns, value ranges)
-3. Validate in Flask route before calling DBHandler
-
 ### Adding a New Route
 1. Add route in `src/ttmp32gme/ttmp32gme.py`
-2. Validate input with Pydantic
-3. Use `db` (DBHandler instance) for database operations
-4. Return JSON for AJAX or render template for pages
+2. Implement logic in `src/ttmp32gme/*_handler.py` files. Only call functions in `src/ttmp32gme/ttmp32gme.py`.
+3. Validate input with Pydantic
+4. Use `db` (DBHandler instance) for database operations
+5. Return JSON for AJAX or render template for pages
 
 ### Fixing E2E Test Issues
-1. Before re-running specific test, start the server manually:
-```bash
- ./ttmp32gme > /tmp/server.log 2>&1 & sleep(2)  # Start server in background
-```
-2. Check server logs in `/tmp/server.log` for errors
-3. Add debug statements to test for element visibility
-4. Use explicit waits: `WebDriverWait(driver, 5).until(...)`
+1. attempt to fix the problem
+2. Run only the failing tests locally: `pytest tests/e2e/<failing tests>
+3. Check server logs in `/tmp/server.log` for errors
+4. Add debug statements to test for element visibility
+5. repeat until the problem is solved and the tests are passing.
+6. only after the failing tests are passing, run other tests.
 
 ## File Locations
 
@@ -227,12 +192,3 @@ pytest tests/e2e/ -v
 # Build documentation
 cd docs/ && sphinx-build -b html . _build/html
 ```
-
-## CI/CD
-
-GitHub Actions workflows run automatically on PRs:
-- **python-tests.yml**: Unit and integration tests (Python 3.11, 3.12, 3.13)
-- **javascript-tests.yml**: Frontend Jest tests (Node 18.x, 20.x)
-- **e2e-tests.yml**: Full E2E suite (manual trigger or workflow_dispatch)
-
-Tests must pass before merging.

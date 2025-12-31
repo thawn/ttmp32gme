@@ -55,11 +55,18 @@ var loadConfig = function(){
 		   });
 }
 
+var downloadOidImages = function(){
+	window.location.href = '/download_oid_images';
+}
+
 $(function(){
     loadConfig();
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#submit').click(function(){
 		updateConfig( $(this) );
+	});
+	$('#download-oid-images').click(function(){
+		downloadOidImages();
 	});
 });
 
@@ -110,5 +117,17 @@ $(function(){
 		</div>
 		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover" disabled>Save
 			Configuration</button>
+	</div>
+</div>
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h4 class="panel-title">Download OID Images:</h4>
+	</div>
+	<div class="panel-body">
+		<p>Download all generated OID images as a ZIP file. These images can be used for designing and printing custom control sheets.</p>
+		<button type="button" id="download-oid-images" class="btn btn-info" data-toggle="tooltip"
+			title="Download all OID images as a ZIP file">
+			<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download OID Images
+		</button>
 	</div>
 </div>

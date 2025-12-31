@@ -7,7 +7,14 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import (
+    Flask,
+    jsonify,
+    render_template,
+    request,
+    send_file,
+    send_from_directory,
+)
 from packaging.version import Version
 from pydantic import ValidationError
 from werkzeug.utils import secure_filename
@@ -90,14 +97,22 @@ def fetch_config() -> Dict[str, Any]:
 
     temp_config = db.get_config()
 
+    # Ensure library_path is set (but don't override if already set in database)
     if not temp_config.get("library_path"):
+        # No path in database, use custom path or default
         if custom_library_path:
-            temp_config["library_path"] = str(custom_library_path)
+            default_path = str(custom_library_path)
         else:
-            temp_config["library_path"] = str(get_default_library_path())
-    elif custom_library_path:
-        # Override database library path with custom path if provided
-        temp_config["library_path"] = str(custom_library_path)
+            default_path = str(get_default_library_path())
+
+        # Save to database
+        db.execute(
+            "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)",
+            ("library_path", default_path),
+        )
+        db.commit()
+        logger.info(f"Initialized library_path in database: {default_path}")
+        temp_config["library_path"] = default_path
 
     # convert strings to numeric types where appropriate
     if "port" in temp_config:
@@ -542,10 +557,10 @@ def help_page():
 @app.route("/images/<path:filename>")
 def serve_dynamic_image(filename):
     """Serve dynamically generated images (OID codes, covers, etc.)."""
-    from .build.file_handler import get_oid_cache
+    db = get_db()
 
     # Check OID cache first
-    oid_cache = get_oid_cache()
+    oid_cache = db.get_oid_cache()
     image_path = oid_cache / filename
     if image_path.exists():
         return send_from_directory(oid_cache, filename)
@@ -602,6 +617,27 @@ def download_gme(oid):
     except Exception as e:
         logger.error(f"Error downloading GME file: {e}")
         return "Error downloading GME file", 500
+
+
+@app.route("/download_oid_images")
+def download_oid_images():
+    """Download all OID images as a ZIP file."""
+    try:
+        db = get_db()
+        zip_file = db.create_oid_images_zip()
+
+        if zip_file is None:
+            return "No OID images available", 404
+
+        return send_file(
+            zip_file,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="oid_images.zip",
+        )
+    except Exception as e:
+        logger.error(f"Error downloading OID images: {e}")
+        return "Error creating OID images ZIP file", 500
 
 
 def main():

@@ -197,3 +197,41 @@ class TestPageContent:
             assert (
                 "ttmp32gme" in response.text
             ), "Library page should contain ttmp32gme title"
+
+
+class TestOIDImagesDownload:
+    """Test OID images download functionality via HTTP"""
+
+    def test_download_oid_images_endpoint_exists(self, clean_server_http):
+        """Test that download endpoint exists and returns valid response"""
+        server_info = clean_server_http
+        response = requests.get(f"{server_info['url']}/download_oid_images", timeout=5)
+        # Should return either 404 (no images) or 200 (has images)
+        assert response.status_code in [
+            200,
+            404,
+        ], f"Expected 200 or 404, got {response.status_code}"
+        if response.status_code == 404:
+            assert (
+                "No OID images available" in response.text
+            ), "Should indicate no images available"
+        elif response.status_code == 200:
+            # Should be a ZIP file
+            assert (
+                response.headers.get("Content-Type") == "application/zip"
+            ), "Should return ZIP file"
+
+    def test_config_page_has_download_button(self, clean_server_http):
+        """Test that config page contains the download OID images button"""
+        server_info = clean_server_http
+        response = requests.get(f"{server_info['url']}/config", timeout=5)
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        assert (
+            "Download OID Images" in response.text
+        ), "Config page should have download button"
+        assert (
+            "download-oid-images" in response.text
+        ), "Config page should have button ID"
+        assert (
+            "downloadOidImages" in response.text
+        ), "Config page should have JavaScript function"

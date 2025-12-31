@@ -1081,6 +1081,54 @@ class DBHandler:
 
         return True
 
+    def get_oid_cache(self) -> Path:
+        """Get the OID cache directory from library path in database.
+
+        Returns:
+            Path to OID cache directory
+        """
+        # Get library path from database configuration
+        library_path_str = self.get_config_value("library_path")
+
+        if library_path_str:
+            library_path = Path(library_path_str)
+        else:
+            # Fallback to default if not set
+            from .build.file_handler import get_default_library_path
+
+            library_path = get_default_library_path()
+
+        cache_dir = library_path / ".oid_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        return cache_dir
+
+    def create_oid_images_zip(self) -> Optional[io.BytesIO]:
+        """Create a ZIP file containing all OID images from the cache.
+
+        Returns:
+            BytesIO object containing the ZIP file, or None if no images found
+        """
+        import zipfile
+
+        oid_cache = self.get_oid_cache()
+
+        # Get all PNG files in the OID cache
+        png_files = list(oid_cache.glob("*.png"))
+
+        if not png_files:
+            logger.warning("No OID images found in cache")
+            return None
+
+        # Create ZIP file in memory
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zipf:
+            for png_file in png_files:
+                zipf.write(png_file, png_file.name)
+
+        memory_file.seek(0)
+        logger.info(f"Created ZIP with {len(png_files)} OID images")
+        return memory_file
+
 
 def extract_tracks_from_album(album: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract track dictionaries from an album dictionary.
