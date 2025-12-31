@@ -411,7 +411,11 @@ def create_oids(oids: List[int], size: int, db_handler: DBHandler) -> List[Path]
     Returns:
         List of paths to generated OID image files
     """
-    target_path = get_oid_cache()
+    # Get library path from database config
+    library_path_str = db_handler.get_config_value("library_path")
+    library_path = Path(library_path_str) if library_path_str else None
+
+    target_path = get_oid_cache(library_path)
     parameters = get_tttool_parameters(db_handler)
     dpi = parameters.get("dpi", "1200")
     pixel_size = parameters.get("pixel-size", "2")

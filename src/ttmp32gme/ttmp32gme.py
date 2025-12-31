@@ -617,7 +617,9 @@ def download_oid_images():
     try:
         from .build.file_handler import create_oid_images_zip
 
-        zip_file = create_oid_images_zip()
+        # Get library path from config
+        library_path = Path(config.get("library_path", ""))
+        zip_file = create_oid_images_zip(library_path)
 
         if zip_file is None:
             return "No OID images available", 404

@@ -235,13 +235,20 @@ def get_executable_path(executable_name: str) -> Optional[str]:
     return None
 
 
-def get_oid_cache() -> Path:
+def get_oid_cache(library_path: Optional[Path] = None) -> Path:
     """Get the OID cache directory.
+
+    Args:
+        library_path: Optional library path. If provided, cache will be placed
+                     in library/.oid_cache. Otherwise uses default library path.
 
     Returns:
         Path to OID cache directory
     """
-    cache_dir = get_local_storage() / "oid_cache"
+    if library_path is None:
+        library_path = get_default_library_path()
+
+    cache_dir = library_path / ".oid_cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir
 
@@ -374,13 +381,16 @@ def open_browser(host: str, port: int) -> bool:
         return False
 
 
-def create_oid_images_zip() -> Optional[io.BytesIO]:
+def create_oid_images_zip(library_path: Optional[Path] = None) -> Optional[io.BytesIO]:
     """Create a ZIP file containing all OID images from the cache.
+
+    Args:
+        library_path: Optional library path to locate the OID cache
 
     Returns:
         BytesIO object containing the ZIP file, or None if no images found
     """
-    oid_cache = get_oid_cache()
+    oid_cache = get_oid_cache(library_path)
 
     # Get all PNG files in the OID cache
     png_files = list(oid_cache.glob("*.png"))
