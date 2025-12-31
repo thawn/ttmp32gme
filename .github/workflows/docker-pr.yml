@@ -5,9 +5,9 @@ on:
     branches: [ main, master, develop ]
     paths:
       - 'build/docker/**'
-      - 'Dockerfile'
       - 'docker-compose.yml'
       - 'build-docker.sh'
+      - 'docker-push.sh'
       - 'src/**'
       - 'pyproject.toml'
       - '.github/workflows/docker-*.yml'
