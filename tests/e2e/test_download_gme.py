@@ -77,21 +77,23 @@ class TestGMEDownload:
             EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
         )
         
-        # Verify download button is NOT visible before GME creation
+        # Verify download button is disabled before GME creation
         download_buttons = library_row.find_elements(By.CLASS_NAME, "download-gme")
         assert len(download_buttons) > 0, "Download button element not found"
         download_button = download_buttons[0]
         
-        # Button should be hidden initially (display: none)
-        assert not download_button.is_displayed(), "Download button should be hidden before GME creation"
+        # Button should be visible but disabled initially
+        assert download_button.is_displayed(), "Download button should be visible"
+        assert not download_button.is_enabled(), "Download button should be disabled before GME creation"
         
         # Create GME file
         create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
         create_button.click()
         time.sleep(5)  # Wait for GME creation
         
-        # Verify download button is now visible
-        assert download_button.is_displayed(), "Download button should be visible after GME creation"
+        # Verify download button is now enabled and active
+        assert download_button.is_displayed(), "Download button should still be visible after GME creation"
+        assert download_button.is_enabled(), "Download button should be enabled after GME creation"
 
     def test_download_gme_file(self, driver, clean_server):
         """Test that GME file can be downloaded through the web interface."""

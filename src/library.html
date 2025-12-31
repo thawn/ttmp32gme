@@ -218,10 +218,10 @@
 		}
 		if (data.gme_file) {
 			$id.find('button.print').show();
-			$id.find('button.download-gme').show();
+			$id.find('button.download-gme').prop('disabled', false).addClass('active');
 		} else {
 			$id.find('button.print').hide();
-			$id.find('button.download-gme').hide();
+			$id.find('button.download-gme').prop('disabled', true).removeClass('active');
 		}
 		$id.find('input[name=old_oid]').val(data.oid);
 		$id.find('button').data('item-id', $id);
@@ -679,7 +679,7 @@
 											<div class="input-group">
 												<input type="text" name="gme_file" class="form-control" disabled>
 												<span class="input-group-btn">
-													<button type="button" class="btn btn-info download-gme" style="display: none;">Download</button>
+													<button type="button" class="btn btn-info download-gme" disabled>Download</button>
 												</span>
 											</div>
 										</div>
