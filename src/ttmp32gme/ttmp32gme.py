@@ -97,29 +97,22 @@ def fetch_config() -> Dict[str, Any]:
 
     temp_config = db.get_config()
 
-    # Handle custom library path from command line
-    if custom_library_path:
-        custom_path_str = str(custom_library_path)
-        # Save to database if it's different from what's stored
-        if temp_config.get("library_path") != custom_path_str:
-            db.execute(
-                "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)",
-                ("library_path", custom_path_str),
-            )
-            db.commit()
-            logger.info(f"Updated library_path in database to: {custom_path_str}")
-        temp_config["library_path"] = custom_path_str
-    elif not temp_config.get("library_path"):
-        # No custom path and no path in database, use default
-        default_path = str(get_default_library_path())
-        temp_config["library_path"] = default_path
-        # Save default to database
+    # Ensure library_path is set (but don't override if already set in database)
+    if not temp_config.get("library_path"):
+        # No path in database, use custom path or default
+        if custom_library_path:
+            default_path = str(custom_library_path)
+        else:
+            default_path = str(get_default_library_path())
+
+        # Save to database
         db.execute(
             "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)",
             ("library_path", default_path),
         )
         db.commit()
-        logger.info(f"Set default library_path in database: {default_path}")
+        logger.info(f"Initialized library_path in database: {default_path}")
+        temp_config["library_path"] = default_path
 
     # convert strings to numeric types where appropriate
     if "port" in temp_config:
