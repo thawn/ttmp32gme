@@ -3,6 +3,8 @@
 import io
 import logging
 import shutil
+import sqlite3
+import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
@@ -160,6 +162,67 @@ def audio_files_context(album_name="Test Album"):
             print(f"Warning: Could not remove temporary directory {tmpdir}: {e}")
 
 
+@contextmanager
+def ogg_audio_files_context(album_name="Test OGG Album"):
+    """Context manager to create and cleanup test OGG files with various tags.
+
+    Reuses audio_files_context to generate MP3 files with tags, then converts them to OGG
+    using ffmpeg with the same arguments as tttool_handler.py. FFmpeg preserves the tags
+    during conversion.
+    """
+    # Check if ffmpeg is available
+    ffmpeg_path = shutil.which("ffmpeg")
+    if not ffmpeg_path:
+        raise RuntimeError("ffmpeg not found, cannot convert to OGG format")
+
+    # Create temporary directory for OGG files
+    tmpdir = tempfile.mkdtemp()
+    tmp_path = Path(tmpdir)
+    ogg_files = []
+
+    try:
+        # Use the existing audio_files_context to generate MP3 files with tags
+        with audio_files_context(album_name=album_name) as mp3_files:
+            # Convert each MP3 file to OGG
+            for mp3_file in mp3_files:
+                if mp3_file.suffix.lower() == ".mp3":
+                    # Create OGG file with same base name
+                    ogg_file = tmp_path / mp3_file.with_suffix(".ogg").name
+
+                    # Convert MP3 to OGG using ffmpeg with same arguments as tttool_handler.py
+                    # From tttool_handler.py lines 141-155
+                    cmd = [
+                        ffmpeg_path,
+                        "-y",
+                        "-i",
+                        str(mp3_file),
+                        "-map",
+                        "0:a",
+                        "-ar",
+                        "22050",
+                        "-ac",
+                        "1",
+                        str(ogg_file),
+                    ]
+
+                    subprocess.run(cmd, check=True, capture_output=True)
+                    ogg_files.append(ogg_file)
+                elif mp3_file.suffix.lower() in {".jpg", ".jpeg", ".png"}:
+                    # Copy image files directly
+                    img_file = tmp_path / mp3_file.name
+                    shutil.copy(mp3_file, img_file)
+                    ogg_files.append(img_file)
+
+        yield ogg_files
+
+    finally:
+        # Cleanup: remove temporary directory
+        try:
+            shutil.rmtree(tmpdir)
+        except Exception as e:
+            print(f"Warning: Could not remove temporary directory {tmpdir}: {e}")
+
+
 @pytest.fixture(scope="function")
 def clean_server(tmp_path, driver):
     """Start a new server with clean database and library in temporary directories.
@@ -255,6 +318,21 @@ def clean_server(tmp_path, driver):
     logger.info("Test server cleanup complete")
 
 
+def _get_database_value(query, params=(), db_path=None):
+    """Helper to query database directly."""
+    if db_path is None:
+        db_path = Path.home() / ".ttmp32gme" / "config.sqlite"
+    if not db_path.exists():
+        return None
+
+    conn = sqlite3.connect(str(db_path))
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
+
 def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
     """Helper to upload album files through UI."""
     print(f"DEBUG: Navigating to {server_url}")
@@ -286,7 +364,10 @@ def _upload_album_files(driver, server_url, test_audio_files, audio_only=True):
 
     if len(file_inputs) > 0:
         if audio_only:
-            upload_files = [str(f) for f in test_audio_files if f.suffix == ".mp3"]
+            # Include both .mp3 and .ogg files (case-insensitive, using set for efficient membership testing)
+            upload_files = [
+                str(f) for f in test_audio_files if f.suffix.lower() in {".mp3", ".ogg"}
+            ]
         else:
             upload_files = [str(f) for f in test_audio_files]
         print(f"DEBUG: Uploading {len(upload_files)} files: {upload_files}")
