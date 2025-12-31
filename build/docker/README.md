@@ -17,7 +17,7 @@ docker run -d \
   --rm \
   --name ttmp32gme \
   --publish 8080:8080 \
-  --volume ttmp32gme-data:/var/lib/ttmp32gme \
+  --volume ttmp32gme-data:/data \
   --volume /path/to/tiptoi:/mnt/tiptoi \
   thawn/ttmp32gme:latest
 ```
@@ -29,7 +29,7 @@ podman run -d \
   --rm \
   --name ttmp32gme \
   --publish 8080:8080 \
-  --volume ttmp32gme-data:/var/lib/ttmp32gme \
+  --volume ttmp32gme-data:/data \
   --volume /path/to/tiptoi:/mnt/tiptoi:Z \
   thawn/ttmp32gme:latest
 ```
@@ -38,7 +38,7 @@ podman run -d \
 
 ## Volume Mounts
 
-- **`/var/lib/ttmp32gme`**: Application data (database, generated library files)
+- **`/data`**: Application data (database, generated library files)
   - First run: Container initializes this directory with default config
   - Subsequent runs: Uses existing data for persistence
   
@@ -56,7 +56,7 @@ Podman automatically maps the container user to your host user, so permissions w
 ```bash
 # Your files will be owned by your user on the host
 podman run --rm \
-  --volume ./my-data:/var/lib/ttmp32gme \
+  --volume ./my-data:/data \
   --volume /media/tiptoi:/mnt/tiptoi:Z \
   --publish 8080:8080 \
   thawn/ttmp32gme:latest
@@ -69,7 +69,7 @@ If you encounter permission issues, you can use these options:
 1. **Option 1**: Match your user ID (recommended)
 ```bash
 docker run --user $(id -u):$(id -g) \
-  --volume ./my-data:/var/lib/ttmp32gme \
+  --volume ./my-data:/data \
   --volume /media/tiptoi:/mnt/tiptoi \
   --publish 8080:8080 \
   thawn/ttmp32gme:latest
@@ -100,7 +100,7 @@ docker run -d \
   --env HOST=127.0.0.1 \
   --env PORT=9000 \
   --publish 9000:9000 \
-  --volume ttmp32gme-data:/var/lib/ttmp32gme \
+  --volume ttmp32gme-data:/data \
   thawn/ttmp32gme:latest
 ```
 
@@ -123,7 +123,7 @@ If you get "permission denied" errors when accessing volumes:
 **For Podman**:
 ```bash
 # Add :Z flag for SELinux systems
-podman run --volume /path/to/data:/var/lib/ttmp32gme:Z ...
+podman run --volume /path/to/data:/data:Z ...
 ```
 
 **For Docker**:

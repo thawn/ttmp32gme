@@ -43,16 +43,15 @@ RUN groupadd -g 1000 ttmp32gme && \
 
 # Set up directories and copy config
 # Use proper permissions instead of 777 for security
-ENV APPDATA=/var/lib/
-RUN mkdir -p ${APPDATA}/ttmp32gme/library /mnt/tiptoi && \
-    cp /app/src/ttmp32gme/config.sqlite ${APPDATA}/ttmp32gme/ && \
-    chown -R ttmp32gme:ttmp32gme ${APPDATA}/ttmp32gme /mnt/tiptoi && \
-    chmod -R 775 ${APPDATA}/ttmp32gme && \
-    chmod 664 ${APPDATA}/ttmp32gme/config.sqlite
+RUN mkdir -p /data/library /mnt/tiptoi && \
+    cp /app/src/ttmp32gme/config.sqlite /data/ && \
+    chown -R ttmp32gme:ttmp32gme /data /mnt/tiptoi && \
+    chmod -R 775 /data && \
+    chmod 664 /data/config.sqlite
 
 # Declare volumes for persistent data
 # This helps Podman/Docker users understand which directories should be mounted
-VOLUME ["${APPDATA}/ttmp32gme", "/mnt/tiptoi"]
+VOLUME ["/data", "/mnt/tiptoi"]
 
 # Expose port 8080
 EXPOSE 8080
@@ -61,7 +60,7 @@ EXPOSE 8080
 USER ttmp32gme
 
 # Run the Python backend
-CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080", "--database=/var/lib/ttmp32gme/config.sqlite", "--library=/var/lib/ttmp32gme/library"]
+CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080", "--database=/data/config.sqlite", "--library=/data/library"]
 
 # Optional health check
 HEALTHCHECK --interval=5m --timeout=3s \
