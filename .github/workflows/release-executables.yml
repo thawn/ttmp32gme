@@ -3,6 +3,14 @@ name: Build and Release Executables
 on:
   release:
     types: [published]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'resources/**'
+      - 'ttmp32gme-*.spec'
+      - 'pyproject.toml'
+      - '.github/workflows/release-executables.yml'
   workflow_dispatch:
     inputs:
       tag:
@@ -46,7 +54,7 @@ jobs:
         with:
           name: ttmp32gme-windows
           path: dist/ttmp32gme-windows.zip
-          retention-days: 7
+          retention-days: 30
 
       - name: Upload to release
         if: github.event_name == 'release'
@@ -90,7 +98,7 @@ jobs:
         with:
           name: ttmp32gme-macos
           path: dist/ttmp32gme-macos.zip
-          retention-days: 7
+          retention-days: 30
 
       - name: Upload to release
         if: github.event_name == 'release'

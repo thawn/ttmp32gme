@@ -64,9 +64,14 @@ The resulting `ttmp32gme-macos.zip` contains:
 
 The build process is automated via GitHub Actions:
 
-1. **Trigger**: Builds are triggered automatically when a new release is published
+1. **Triggers**: Builds are triggered automatically:
+   - On pull requests that change source code, specs, or dependencies
+   - When a new release is published
+   - Manually via workflow dispatch
 2. **Parallel builds**: Windows and macOS builds run in parallel on their respective platforms
-3. **Artifacts**: Built executables are automatically uploaded as release assets
+3. **Artifacts**: Built executables are automatically uploaded:
+   - As workflow artifacts for pull requests (retained for 30 days)
+   - As release assets when a release is published
 
 To trigger a manual build:
 
