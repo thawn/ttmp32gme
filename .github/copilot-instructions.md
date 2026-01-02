@@ -111,6 +111,7 @@ sphinx-build -b html . _build/html
 # View documentation
 # Open docs/_build/html/index.html in browser
 ```
+Whenever you make changes to any file in the docs/ directory, verify that the documentation still builds without warnings or errors (warnings are treated as errors in the CI workflow that builds documentation).
 
 **Documentation Structure**:
 - User guides: `docs/*.md` (getting-started, installation, usage, etc.)
