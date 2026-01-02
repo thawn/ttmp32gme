@@ -68,11 +68,9 @@ SQL_INJECTION_PATTERNS = [
     r"['\"].*;",  # Semicolon after quote (injection attempt)
     # UNION-based attacks
     r"\bUNION\b.*\bSELECT\b",
-    # Boolean logic injection patterns
-    r"['\"].*\b(OR|AND)\b\s+['\"]?\w+['\"]?\s*=\s*['\"]?\w+['\"]?",  # ' OR 'x'='x
+    # Boolean logic injection patterns (more flexible to catch various injection attempts)
+    r"['\"].*\b(OR|AND)\b\s+['\"]?[^'\"]*['\"]?\s*=\s*['\"]?[^'\"]*['\"]?",  # ' OR 'x'='x
     r"\b(OR|AND)\b\s+\d+\s*=\s*\d+",  # OR 1=1 style attacks
-    # Hex or char-based injection
-    r"0x[0-9a-fA-F]+",  # Hex literals often used in injection
     # Multiple quotes (quote escaping attempts)
     r"'{3,}|" + r'"{3,}',  # Three or more consecutive quotes
 ]
