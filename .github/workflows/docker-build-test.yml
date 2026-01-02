@@ -155,6 +155,8 @@ jobs:
         docker stop ttmp32gme-test || true
         docker rm ttmp32gme-test || true
 
+    # Build and push multi-platform images to Docker Hub
+    # Note: tttool dependency (x86-64 binary) runs via QEMU emulation on ARM64
     - name: Build and push to Docker Hub
       if: ${{ inputs.push_to_registry }}
       uses: docker/build-push-action@v5
