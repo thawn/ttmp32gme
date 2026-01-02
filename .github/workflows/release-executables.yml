@@ -165,7 +165,7 @@ jobs:
           fi
 
           # Remove quarantine attribute to allow execution on macOS
-          xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/tttool" 2>/dev/null || true
+          # xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/tttool" 2>/dev/null || true
 
           # Also remove quarantine from dylibs if present
           for dylib in "$GITHUB_WORKSPACE/lib/mac"/*.dylib; do
