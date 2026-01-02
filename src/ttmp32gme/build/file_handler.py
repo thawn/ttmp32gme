@@ -216,7 +216,7 @@ def get_executable_path(executable_name: str) -> Optional[str]:
     # Check for bundled dependencies first (PyInstaller)
     if getattr(sys, "frozen", False):
         # Running in a PyInstaller bundle
-        bundle_dir = Path(sys._MEIPASS)
+        bundle_dir = Path(getattr(sys, "_MEIPASS", "."))
 
         # Check platform-specific lib subdirectories
         if platform.system() == "Windows":
