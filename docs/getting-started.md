@@ -51,4 +51,4 @@ Click "Create GME" button, wait for conversion (1-5 minutes).
 * Use unique OID numbers
 * Include cover images for easier identification
 * Test print quality with [OID table](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/oid-table.png)
-* Backup `~/.ttmp32gme/` directory regularly
+* Backup `~/.ttmp32gme/` directory regularly (see [Migration Guide](migration.md))

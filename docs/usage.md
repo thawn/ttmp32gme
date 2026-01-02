@@ -68,4 +68,4 @@ ttmp32gme --debug                  # Debug mode
 - Use unique OID numbers
 - Include cover images
 - Print at 1200 DPI
-- Backup `~/.ttmp32gme/` directory
+- Backup `~/.ttmp32gme/` directory (see [Migration Guide](migration.md))
