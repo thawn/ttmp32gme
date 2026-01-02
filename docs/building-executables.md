@@ -85,7 +85,7 @@ The CI workflow will automatically build and upload executables to the release.
 
 ### Windows
 
-```cmd
+```batch
 # Extract and run
 ttmp32gme.exe --help
 ttmp32gme.exe --port 10020

@@ -33,6 +33,7 @@ troubleshooting
 :caption: Developer Guide
 
 development
+building-executables
 api/index
 contributing
 SECURITY
