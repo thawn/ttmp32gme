@@ -24,6 +24,7 @@ getting-started
 installation
 usage
 print-configuration
+migration
 troubleshooting
 ```
 
