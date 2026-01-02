@@ -146,6 +146,14 @@ jobs:
           wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
           unzip -q "tttool-${TTTOOL_VERSION}.zip"
 
+          # List extracted files for debugging
+          echo "Extracted files:"
+          ls -la
+
+          # Check file type
+          echo "File type of tttool:"
+          file tttool || echo "file command failed"
+
           # Move binary and dynamic libraries to lib/mac
           chmod a+x tttool
           mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
@@ -160,7 +168,7 @@ jobs:
 
           # Also remove quarantine from dylibs if present
           for dylib in "$GITHUB_WORKSPACE/lib/mac"/*.dylib; do
-            [ -f "$dylib" ] && xattr -d com.apple.quarantine "$dylib" 2>/dev/null || true
+            [ -f "$dylib" ] && sudo xattr -d com.apple.quarantine "$dylib" 2>/dev/null || true
           done
 
           # Cleanup temp directory - change permissions first to ensure deletion succeeds
@@ -168,8 +176,19 @@ jobs:
           chmod -R u+w "$TEMP_DIR" || true
           rm -rf "$TEMP_DIR"
 
-          # Verify
-          lib/mac/tttool --help
+          # Verify - check architecture and try to run
+          echo "tttool binary info:"
+          file lib/mac/tttool
+          echo "Architecture:"
+          lipo -info lib/mac/tttool || echo "lipo command not available or failed"
+          echo "Attempting to run tttool --help:"
+          lib/mac/tttool --help || {
+            echo "Failed to execute tttool"
+            echo "Exit code: $?"
+            echo "Checking otool dependencies:"
+            otool -L lib/mac/tttool || echo "otool failed"
+            exit 1
+          }
 
       - name: Download ffmpeg for macOS
         run: |
