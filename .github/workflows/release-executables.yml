@@ -44,17 +44,18 @@ jobs:
         run: |
           pyinstaller ttmp32gme-windows.spec --clean
 
-      - name: Create ZIP archive
-        run: |
-          cd dist
-          Compress-Archive -Path ttmp32gme -DestinationPath ttmp32gme-windows.zip
-
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
         with:
           name: ttmp32gme-windows
-          path: dist/ttmp32gme-windows.zip
+          path: dist/ttmp32gme
           retention-days: 30
+
+      - name: Create ZIP archive for release
+        if: github.event_name == 'release'
+        run: |
+          cd dist
+          Compress-Archive -Path ttmp32gme -DestinationPath ttmp32gme-windows.zip
 
       - name: Upload to release
         if: github.event_name == 'release'
@@ -87,18 +88,19 @@ jobs:
         run: |
           pyinstaller ttmp32gme-macos.spec --clean
 
-      - name: Create DMG or ZIP archive
-        run: |
-          cd dist
-          # For now, create a ZIP. Later we can create a proper DMG
-          zip -r ttmp32gme-macos.zip ttmp32gme.app
-
       - name: Upload macOS executable
         uses: actions/upload-artifact@v4
         with:
           name: ttmp32gme-macos
-          path: dist/ttmp32gme-macos.zip
+          path: dist/ttmp32gme.app
           retention-days: 30
+
+      - name: Create ZIP archive for release
+        if: github.event_name == 'release'
+        run: |
+          cd dist
+          # For now, create a ZIP. Later we can create a proper DMG
+          zip -r ttmp32gme-macos.zip ttmp32gme.app
 
       - name: Upload to release
         if: github.event_name == 'release'
