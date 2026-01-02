@@ -270,6 +270,8 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     # --disable-gpu: Disable GPU hardware acceleration
     # --no-pdf-header-footer: Disable headers and footers in PDF
     # --print-to-pdf=<path>: Output to PDF file at specified path
+    # Note: Margins are controlled via CSS @page rules in pdf.html (0.5in all sides)
+    # Chromium doesn't support command-line margin parameters like wkhtmltopdf
     args = [
         chromium_path,
         "--headless",
