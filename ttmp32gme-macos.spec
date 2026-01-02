@@ -29,13 +29,15 @@ datas = [
     (str(templates_dir), 'templates'),
     # Assets (CSS, JS, images) - relative to ttmp32gme module
     (str(assets_dir), 'assets'),
+    # OID cache (pre-generated OID images)
+    (str(project_root / 'src' / 'oid_cache'), 'oid_cache'),
     # Config database
     (str(src_dir / 'config.sqlite'), 'ttmp32gme'),
-    # Top-level HTML files
-    (str(project_root / 'src' / 'library.html'), 'ttmp32gme'),
-    (str(project_root / 'src' / 'help.html'), 'ttmp32gme'),
-    (str(project_root / 'src' / 'config.html'), 'ttmp32gme'),
-    (str(project_root / 'src' / 'upload.html'), 'ttmp32gme'),
+    # Top-level HTML files (served from parent directory of ttmp32gme module)
+    (str(project_root / 'src' / 'library.html'), '.'),
+    (str(project_root / 'src' / 'help.html'), '.'),
+    (str(project_root / 'src' / 'config.html'), '.'),
+    (str(project_root / 'src' / 'upload.html'), '.'),
 ]
 
 # Collect bundled binaries for macOS
