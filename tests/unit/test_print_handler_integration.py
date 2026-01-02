@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -46,8 +47,20 @@ class TestFormatTracksIntegration:
         db.close()
         Path(db_path).unlink(missing_ok=True)
 
-    def test_format_tracks_with_real_db_none_tt_script(self, db_with_tracks):
+    @patch("ttmp32gme.print_handler.create_oids")
+    def test_format_tracks_with_real_db_none_tt_script(
+        self, mock_create_oids, db_with_tracks
+    ):
         """Test format_tracks with real database where tt_script is None."""
+
+        # Mock create_oids to avoid calling tttool
+        def create_oids_side_effect(oids, *args):
+            return [
+                Mock(spec=["name"], **{"name": f"{oid}-24-1200-2.png"}) for oid in oids
+            ]
+
+        mock_create_oids.side_effect = create_oids_side_effect
+
         # Get album from database
         album = db_with_tracks.get_album(920)
 
