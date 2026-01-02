@@ -11,7 +11,7 @@
 - **Database**: SQLite with custom DBHandler class
 - **Python Version**: 3.11+ required
 - **Testing**: 80+ tests (unit, integration, E2E with Selenium); coverage target 75%+
-- **Documentation**: Sphinx-based documentation in `docs/` folder with API reference
+- **Documentation**: Sphinx-based documentation in `docs/` folder with API reference. Concise and user-centric.
 
 ### Architecture
 - **Backend**: Python Flask application migrated from Perl
@@ -96,7 +96,17 @@ Pre-commit hooks perform the following steps:
 
 **No build step required** - Python source runs directly.
 
-### Building Documentation
+### Documentation
+
+Keep documentation concise and target audience-centric. Whenever new features are implemented or the API of existing features changes, check if the documentation needs to be updated.
+
+#### Documentation Structure
+- User guides: `docs/*.md` (except for `docs/Contributing.md`, `docs/Development.md`) getting-started, installation, usage, etc. Target audience: users
+- API reference: `docs/Contributing.md`, `docs/Development.md`, `docs/api/*.md` module documentation. Target audience: developers.
+- Configuration: `docs/conf.py`
+- Built output: `docs/_build/html/`
+
+#### Building documentation
 
 Documentation is built using Sphinx:
 
@@ -111,12 +121,8 @@ sphinx-build -b html . _build/html
 # View documentation
 # Open docs/_build/html/index.html in browser
 ```
+Whenever you make changes to any file in the docs/ directory, verify that the documentation still builds without warnings or errors (warnings are treated as errors in the CI workflow that builds documentation).
 
-**Documentation Structure**:
-- User guides: `docs/*.md` (getting-started, installation, usage, etc.)
-- API reference: `docs/api/*.md` (module documentation)
-- Configuration: `docs/conf.py`
-- Built output: `docs/_build/html/`
 
 ## Code Patterns & Conventions
 

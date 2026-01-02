@@ -198,6 +198,12 @@ class TrackMetadataModel(BaseModel):
 
 
 class DBHandler:
+    # Valid table names that can be used in queries
+    VALID_TABLES = {"config", "gme_library", "script_codes", "tracks"}
+
+    # Valid column names for each table (populated dynamically)
+    _valid_columns: Dict[str, set] = {}
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.conn: Optional[sqlite3.Connection] = None
@@ -219,6 +225,8 @@ class DBHandler:
             # This is safe because SQLite handles its own locking
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
+            # Populate valid columns cache
+            self._populate_valid_columns()
 
     def close(self):
         if self.conn:
@@ -337,6 +345,8 @@ class DBHandler:
     """
         )
         self.commit()
+        # Refresh column cache after table creation
+        self._populate_valid_columns()
 
     def execute(self, query: str, params: Tuple[Any, ...] = ()) -> sqlite3.Cursor:
         self.connect()
@@ -362,6 +372,58 @@ class DBHandler:
         if self.conn:
             self.conn.commit()
 
+    def _populate_valid_columns(self):
+        """Populate the cache of valid column names for each table."""
+        for table in self.VALID_TABLES:
+            try:
+                cursor = self.conn.cursor()
+                # Safe to use f-string here: table is from VALID_TABLES whitelist
+                cursor.execute(f"PRAGMA table_info({table});")
+                columns = [row[1] for row in cursor.fetchall()]
+                self._valid_columns[table] = set(columns)
+                cursor.close()
+            except sqlite3.OperationalError:
+                # Table might not exist yet (during initialization)
+                self._valid_columns[table] = set()
+
+    def _validate_table_name(self, table: str) -> None:
+        """Validate that a table name is allowed.
+
+        Args:
+            table: Table name to validate
+
+        Raises:
+            ValueError: If table name is not in the whitelist
+        """
+        if table not in self.VALID_TABLES:
+            raise ValueError(
+                f"Invalid table name: {table}. "
+                f"Allowed tables: {', '.join(sorted(self.VALID_TABLES))}"
+            )
+
+    def _validate_field_names(self, table: str, fields: List[str]) -> None:
+        """Validate that field names are allowed for the given table.
+
+        Args:
+            table: Table name
+            fields: List of field names to validate
+
+        Raises:
+            ValueError: If any field name is not valid for the table
+        """
+        valid_columns = self._valid_columns.get(table, set())
+        if not valid_columns:
+            # Re-populate in case table was just created
+            self._populate_valid_columns()
+            valid_columns = self._valid_columns.get(table, set())
+
+        invalid_fields = [f for f in fields if f not in valid_columns]
+        if invalid_fields:
+            raise ValueError(
+                f"Invalid field names for table {table}: {', '.join(invalid_fields)}. "
+                f"Allowed fields: {', '.join(sorted(valid_columns))}"
+            )
+
     def write_to_database(self, table: str, data: Dict[str, Any]):
         """Write data to database table.
 
@@ -369,8 +431,14 @@ class DBHandler:
             table: Table name
             data: Data dictionary
             connection: Database connection
+
+        Raises:
+            ValueError: If table name or field names are invalid
         """
+        self._validate_table_name(table)
         fields = sorted(data.keys())
+        self._validate_field_names(table, fields)
+
         values = [data[field] for field in fields]
         placeholders = ", ".join("?" * len(fields))
         query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
@@ -499,8 +567,14 @@ class DBHandler:
 
         Returns:
             True if successful
+
+        Raises:
+            ValueError: If table name or field names are invalid
         """
+        self._validate_table_name(table)
         fields = sorted(data.keys())
+        self._validate_field_names(table, fields)
+
         values = [data[field] for field in fields]
         set_clause = ", ".join(f"{field}=?" for field in fields)
         query = f"UPDATE {table} SET {set_clause} WHERE {keyname}"
