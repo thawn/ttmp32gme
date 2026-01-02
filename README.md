@@ -82,7 +82,7 @@ See [Print Configuration](docs/print-configuration.md) and [Troubleshooting](doc
 
 ## Documentation
 
-Comprehensive documentation in the `docs/` folder:
+[Comprehensive documentation available here](https://thawn.github.io/ttmp32gme/).
 
 * [Getting Started](docs/getting-started.md) - Quick introduction
 * [Installation](docs/installation.md) - Platform-specific instructions
