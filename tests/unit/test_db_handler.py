@@ -55,9 +55,16 @@ class TestReusableValidators:
         assert trim_optional_str(None) is None
 
     def test_trim_optional_str_with_empty(self):
-        """Test that empty string returns empty string (falsy)."""
-        # Empty string is falsy, so it returns as-is (empty string, not None)
+        """Test that empty string returns empty string unchanged."""
+        # Empty string fails the `if v and isinstance(v, str):` check
+        # because empty string is falsy, so it returns as-is
         assert trim_optional_str("") == ""
+
+    def test_trim_optional_str_with_non_string(self):
+        """Test that non-string values return unchanged."""
+        assert trim_optional_str(123) == 123
+        assert trim_optional_str(True) is True
+        assert trim_optional_str([]) == []
 
     def test_validate_non_empty_str_valid(self):
         """Test validating non-empty strings."""
@@ -81,6 +88,16 @@ class TestReusableValidators:
         with pytest.raises(ValueError) as exc:
             validate_non_empty_str("", "Custom field")
         assert "Custom field cannot be empty" in str(exc.value)
+
+    def test_validate_non_empty_str_non_string(self):
+        """Test that non-string values raise TypeError."""
+        with pytest.raises(TypeError) as exc:
+            validate_non_empty_str(123)
+        assert "must be a string" in str(exc.value)
+
+        with pytest.raises(TypeError) as exc:
+            validate_non_empty_str(None, "My field")
+        assert "My field must be a string" in str(exc.value)
 
 
 class TestAlbumUpdateModel:

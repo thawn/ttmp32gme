@@ -50,7 +50,7 @@ def trim_optional_str(v):
     Returns:
         Trimmed string or None
     """
-    if v:
+    if v and isinstance(v, str):
         return v.strip()
     return v
 
@@ -67,7 +67,10 @@ def validate_non_empty_str(v, field_name: str = "field"):
 
     Raises:
         ValueError: If string is empty or whitespace only
+        TypeError: If value is not a string
     """
+    if not isinstance(v, str):
+        raise TypeError(f"{field_name} must be a string")
     if not v or not v.strip():
         raise ValueError(f"{field_name} cannot be empty")
     return v.strip()
