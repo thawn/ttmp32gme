@@ -10,7 +10,112 @@ import pytest
 from mutagen.oggvorbis import OggVorbis
 from pydantic import ValidationError
 
-from ttmp32gme.db_handler import AlbumMetadataModel, DBHandler, TrackMetadataModel
+from ttmp32gme.db_handler import (
+    AlbumMetadataModel,
+    AlbumUpdateModel,
+    DBHandler,
+    LibraryActionModel,
+    TrackMetadataModel,
+    convert_str_to_int,
+    trim_optional_str,
+    validate_non_empty_str,
+)
+
+
+class TestReusableValidators:
+    """Test reusable validator functions."""
+
+    def test_convert_str_to_int_with_string(self):
+        """Test converting string to int."""
+        assert convert_str_to_int("42") == 42
+        assert convert_str_to_int("920") == 920
+
+    def test_convert_str_to_int_with_int(self):
+        """Test that integers pass through unchanged."""
+        assert convert_str_to_int(42) == 42
+        assert convert_str_to_int(920) == 920
+
+    def test_convert_str_to_int_with_none(self):
+        """Test that None passes through unchanged."""
+        assert convert_str_to_int(None) is None
+
+    def test_convert_str_to_int_invalid(self):
+        """Test that invalid strings raise ValueError."""
+        with pytest.raises(ValueError) as exc:
+            convert_str_to_int("not_a_number")
+        assert "Invalid integer value" in str(exc.value)
+
+    def test_trim_optional_str_with_whitespace(self):
+        """Test trimming strings with whitespace."""
+        assert trim_optional_str("  hello  ") == "hello"
+        assert trim_optional_str("world\n") == "world"
+
+    def test_trim_optional_str_with_none(self):
+        """Test that None returns None."""
+        assert trim_optional_str(None) is None
+
+    def test_trim_optional_str_with_empty(self):
+        """Test that empty string returns empty string (falsy)."""
+        # Empty string is falsy, so it returns as-is (empty string, not None)
+        assert trim_optional_str("") == ""
+
+    def test_validate_non_empty_str_valid(self):
+        """Test validating non-empty strings."""
+        assert validate_non_empty_str("hello") == "hello"
+        assert validate_non_empty_str("  world  ") == "world"
+
+    def test_validate_non_empty_str_empty(self):
+        """Test that empty strings raise ValueError."""
+        with pytest.raises(ValueError) as exc:
+            validate_non_empty_str("")
+        assert "cannot be empty" in str(exc.value)
+
+    def test_validate_non_empty_str_whitespace(self):
+        """Test that whitespace-only strings raise ValueError."""
+        with pytest.raises(ValueError) as exc:
+            validate_non_empty_str("   ")
+        assert "cannot be empty" in str(exc.value)
+
+    def test_validate_non_empty_str_custom_field_name(self):
+        """Test custom field name in error message."""
+        with pytest.raises(ValueError) as exc:
+            validate_non_empty_str("", "Custom field")
+        assert "Custom field cannot be empty" in str(exc.value)
+
+
+class TestAlbumUpdateModel:
+    """Test AlbumUpdateModel validation."""
+
+    def test_oid_string_to_int_conversion(self):
+        """Test that OID strings are converted to integers."""
+        data = {"oid": "920", "album_title": "Test"}
+        model = AlbumUpdateModel(**data)
+        assert model.oid == 920
+        assert isinstance(model.oid, int)
+
+    def test_uid_string_to_int_conversion(self):
+        """Test that UID strings are converted to integers."""
+        data = {"uid": "920", "album_title": "Test"}
+        model = AlbumUpdateModel(**data)
+        assert model.uid == 920
+        assert isinstance(model.uid, int)
+
+
+class TestLibraryActionModel:
+    """Test LibraryActionModel validation."""
+
+    def test_uid_string_to_int_conversion(self):
+        """Test that UID strings are converted to integers."""
+        data = {"uid": "920"}
+        model = LibraryActionModel(**data)
+        assert model.uid == 920
+        assert isinstance(model.uid, int)
+
+    def test_uid_required(self):
+        """Test that UID is required."""
+        with pytest.raises(ValidationError) as exc:
+            LibraryActionModel()
+        assert "uid" in str(exc.value)
 
 
 class TestAlbumMetadataModel:
