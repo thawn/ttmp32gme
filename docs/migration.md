@@ -31,7 +31,9 @@ If you started ttmp32gme with `--database` or `--library` flags, your data is in
 
 ## Migration Steps
 
-### Option 1: Complete Migration (Recommended)
+### Option 1: Same-Platform Migration (Recommended)
+
+Use this method when migrating between computers running the same operating system (Linux to Linux, macOS to macOS, Windows to Windows) or between Linux and macOS.
 
 Migrate both database and library to preserve all data and settings.
 
@@ -52,53 +54,29 @@ Migrate both database and library to preserve all data and settings.
 4. Copy the entire directory from your backup to this location
 5. Start ttmp32gme - all albums, settings, and files will be available
 
-### Option 2: Database Only Migration
+### Option 2: Cross-Platform Migration (Windows to macOS/Linux)
 
-Migrate only the configuration database to preserve settings and album metadata. You'll need to regenerate GME files.
+Use this method **only** when migrating between Windows and another operating system (macOS or Linux). This process requires re-importing your audio files.
 
-**On the source computer**:
+**Note**: For migrations between macOS and Linux, use **Option 1** instead.
 
-1. Stop ttmp32gme if running
-2. Copy `config.sqlite` from the data directory to a USB drive or network location
-
-**On the destination computer**:
-
-1. Install ttmp32gme
-2. Stop ttmp32gme if running
-3. Copy `config.sqlite` to the data directory
-4. Start ttmp32gme
-5. Regenerate GME files by clicking "Create GME" for each album in the Library page
-
-**Note**: Audio files and cover images are stored in the library folder. If you only migrate the database, you'll need to re-upload these files or manually copy the library folder.
-
-### Option 3: Library Only Migration
-
-Migrate the library folder while keeping default settings on the new computer.
-
-**On the source computer**:
+**On the source computer (Windows)**:
 
 1. Stop ttmp32gme if running
-2. Copy the entire `library/` folder to a USB drive or network location
+2. Locate your library folder: `%APPDATA%\ttmp32gme\library\`
+3. Copy all album folders from the library to a USB drive or network location
+4. Each album folder contains the original MP3 files and cover images
 
-**On the destination computer**:
+**On the destination computer (macOS/Linux)**:
 
-1. Install ttmp32gme
-2. Stop ttmp32gme if running
-3. Copy the `library/` folder to the data directory
-4. Start ttmp32gme
-5. Albums will appear in the Library page with their existing GME files
-
-**Note**: Settings, OID assignments, and metadata are stored in the database. If you only migrate the library, you'll need to reconfigure settings in the Config page.
-
-## Cross-Platform Migration
-
-When migrating between different operating systems (e.g., Windows to Linux):
-
-1. Follow **Option 1** steps above
-2. After copying, update the library path in Config page if needed:
-   - Open Config page in ttmp32gme
-   - Update "Library Path" to match the new system's path format
-   - Save configuration
+1. Install ttmp32gme (see [Installation](installation.md))
+2. Start ttmp32gme to create the initial configuration
+3. For each album from your backup:
+   - Navigate to the Upload page
+   - Upload the MP3 files from the album folder
+   - Upload the cover image (if present: `cover.jpg` or `cover.png`)
+   - Configure album settings (title, artist, OID) to match your original setup
+   - Click "Create GME" to generate the GME files
 
 ## Custom Paths
 
@@ -118,22 +96,13 @@ After migration:
 2. Check Library page - all albums should be visible
 3. Check Config page - settings should match your old setup
 4. Test printing a control sheet to verify OID codes are preserved
-5. If GME files were not migrated, click "Create GME" to regenerate them
 
 ## Troubleshooting
 
 **Albums missing after migration**:
-- Verify you copied the `config.sqlite` file
+- Verify you copied the entire data directory including `config.sqlite`
 - Refresh the Library page (F5)
 - Check that the database file has read/write permissions
-
-**GME files missing**:
-- If you only migrated the database, regenerate GME files using "Create GME" button
-- Verify the library folder was copied completely
-
-**Path errors**:
-- Update library path in Config page to match the new system
-- Ensure the library folder exists and is accessible
 
 **Permission errors**:
 - Ensure copied files have proper read/write permissions
