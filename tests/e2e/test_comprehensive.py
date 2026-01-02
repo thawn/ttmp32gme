@@ -765,6 +765,120 @@ class TestWebInterface:
 
         conn.close()
 
+    def test_edit_album_info_change_image(self, driver, base_config_with_album):
+        """Test changing album cover image via the library page edit modal."""
+        server_info = base_config_with_album
+
+        # Get original album info from database
+        conn = sqlite3.connect(str(server_info["db_path"]))
+        cursor = conn.cursor()
+        cursor.execute("SELECT oid, picture_filename, path FROM gme_library LIMIT 1")
+        original_oid, original_picture_filename, album_path = cursor.fetchone()
+        conn.close()
+
+        # Verify original cover exists
+        album_dir = Path(album_path)
+        if original_picture_filename:
+            original_cover = album_dir / original_picture_filename
+            assert original_cover.exists(), f"Original cover {original_cover} not found"
+
+        # Create a new test image file
+        import tempfile
+
+        from PIL import Image
+
+        tmpdir = tempfile.mkdtemp()
+        tmp_path = Path(tmpdir)
+        try:
+            new_cover_img = tmp_path / "new_cover.jpg"
+            # Create a distinct green image (original is red/blue)
+            img = Image.new("RGB", (150, 150), color="green")
+            img.save(new_cover_img, "JPEG")
+
+            # Open edit modal
+            library_element = _open_library_element_for_editing(
+                server_info["url"], driver
+            )
+
+            # Find the image uploader component and upload new image
+            # The image uploader uses FineUploader - find the file input
+            time.sleep(0.5)  # Wait for modal to fully load
+
+            # Find the file input within the image-uploader div
+            image_uploader = library_element.find_element(
+                By.CLASS_NAME, "image-uploader"
+            )
+            file_inputs = image_uploader.find_elements(
+                By.CSS_SELECTOR, "input[type='file']"
+            )
+
+            # If no file input found, click the upload button to reveal it
+            if len(file_inputs) == 0:
+                upload_button = image_uploader.find_element(
+                    By.CLASS_NAME, "qq-upload-button"
+                )
+                upload_button.click()
+                time.sleep(0.5)
+                file_inputs = image_uploader.find_elements(
+                    By.CSS_SELECTOR, "input[type='file']"
+                )
+
+            assert len(file_inputs) > 0, "No file input found in image uploader"
+
+            # Upload the new cover image
+            file_inputs[0].send_keys(str(new_cover_img))
+            time.sleep(2)  # Wait for upload to complete
+
+            # The FineUploader callback should trigger updateElement which refreshes the data
+            # Wait a bit more to ensure processing completes
+            time.sleep(1)
+
+            # Close the modal or navigate away to trigger save
+            # Actually, the image upload happens immediately via the add_cover action
+            # We can verify the change right away
+
+            # Verify the new cover image exists in the album directory
+            new_covers = list(album_dir.glob("new_cover.jpg"))
+            assert len(new_covers) > 0, "New cover image not found in album directory"
+
+            # Verify database updated with new picture_filename
+            conn = sqlite3.connect(str(server_info["db_path"]))
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT picture_filename FROM gme_library WHERE oid = ?",
+                (original_oid,),
+            )
+            result = cursor.fetchone()
+            conn.close()
+
+            assert result is not None, "Album not found in database"
+            new_picture_filename = result[0]
+            assert (
+                new_picture_filename is not None
+            ), "picture_filename is None after upload"
+            assert (
+                "new_cover" in new_picture_filename
+            ), f"Expected new_cover in filename, got {new_picture_filename}"
+
+            # Verify old cover was removed (if it existed)
+            if (
+                original_picture_filename
+                and original_picture_filename != new_picture_filename
+            ):
+                old_cover = album_dir / original_picture_filename
+                assert (
+                    not old_cover.exists()
+                ), f"Old cover {old_cover} still exists after replacement"
+
+        finally:
+            # Cleanup temporary directory
+            import shutil
+
+            try:
+                shutil.rmtree(tmpdir)
+            except Exception as e:
+                logger.warning(f"Could not remove temporary directory {tmpdir}: {e}")
+
     def test_select_deselect_all(self, driver, base_config_with_album):
         """Test select all / deselect all on library page."""
         server_info = base_config_with_album
