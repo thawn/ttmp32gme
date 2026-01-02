@@ -300,6 +300,7 @@ class DBHandler:
             INSERT OR IGNORE INTO config VALUES('audio_format','mp3');
             INSERT OR IGNORE INTO config VALUES('print_max_track_controls','24');
             INSERT OR IGNORE INTO config VALUES('print_page_size','A4');
+            INSERT OR IGNORE INTO config VALUES('print_page_margin','0.5in');
             INSERT OR IGNORE INTO config VALUES('print_show_cover','TRUE');
             INSERT OR IGNORE INTO config VALUES('print_show_album_info','TRUE');
             INSERT OR IGNORE INTO config VALUES('print_show_album_controls','TRUE');
