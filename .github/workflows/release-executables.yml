@@ -150,8 +150,9 @@ jobs:
           chmod +x tttool
           mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
 
-          # Cleanup temp directory
+          # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
+          chmod -R u+w "$TEMP_DIR" || true
           rm -rf "$TEMP_DIR"
 
           # Verify
@@ -173,8 +174,9 @@ jobs:
           chmod +x ffmpeg
           mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
 
-          # Cleanup temp directory
+          # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
+          chmod -R u+w "$TEMP_DIR" || true
           rm -rf "$TEMP_DIR"
 
           # Verify
