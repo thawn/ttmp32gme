@@ -145,6 +145,7 @@ jobs:
           # Download and extract tttool
           wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
           unzip -q "tttool-${TTTOOL_VERSION}.zip"
+          cd osx
 
           # List extracted files for debugging
           echo "Extracted files:"
@@ -155,7 +156,7 @@ jobs:
           file tttool || echo "file command failed"
 
           # Move binary and dynamic libraries to lib/mac
-          chmod a+x tttool
+          chmod +x tttool
           mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
 
           # Copy all .dylib files if they exist
@@ -164,7 +165,7 @@ jobs:
           fi
 
           # Remove quarantine attribute to allow execution on macOS
-          sudo xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/tttool" 2>/dev/null || true
+          xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/tttool" 2>/dev/null || true
 
           # Also remove quarantine from dylibs if present
           for dylib in "$GITHUB_WORKSPACE/lib/mac"/*.dylib; do
@@ -203,11 +204,11 @@ jobs:
           unzip -q ffmpeg.zip
 
           # Move binary to lib/mac
-          chmod a+x ffmpeg
+          chmod +x ffmpeg
           mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
 
           # Remove quarantine attribute to allow execution on macOS
-          sudo xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/ffmpeg" 2>/dev/null || true
+          xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/ffmpeg" 2>/dev/null || true
 
           # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
