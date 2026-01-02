@@ -6,6 +6,7 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional
 
@@ -203,13 +204,53 @@ def cleanup_filename(filename: str) -> str:
 def get_executable_path(executable_name: str) -> Optional[str]:
     """Find executable in PATH or common locations.
 
+    Looks for bundled dependencies first (for PyInstaller builds),
+    then checks PATH and common installation locations.
+
     Args:
         executable_name: Name of executable to find
 
     Returns:
         Path to executable or None if not found
     """
-    # First check if it's in PATH
+    # Check for bundled dependencies first (PyInstaller)
+    if getattr(sys, "frozen", False):
+        # Running in a PyInstaller bundle
+        bundle_dir = Path(sys._MEIPASS)
+
+        # Check platform-specific lib subdirectories
+        if platform.system() == "Windows":
+            bundled_path = bundle_dir / "lib" / "win" / f"{executable_name}.exe"
+        elif platform.system() == "Darwin":
+            bundled_path = bundle_dir / "lib" / "mac" / executable_name
+        else:
+            bundled_path = bundle_dir / "lib" / "linux" / executable_name
+
+        if bundled_path.exists() and os.access(bundled_path, os.X_OK):
+            return str(bundled_path)
+
+        # Also check directly in bundle_dir
+        if platform.system() == "Windows":
+            direct_path = bundle_dir / f"{executable_name}.exe"
+        else:
+            direct_path = bundle_dir / executable_name
+
+        if direct_path.exists() and os.access(direct_path, os.X_OK):
+            return str(direct_path)
+    else:
+        # Check lib/ directory relative to source (for development)
+        src_dir = Path(__file__).parent.parent.parent.parent
+        if platform.system() == "Windows":
+            bundled_path = src_dir / "lib" / "win" / f"{executable_name}.exe"
+        elif platform.system() == "Darwin":
+            bundled_path = src_dir / "lib" / "mac" / executable_name
+        else:
+            bundled_path = src_dir / "lib" / "linux" / executable_name
+
+        if bundled_path.exists() and os.access(bundled_path, os.X_OK):
+            return str(bundled_path)
+
+    # Check if it's in PATH
     result = shutil.which(executable_name)
     if result:
         return result

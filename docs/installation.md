@@ -4,6 +4,21 @@
 
 Download pre-built executables from [releases page](https://github.com/thawn/ttmp32gme/releases), extract, and run. Open `http://localhost:10020` in browser.
 
+**Requirements**:
+- Chrome or Chromium browser (for PDF generation) - [Download Chrome](https://www.google.com/chrome/)
+
+**Installation steps**:
+1. Download the appropriate ZIP file for your platform:
+   - `ttmp32gme-windows.zip` for Windows
+   - `ttmp32gme-macos.zip` for macOS
+2. Extract the ZIP file to a location of your choice
+3. Run the executable:
+   - Windows: Double-click `ttmp32gme.exe` or run from command prompt
+   - macOS: Right-click `ttmp32gme.app` → Open (first time only to bypass Gatekeeper)
+4. Open your browser to `http://localhost:10020`
+
+The executable includes all necessary dependencies (tttool, ffmpeg) except Chrome/Chromium which should be installed separately.
+
 ## Linux
 
 ### Python (Recommended)
