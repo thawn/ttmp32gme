@@ -145,6 +145,7 @@ jobs:
           # Download and extract tttool
           wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
           unzip -q "tttool-${TTTOOL_VERSION}.zip"
+          cd tttool-1.11/osx
 
           # List extracted files for debugging
           echo "Extracted files:"
