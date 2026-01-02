@@ -137,7 +137,8 @@ After migration:
 
 **Permission errors**:
 - Ensure copied files have proper read/write permissions
-- On Linux/macOS: `chmod -R u+rw ~/.ttmp32gme/`
+- On Linux: `chmod -R u+rw ~/.ttmp32gme/`
+- On macOS: `chmod -R u+rw ~/Library/Application\ Support/ttmp32gme/`
 
 ## Backup Recommendations
 
@@ -147,10 +148,16 @@ Regular backups prevent data loss:
 - **Before updates**: Backup before upgrading ttmp32gme
 - **After changes**: Backup after creating new albums or changing settings
 
-Example backup command (Linux/macOS):
+Example backup command (Linux):
 ```bash
 # Create timestamped backup
 tar -czf ttmp32gme-backup-$(date +%Y%m%d).tar.gz ~/.ttmp32gme/
+```
+
+Example backup command (macOS):
+```bash
+# Create timestamped backup
+tar -czf ttmp32gme-backup-$(date +%Y%m%d).tar.gz ~/Library/Application\ Support/ttmp32gme/
 ```
 
 Example backup command (Windows PowerShell):
