@@ -61,20 +61,35 @@ class TestSanitizeString:
             sanitize_string("admin' OR 1=1--")
         assert "suspicious SQL patterns" in str(exc.value)
 
-    def test_sanitize_sql_comment(self):
-        """Test that SQL comments are rejected."""
+    def test_sanitize_sql_comment_after_quote(self):
+        """Test that SQL comments after quotes are rejected."""
         with pytest.raises(ValueError) as exc:
-            sanitize_string("test -- comment")
+            sanitize_string("test' -- comment")
         assert "suspicious SQL patterns" in str(exc.value)
 
-    def test_sanitize_semicolon(self):
-        """Test that semicolons are rejected."""
+    def test_sanitize_semicolon_after_quote(self):
+        """Test that semicolons after quotes are rejected."""
         with pytest.raises(ValueError) as exc:
-            sanitize_string("test; DROP TABLE")
+            sanitize_string("test'; DROP TABLE")
         assert "suspicious SQL patterns" in str(exc.value)
+
+    def test_sanitize_legitimate_semicolon(self):
+        """Test that legitimate semicolons are allowed."""
+        result = sanitize_string("Symphony No. 9; Ode to Joy")
+        assert "Symphony No. 9; Ode to Joy" in result
+
+    def test_sanitize_legitimate_double_dash(self):
+        """Test that legitimate double dashes are allowed."""
+        result = sanitize_string("Best of 1990--2000")
+        assert "Best of 1990--2000" in result
+
+    def test_sanitize_legitimate_or_and(self):
+        """Test that legitimate OR/AND words are allowed."""
+        result = sanitize_string("Track 1 OR 2019 Release")
+        assert "Track 1 OR 2019 Release" in result
 
     def test_sanitize_case_insensitive(self):
-        """Test that SQL keywords are caught case-insensitively."""
+        """Test that SQL keywords in suspicious contexts are caught."""
         with pytest.raises(ValueError) as exc:
             sanitize_string("SeLeCt * FrOm users")
         assert "suspicious SQL patterns" in str(exc.value)

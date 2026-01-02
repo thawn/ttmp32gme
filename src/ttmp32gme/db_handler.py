@@ -54,16 +54,27 @@ VALID_COLUMNS = {
     "script_codes": {"script", "code"},
 }
 
-# SQL keywords that should not appear in data (case-insensitive)
+# SQL injection patterns that indicate malicious intent (case-insensitive)
+# These patterns are designed to catch SQL injection attempts while minimizing false positives
 SQL_INJECTION_PATTERNS = [
-    r"\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b",
-    r"--",  # SQL comment
-    r"/\*",  # Multi-line comment start
-    r"\*/",  # Multi-line comment end
-    r";",  # Statement separator
-    r"\bUNION\b",
-    r"\bOR\b\s+\d+\s*=\s*\d+",  # OR 1=1 style attacks
-    r"\bAND\b\s+\d+\s*=\s*\d+",  # AND 1=1 style attacks
+    # SQL keywords in suspicious contexts (with quotes or special chars)
+    r"['\"].*\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b.*['\"]",
+    r"\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\b.*\bFROM\b",
+    r"\b(DROP|CREATE|ALTER)\b.*\b(TABLE|DATABASE|INDEX)\b",
+    # SQL comments in suspicious contexts (after quotes or with injection patterns)
+    r"['\"].*--",  # SQL comment after quote
+    r"['\"].*/\*",  # Multi-line comment after quote
+    # Statement separator in suspicious context
+    r"['\"].*;",  # Semicolon after quote (injection attempt)
+    # UNION-based attacks
+    r"\bUNION\b.*\bSELECT\b",
+    # Boolean logic injection patterns
+    r"['\"].*\b(OR|AND)\b\s+['\"]?\w+['\"]?\s*=\s*['\"]?\w+['\"]?",  # ' OR 'x'='x
+    r"\b(OR|AND)\b\s+\d+\s*=\s*\d+",  # OR 1=1 style attacks
+    # Hex or char-based injection
+    r"0x[0-9a-fA-F]+",  # Hex literals often used in injection
+    # Multiple quotes (quote escaping attempts)
+    r"'{3,}|" + r'"{3,}',  # Three or more consecutive quotes
 ]
 
 
