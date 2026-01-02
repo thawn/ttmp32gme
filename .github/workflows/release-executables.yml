@@ -47,14 +47,18 @@ jobs:
           # Create lib/win directory if it doesn't exist
           New-Item -ItemType Directory -Force -Path lib/win
 
-          # Download tttool
+          # Download tttool to temp directory
+          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "tttool-temp-$(Get-Random)")
           $url = "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
-          Invoke-WebRequest -Uri $url -OutFile tttool.zip
+          $zipPath = Join-Path $tempDir "tttool.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zipPath
 
-          # Extract and move to lib/win
-          Expand-Archive -Path tttool.zip -DestinationPath .
-          Move-Item -Path tttool.exe -Destination lib/win/tttool.exe -Force
-          Remove-Item tttool.zip
+          # Extract to temp directory and move binary
+          Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+          Move-Item -Path (Join-Path $tempDir "tttool.exe") -Destination lib/win/tttool.exe -Force
+
+          # Cleanup temp directory
+          Remove-Item -Recurse -Force $tempDir
 
           # Verify
           lib/win/tttool.exe --help
@@ -63,16 +67,21 @@ jobs:
         run: |
           Write-Host "Downloading ffmpeg for Windows"
 
-          # Download ffmpeg static build
+          # Download ffmpeg to temp directory
+          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "ffmpeg-temp-$(Get-Random)")
           $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-          Invoke-WebRequest -Uri $url -OutFile ffmpeg.zip
+          $zipPath = Join-Path $tempDir "ffmpeg.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zipPath
 
-          # Extract and move to lib/win
-          Expand-Archive -Path ffmpeg.zip -DestinationPath .
-          $ffmpegDir = Get-ChildItem -Directory -Filter "ffmpeg-*" | Select-Object -First 1
-          Move-Item -Path "$($ffmpegDir.FullName)/bin/ffmpeg.exe" -Destination lib/win/ffmpeg.exe -Force
-          Remove-Item -Recurse -Force $ffmpegDir
-          Remove-Item ffmpeg.zip
+          # Extract to temp directory
+          Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+
+          # Find and move ffmpeg.exe
+          $ffmpegDir = Get-ChildItem -Path $tempDir -Directory -Filter "ffmpeg-*" | Select-Object -First 1
+          Move-Item -Path (Join-Path $ffmpegDir.FullName "bin/ffmpeg.exe") -Destination lib/win/ffmpeg.exe -Force
+
+          # Cleanup temp directory
+          Remove-Item -Recurse -Force $tempDir
 
           # Verify
           lib/win/ffmpeg.exe -version
@@ -129,14 +138,21 @@ jobs:
           # Create lib/mac directory if it doesn't exist
           mkdir -p lib/mac
 
+          # Create temp directory for extraction
+          TEMP_DIR=$(mktemp -d)
+          cd "$TEMP_DIR"
+
           # Download and extract tttool
           wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
           unzip -q "tttool-${TTTOOL_VERSION}.zip"
 
-          # Move to lib/mac
+          # Move binary to lib/mac
           chmod +x tttool
-          mv tttool lib/mac/tttool
-          rm "tttool-${TTTOOL_VERSION}.zip"
+          mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
+
+          # Cleanup temp directory
+          cd "$GITHUB_WORKSPACE"
+          rm -rf "$TEMP_DIR"
 
           # Verify
           lib/mac/tttool --help
@@ -145,14 +161,21 @@ jobs:
         run: |
           echo "Downloading ffmpeg for macOS"
 
+          # Create temp directory for extraction
+          TEMP_DIR=$(mktemp -d)
+          cd "$TEMP_DIR"
+
           # Download ffmpeg static build for macOS
           wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip
           unzip -q ffmpeg.zip
 
-          # Move to lib/mac
+          # Move binary to lib/mac
           chmod +x ffmpeg
-          mv ffmpeg lib/mac/ffmpeg
-          rm ffmpeg.zip
+          mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
+
+          # Cleanup temp directory
+          cd "$GITHUB_WORKSPACE"
+          rm -rf "$TEMP_DIR"
 
           # Verify
           lib/mac/ffmpeg -version
