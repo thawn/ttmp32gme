@@ -147,7 +147,7 @@ jobs:
           unzip -q "tttool-${TTTOOL_VERSION}.zip"
 
           # Move binary and dynamic libraries to lib/mac
-          chmod +x tttool
+          chmod a+x tttool
           mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
 
           # Copy all .dylib files if they exist
