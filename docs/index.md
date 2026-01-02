@@ -44,6 +44,7 @@ troubleshooting
 development
 api/index
 contributing
+SECURITY
 ```
 
 ## External Resources
