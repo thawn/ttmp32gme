@@ -547,7 +547,7 @@ class TestDBHandlerCoreMethods:
         """Test get_config_value method."""
         version = db.get_config_value("version")
         assert version is not None
-        assert version == "1.0.0"
+        assert version == "2.0.0"
 
     def test_get_config_value_not_found(self, db):
         """Test get_config_value for non-existent parameter."""
