@@ -147,14 +147,6 @@ jobs:
           unzip -q "tttool-${TTTOOL_VERSION}.zip"
           cd tttool-1.11/osx
 
-          # List extracted files for debugging
-          echo "Extracted files:"
-          ls -la
-
-          # Check file type
-          echo "File type of tttool:"
-          file tttool || echo "file command failed"
-
           # Move binary and dynamic libraries to lib/mac
           chmod +x tttool
           mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
@@ -164,25 +156,12 @@ jobs:
             mv *.dylib "$GITHUB_WORKSPACE/lib/mac/"
           fi
 
-          # Remove quarantine attribute to allow execution on macOS
-          # xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/tttool" 2>/dev/null || true
-
-          # Also remove quarantine from dylibs if present
-          for dylib in "$GITHUB_WORKSPACE/lib/mac"/*.dylib; do
-            [ -f "$dylib" ] && sudo xattr -d com.apple.quarantine "$dylib" 2>/dev/null || true
-          done
-
           # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
           chmod -R u+w "$TEMP_DIR" || true
           rm -rf "$TEMP_DIR"
 
           # Verify - check architecture and try to run
-          echo "tttool binary info:"
-          file lib/mac/tttool
-          echo "Architecture:"
-          lipo -info lib/mac/tttool || echo "lipo command not available or failed"
-          echo "Attempting to run tttool --help:"
           lib/mac/tttool --help || {
             echo "Failed to execute tttool"
             echo "Exit code: $?"
@@ -206,9 +185,6 @@ jobs:
           # Move binary to lib/mac
           chmod +x ffmpeg
           mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
-
-          # Remove quarantine attribute to allow execution on macOS
-          xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/ffmpeg" 2>/dev/null || true
 
           # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
