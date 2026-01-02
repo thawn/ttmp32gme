@@ -4,7 +4,7 @@ FROM python:3.12-slim AS base
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (wget, unzip for downloads, ffmpeg for audio conversion, git for setuptools-scm)
+# Install system dependencies (wget, unzip for downloads, ffmpeg for audio conversion, git for setuptools-scm, chromium for PDF generation)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
@@ -12,7 +12,8 @@ RUN apt-get update && \
         xz-utils \
         ca-certificates \
         ffmpeg \
-        git && \
+        git \
+        chromium && \
     rm -rf /var/lib/apt/lists/*
 
 # Install tttool (from releases)

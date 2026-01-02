@@ -323,8 +323,8 @@ class TestCreatePdf:
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
     def test_create_pdf_success(self, mock_popen, mock_get_exec):
-        """Test PDF creation with wkhtmltopdf available."""
-        mock_get_exec.return_value = "/usr/bin/wkhtmltopdf"
+        """Test PDF creation with chromium available."""
+        mock_get_exec.return_value = "/usr/bin/chromium"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             library_path = Path(tmpdir)
@@ -334,10 +334,14 @@ class TestCreatePdf:
             assert result is not None
             assert result == library_path / "print.pdf"
             assert mock_popen.called
+            # Verify chromium headless arguments
+            call_args = mock_popen.call_args[0][0]
+            assert "--headless" in call_args
+            assert "--no-pdf-header-footer" in call_args
 
     @patch("ttmp32gme.print_handler.get_executable_path")
-    def test_create_pdf_no_wkhtmltopdf(self, mock_get_exec):
-        """Test PDF creation when wkhtmltopdf not found."""
+    def test_create_pdf_no_chromium(self, mock_get_exec):
+        """Test PDF creation when chromium not found."""
         mock_get_exec.return_value = None
 
         result = create_pdf(10020)
@@ -348,12 +352,28 @@ class TestCreatePdf:
     @patch("ttmp32gme.print_handler.subprocess.Popen")
     def test_create_pdf_exception(self, mock_popen, mock_get_exec):
         """Test PDF creation when subprocess fails."""
-        mock_get_exec.return_value = "/usr/bin/wkhtmltopdf"
+        mock_get_exec.return_value = "/usr/bin/chromium"
         mock_popen.side_effect = Exception("Test error")
 
         result = create_pdf(10020)
 
         assert result is None
+
+    @patch("ttmp32gme.print_handler.get_executable_path")
+    @patch("ttmp32gme.print_handler.subprocess.Popen")
+    def test_create_pdf_tries_multiple_names(self, mock_popen, mock_get_exec):
+        """Test PDF creation tries multiple chromium binary names."""
+        # First call returns None (chromium), second returns path (chromium-browser)
+        mock_get_exec.side_effect = [None, "/usr/bin/chromium-browser"]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            library_path = Path(tmpdir)
+
+            result = create_pdf(10020, library_path)
+
+            assert result is not None
+            assert result == library_path / "print.pdf"
+            assert mock_popen.called
 
 
 class TestFormatPrintButton:
@@ -371,8 +391,8 @@ class TestFormatPrintButton:
 
     @patch("ttmp32gme.print_handler.platform.system")
     @patch("ttmp32gme.print_handler.get_executable_path")
-    def test_format_print_button_linux_no_wkhtmltopdf(self, mock_get_exec, mock_system):
-        """Test print button on Linux without wkhtmltopdf."""
+    def test_format_print_button_linux_no_chromium(self, mock_get_exec, mock_system):
+        """Test print button on Linux without chromium."""
         mock_system.return_value = "Linux"
         mock_get_exec.return_value = None
 
@@ -383,16 +403,10 @@ class TestFormatPrintButton:
 
     @patch("ttmp32gme.print_handler.platform.system")
     @patch("ttmp32gme.print_handler.get_executable_path")
-    @patch("ttmp32gme.print_handler.subprocess.run")
-    def test_format_print_button_linux_with_old_wkhtmltopdf(
-        self, mock_run, mock_get_exec, mock_system
-    ):
-        """Test print button on Linux with wkhtmltopdf 0.13."""
+    def test_format_print_button_linux_with_chromium(self, mock_get_exec, mock_system):
+        """Test print button on Linux with chromium available."""
         mock_system.return_value = "Linux"
-        mock_get_exec.return_value = "/usr/bin/wkhtmltopdf"
-        mock_result = Mock()
-        mock_result.stdout = "wkhtmltopdf 0.13.0"
-        mock_run.return_value = mock_result
+        mock_get_exec.return_value = "/usr/bin/chromium"
 
         result = format_print_button()
 

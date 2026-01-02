@@ -238,7 +238,7 @@ def create_print_layout(
 
 
 def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]:
-    """Create PDF from print layout using wkhtmltopdf.
+    """Create PDF from print layout using Chromium headless.
 
     Args:
         port: Server port number for accessing the print page via HTTP
@@ -247,40 +247,45 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     Returns:
         Path to created PDF file, or None if PDF creation failed
     """
-    wkhtmltopdf_path = get_executable_path("wkhtmltopdf")
+    # Try multiple possible chromium binary names
+    chromium_names = ["chromium", "chromium-browser", "google-chrome", "chrome"]
+    chromium_path = None
 
-    if not wkhtmltopdf_path:
-        logger.error("Could not create pdf, wkhtmltopdf not found.")
+    for name in chromium_names:
+        chromium_path = get_executable_path(name)
+        if chromium_path:
+            break
+
+    if not chromium_path:
+        logger.error("Could not create pdf, chromium not found.")
         return None
 
     if library_path is None:
         library_path = get_default_library_path()
 
     pdf_file = library_path / "print.pdf"
+
+    # Chromium headless PDF printing arguments
+    # --headless: Run in headless mode
+    # --disable-gpu: Disable GPU hardware acceleration
+    # --no-pdf-header-footer: Disable headers and footers in PDF
+    # --print-to-pdf=<path>: Output to PDF file at specified path
+    # Note: Margins are controlled via CSS @page rules in pdf.html (0.5in all sides)
+    # Chromium doesn't support command-line margin parameters like wkhtmltopdf
     args = [
-        wkhtmltopdf_path,
-        "-B",
-        "0.5in",
-        "-T",
-        "0.5in",
-        "-L",
-        "0.5in",
-        "-R",
-        "0.5in",
+        chromium_path,
+        "--headless",
+        "--disable-gpu",
+        "--no-pdf-header-footer",
+        f"--print-to-pdf={pdf_file}",
         f"http://localhost:{port}/pdf",
-        str(pdf_file),
     ]
 
     logger.info(f"Creating PDF: {' '.join(args)}")
 
     try:
-        if platform.system() == "Windows":
-            # Run in background on Windows
-            subprocess.Popen(args)
-        else:
-            # Run in background on Unix-like systems
-            subprocess.Popen(args)
-
+        # Run in background
+        subprocess.Popen(args)
         return pdf_file
     except Exception as e:
         logger.error(f"Could not create PDF: {e}")
@@ -288,7 +293,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
 
 
 def format_print_button() -> str:
-    """Format the print button HTML based on platform and wkhtmltopdf availability.
+    """Format the print button HTML based on platform and chromium availability.
 
     Returns:
         HTML string for print/PDF button(s) appropriate for the current platform
@@ -300,22 +305,22 @@ def format_print_button() -> str:
             "Save as PDF</button>"
         )
 
-    wkhtmltopdf_path = get_executable_path("wkhtmltopdf")
+    # Try multiple possible chromium binary names
+    chromium_names = ["chromium", "chromium-browser", "google-chrome", "chrome"]
+    chromium_path = None
 
-    if wkhtmltopdf_path:
-        try:
-            result = subprocess.run(
-                [wkhtmltopdf_path, "-V"], capture_output=True, text=True, check=True
-            )
-            if "0.13." in result.stdout:
-                return (
-                    '<button type="button" class="btn btn-info" onclick="javascript:window.print()">'
-                    "Print This Page</button> "
-                    '<button type="button" id="pdf-save" class="btn btn-primary" '
-                    'data-toggle="popover" title="Save as pdf. The PDF usually prints better than the webpage.">'
-                    "Save as PDF</button>"
-                )
-        except Exception:
-            pass
+    for name in chromium_names:
+        chromium_path = get_executable_path(name)
+        if chromium_path:
+            break
+
+    if chromium_path:
+        return (
+            '<button type="button" class="btn btn-info" onclick="javascript:window.print()">'
+            "Print This Page</button> "
+            '<button type="button" id="pdf-save" class="btn btn-primary" '
+            'data-toggle="popover" title="Save as pdf. The PDF usually prints better than the webpage.">'
+            "Save as PDF</button>"
+        )
 
     return '<button type="button" class="btn btn-info" onclick="javascript:window.print()">Print This Page</button>'

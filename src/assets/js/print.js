@@ -280,24 +280,40 @@ var changeNumberOfColumns = function($id) {
 }
 
 var savePDF = function() {
+	// First save the configuration
+	var configVars = getElementValues($('#config'));
 	$.post(
 			document.baseURI,
-			'action=save_pdf&data=' + encodeURIComponent(JSON.stringify({content: $('#wrap-all-print').html()})),
-			function(data,textStatus,jqXHR) {
-				if (data.success) {
-					setTimeout(function() { window.open('/print.pdf'); }, 10000);
-					notify($('#pdf-save'), '', 'Creating pdf, please wait about 10 s... (you need to allow popups to see the pdf. otherwise open "http://'+window.location.host+'/print.pdf" manually', 'bg-info',
-							10000);
+			'action=save_config&data=' + encodeURIComponent(JSON.stringify(configVars)),
+			function(configData, textStatus, jqXHR) {
+				if (configData.success) {
+					// Configuration saved, now generate PDF
+					$.post(
+							document.baseURI,
+							'action=save_pdf&data=' + encodeURIComponent(JSON.stringify({content: $('#wrap-all-print').html()})),
+							function(data,textStatus,jqXHR) {
+								if (data.success) {
+									setTimeout(function() { window.open('/print.pdf'); }, 10000);
+									notify($('#pdf-save'), '', 'Creating pdf, please wait about 10 s... (you need to allow popups to see the pdf. otherwise open "http://'+window.location.host+'/print.pdf" manually', 'bg-info',
+											10000);
+								} else {
+									notify($('#pdf-save'), '', jqXHR.statusText, 'bg-danger',
+											4000);
+								}
+							}, 'json').fail(
+							function() {
+								notify($('#pdf-save'), '', 'Connection error', 'bg-danger',
+										4000);
+							});
 				} else {
-					notify($('#pdf-save'), '', jqXHR.statusText, 'bg-danger',
+					notify($('#pdf-save'), '', 'Failed to save configuration: ' + configData.error, 'bg-danger',
 							4000);
 				}
 			}, 'json').fail(
 			function() {
-				notify($('#pdf-save'), '', 'Connection error', 'bg-danger',
+				notify($('#pdf-save'), '', 'Connection error while saving configuration', 'bg-danger',
 						4000);
 			});
-
 }
 
 $(function() {

@@ -466,7 +466,13 @@ def print_post():
 @app.route("/pdf")
 def pdf_page():
     """PDF generation page."""
-    return render_template("pdf.html", strippedTitle="PDF", content=print_content)
+    return render_template(
+        "pdf.html",
+        strippedTitle="PDF",
+        content=print_content,
+        page_size=config.get("print_page_size", "A4"),
+        page_margin=config.get("print_page_margin", "0.5in"),
+    )
 
 
 @app.route("/config")

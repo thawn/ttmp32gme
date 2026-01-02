@@ -291,7 +291,7 @@ class DBHandler:
             """
             INSERT OR IGNORE INTO config VALUES('host','127.0.0.1');
             INSERT OR IGNORE INTO config VALUES('port','10020');
-            INSERT OR IGNORE INTO config VALUES('version','1.0.0');
+            INSERT OR IGNORE INTO config VALUES('version','2.0.0');
             INSERT OR IGNORE INTO config VALUES('open_browser','TRUE');
             INSERT OR IGNORE INTO config VALUES('tt_dpi','1200');
             INSERT OR IGNORE INTO config VALUES('tt_code-dim',NULL);
@@ -300,6 +300,7 @@ class DBHandler:
             INSERT OR IGNORE INTO config VALUES('audio_format','mp3');
             INSERT OR IGNORE INTO config VALUES('print_max_track_controls','24');
             INSERT OR IGNORE INTO config VALUES('print_page_size','A4');
+            INSERT OR IGNORE INTO config VALUES('print_page_margin','0.5in');
             INSERT OR IGNORE INTO config VALUES('print_show_cover','TRUE');
             INSERT OR IGNORE INTO config VALUES('print_show_album_info','TRUE');
             INSERT OR IGNORE INTO config VALUES('print_show_album_controls','TRUE');
@@ -1182,6 +1183,10 @@ class DBHandler:
                 "ALTER TABLE gme_library ADD COLUMN player_mode TEXT DEFAULT 'music';",
             ],
             "1.0.0": ["UPDATE config SET value='1.0.0' WHERE param='version';"],
+            "2.0.0": [
+                "UPDATE config SET value='2.0.0' WHERE param='version';",
+                "INSERT OR IGNORE INTO config (param, value) VALUES ('print_page_margin', '0.5in');",
+            ],
         }
         current_version = Version(self.get_config_value("version"))
 
