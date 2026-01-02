@@ -184,7 +184,7 @@ jobs:
           unzip -q ffmpeg.zip
 
           # Move binary to lib/mac
-          chmod +x ffmpeg
+          chmod a+x ffmpeg
           mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
 
           # Remove quarantine attribute to allow execution on macOS
