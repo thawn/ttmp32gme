@@ -1,10 +1,12 @@
 import io
 import logging
+import re
 import shutil
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import bleach
 from mutagen import File as MutagenFile
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
@@ -15,6 +17,139 @@ from pydantic import BaseModel, Field, field_validator
 from .build.file_handler import cleanup_filename, make_new_album_dir, remove_album
 
 logger = logging.getLogger(__name__)
+
+
+# Security: SQL Injection Prevention
+
+# Whitelist of valid table names
+VALID_TABLES = {"gme_library", "tracks", "config", "script_codes"}
+
+# Whitelist of valid column names per table
+VALID_COLUMNS = {
+    "gme_library": {
+        "oid",
+        "album_title",
+        "album_artist",
+        "album_year",
+        "num_tracks",
+        "picture_filename",
+        "gme_file",
+        "path",
+        "player_mode",
+    },
+    "tracks": {
+        "parent_oid",
+        "album",
+        "artist",
+        "disc",
+        "duration",
+        "genre",
+        "lyrics",
+        "title",
+        "track",
+        "filename",
+        "tt_script",
+    },
+    "config": {"param", "value"},
+    "script_codes": {"script", "code"},
+}
+
+# SQL keywords that should not appear in data (case-insensitive)
+SQL_INJECTION_PATTERNS = [
+    r"\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)\b",
+    r"--",  # SQL comment
+    r"/\*",  # Multi-line comment start
+    r"\*/",  # Multi-line comment end
+    r";",  # Statement separator
+    r"\bUNION\b",
+    r"\bOR\b\s+\d+\s*=\s*\d+",  # OR 1=1 style attacks
+    r"\bAND\b\s+\d+\s*=\s*\d+",  # AND 1=1 style attacks
+]
+
+
+def sanitize_string(value: str, allow_html: bool = False) -> str:
+    """Sanitize string to prevent XSS and SQL injection.
+
+    Args:
+        value: String to sanitize
+        allow_html: If True, allow safe HTML tags (for lyrics, etc.)
+
+    Returns:
+        Sanitized string
+
+    Raises:
+        ValueError: If suspicious SQL injection patterns are detected
+    """
+    if not isinstance(value, str):
+        return value
+
+    # Check for SQL injection patterns
+    for pattern in SQL_INJECTION_PATTERNS:
+        if re.search(pattern, value, re.IGNORECASE):
+            logger.warning(
+                f"Potential SQL injection detected in input: {value[:50]}..."
+            )
+            raise ValueError(
+                "Input contains suspicious SQL patterns and was rejected for security"
+            )
+
+    # Sanitize HTML/XSS
+    if allow_html:
+        # Allow basic formatting tags for lyrics
+        sanitized = bleach.clean(
+            value,
+            tags=["b", "i", "u", "br", "p"],
+            attributes={},
+            strip=True,
+        )
+    else:
+        # Strip all HTML
+        sanitized = bleach.clean(value, tags=[], attributes={}, strip=True)
+
+    return sanitized
+
+
+def validate_table_name(table: str) -> str:
+    """Validate table name against whitelist.
+
+    Args:
+        table: Table name to validate
+
+    Returns:
+        Validated table name
+
+    Raises:
+        ValueError: If table name is not in whitelist
+    """
+    if table not in VALID_TABLES:
+        raise ValueError(f"Invalid table name: {table}. Must be one of {VALID_TABLES}")
+    return table
+
+
+def validate_column_names(table: str, columns: List[str]) -> List[str]:
+    """Validate column names against whitelist for a specific table.
+
+    Args:
+        table: Table name
+        columns: List of column names to validate
+
+    Returns:
+        Validated column names
+
+    Raises:
+        ValueError: If any column name is not valid for the table
+    """
+    if table not in VALID_COLUMNS:
+        raise ValueError(f"No column whitelist defined for table: {table}")
+
+    valid_cols = VALID_COLUMNS[table]
+    for col in columns:
+        if col not in valid_cols:
+            raise ValueError(
+                f"Invalid column name '{col}' for table '{table}'. "
+                f"Valid columns: {valid_cols}"
+            )
+    return columns
 
 
 # Pydantic Models for Input Validation
@@ -41,32 +176,36 @@ def convert_str_to_int(v):
     return v
 
 
-def trim_optional_str(v):
-    """Trim optional string fields.
+def trim_optional_str(v, allow_html: bool = False):
+    """Trim and sanitize optional string fields.
 
     Args:
         v: String value or None
+        allow_html: If True, allow safe HTML tags
 
     Returns:
-        Trimmed string or None
+        Trimmed and sanitized string or None
     """
     if v and isinstance(v, str):
-        return v.strip()
+        stripped = v.strip()
+        if stripped:
+            return sanitize_string(stripped, allow_html=allow_html)
     return v
 
 
-def validate_non_empty_str(v, field_name: str = "field"):
-    """Validate and trim non-empty string fields.
+def validate_non_empty_str(v, field_name: str = "field", allow_html: bool = False):
+    """Validate, trim, and sanitize non-empty string fields.
 
     Args:
         v: String value to validate
         field_name: Name of the field (for error messages)
+        allow_html: If True, allow safe HTML tags
 
     Returns:
-        Trimmed string
+        Trimmed and sanitized string
 
     Raises:
-        ValueError: If string is empty or whitespace only
+        ValueError: If string is empty or whitespace only, or contains SQL injection
         TypeError: If value is not a string
     """
     if not isinstance(v, str):
@@ -74,7 +213,7 @@ def validate_non_empty_str(v, field_name: str = "field"):
     stripped = v.strip()
     if not stripped:
         raise ValueError(f"{field_name} cannot be empty")
-    return stripped
+    return sanitize_string(stripped, allow_html=allow_html)
 
 
 class AlbumUpdateModel(BaseModel):
@@ -98,6 +237,12 @@ class AlbumUpdateModel(BaseModel):
         """Convert string OIDs to integers."""
         return convert_str_to_int(v)
 
+    @field_validator("album_title", "album_artist", mode="before")
+    @classmethod
+    def sanitize_string_fields(cls, v):
+        """Sanitize string fields to prevent SQL injection and XSS."""
+        return trim_optional_str(v, allow_html=False)
+
 
 class ConfigUpdateModel(BaseModel):
     """Validates configuration update data from frontend."""
@@ -111,6 +256,12 @@ class ConfigUpdateModel(BaseModel):
 
     # Allow other config fields
     model_config = {"extra": "allow"}
+
+    @field_validator("pen_language", "library_path", mode="before")
+    @classmethod
+    def sanitize_string_fields(cls, v):
+        """Sanitize string fields to prevent SQL injection and XSS."""
+        return trim_optional_str(v, allow_html=False)
 
 
 class LibraryActionModel(BaseModel):
@@ -187,14 +338,20 @@ class TrackMetadataModel(BaseModel):
     @field_validator("title", mode="before")
     @classmethod
     def validate_title(cls, v):
-        """Ensure track title is not empty."""
-        return validate_non_empty_str(v, "Track title")
+        """Ensure track title is not empty and sanitize."""
+        return validate_non_empty_str(v, "Track title", allow_html=False)
 
     @field_validator("album", "artist", "genre", mode="before")
     @classmethod
     def trim_string_fields(cls, v):
-        """Trim string fields."""
-        return trim_optional_str(v)
+        """Trim and sanitize string fields."""
+        return trim_optional_str(v, allow_html=False)
+
+    @field_validator("lyrics", mode="before")
+    @classmethod
+    def sanitize_lyrics(cls, v):
+        """Sanitize lyrics (allow basic HTML formatting)."""
+        return trim_optional_str(v, allow_html=True)
 
 
 class DBHandler:
@@ -363,14 +520,22 @@ class DBHandler:
             self.conn.commit()
 
     def write_to_database(self, table: str, data: Dict[str, Any]):
-        """Write data to database table.
+        """Write data to database table with SQL injection protection.
 
         Args:
-            table: Table name
-            data: Data dictionary
-            connection: Database connection
+            table: Table name (validated against whitelist)
+            data: Data dictionary (column names validated against whitelist)
+
+        Raises:
+            ValueError: If table or column names are not in whitelist
         """
+        # Validate table name
+        table = validate_table_name(table)
+
+        # Validate column names
         fields = sorted(data.keys())
+        validate_column_names(table, fields)
+
         values = [data[field] for field in fields]
         placeholders = ", ".join("?" * len(fields))
         query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
@@ -489,18 +654,32 @@ class DBHandler:
     def update_table_entry(
         self, table: str, keyname: str, search_keys: List, data: Dict[str, Any]
     ) -> bool:
-        """Update a table entry.
+        """Update a table entry with SQL injection protection.
 
         Args:
-            table: Table name
+            table: Table name (validated against whitelist)
             keyname: Key column name with condition (e.g., 'oid=?')
             search_keys: Values for the key condition
-            data: Data to update
+            data: Data to update (column names validated against whitelist)
 
         Returns:
             True if successful
+
+        Raises:
+            ValueError: If table or column names are not in whitelist
         """
+        # Validate table name
+        table = validate_table_name(table)
+
+        # Validate column names in data
         fields = sorted(data.keys())
+        validate_column_names(table, fields)
+
+        # Validate the keyname column (extract column name from 'oid=?' pattern)
+        key_column = keyname.split("=")[0].strip()
+        if key_column:
+            validate_column_names(table, [key_column])
+
         values = [data[field] for field in fields]
         set_clause = ", ".join(f"{field}=?" for field in fields)
         query = f"UPDATE {table} SET {set_clause} WHERE {keyname}"
