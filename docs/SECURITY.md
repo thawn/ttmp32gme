@@ -1,176 +1,81 @@
-# Security Analysis Report
+# SQL Injection Protection
 
-## SQL Injection Vulnerability Assessment
+## Security Requirements for Database Operations
 
-**Date:** January 2, 2026  
-**Scope:** ttmp32gme application database layer
+All database operations in this project must follow these security guidelines to prevent SQL injection attacks.
 
-### Summary
+### 1. Always Use Parameterized Queries
 
-A comprehensive security audit was conducted on the ttmp32gme application to identify and mitigate SQL injection vulnerabilities. The audit focused on:
+**Required:** All data values MUST use SQLite parameterized queries with `?` placeholders.
 
-1. Database operations in `db_handler.py`
-2. User input from web frontend
-3. Metadata extraction from MP3/OGG files (ID3 tags)
-
-### Findings
-
-#### 1. Potential SQL Injection via Field Names (FIXED)
-
-**Severity:** Medium  
-**Location:** `db_handler.py` lines 376, 506
-
-**Description:**  
-The `write_to_database()` and `update_table_entry()` methods constructed SQL queries by directly interpolating field names from user-provided dictionaries. While the values were properly parameterized, malicious field names could potentially cause:
-- Denial of Service (SQL syntax errors)
-- Information disclosure through error messages
-- Best practice violations
-
-**Attack Vector:**
 ```python
-# Malicious field name injection
-malicious_data = {
-    "oid": 920,
-    "album_title' OR '1'='1": "attacker"
-}
+# ✅ Correct - parameterized query
+db.execute("SELECT * FROM tracks WHERE parent_oid=?", (oid,))
+db.execute("UPDATE config SET value=? WHERE param=?", (value, param))
+
+# ❌ Wrong - string concatenation
+db.execute(f"SELECT * FROM tracks WHERE parent_oid={oid}")
+db.execute("UPDATE config SET value='" + value + "' WHERE param='" + param + "'")
 ```
 
-**Fix Implemented:**
-- Added table name whitelist (`VALID_TABLES`)
-- Implemented field name validation against database schema
-- Added `_validate_table_name()` method
-- Added `_validate_field_names()` method
-- Validation occurs before SQL query construction
+### 2. Validate Table Names
 
-**Code Changes:**
-```python
-# Before (vulnerable)
-query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
+**Required:** Use only tables from the `VALID_TABLES` whitelist defined in `DBHandler`:
 
-# After (secured)
-self._validate_table_name(table)
-self._validate_field_names(table, fields)
-query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
-```
-
-#### 2. SQL Injection via Values (SECURE)
-
-**Severity:** None  
-**Status:** Already Secure
-
-**Description:**  
-All database operations correctly use parameterized queries (? placeholders) for values. This prevents SQL injection through data values, including:
-- User input from web forms
-- MP3/OGG ID3 tags
-- File names and paths
-
-**Verification:**
-```python
-# Secure parameterized query
-self.execute(query, values)  # Values passed separately, not concatenated
-```
-
-**Test Coverage:**
-- `test_value_injection_is_prevented()` confirms malicious values are stored as literals
-- `test_metadata_extraction_sql_injection()` verifies ID3 tag safety
-
-### Security Measures Implemented
-
-#### 1. Table Name Validation
-
-All table names must be in the `VALID_TABLES` whitelist:
 ```python
 VALID_TABLES = {"config", "gme_library", "script_codes", "tracks"}
 ```
 
-Attempts to use non-whitelisted table names raise `ValueError`.
+When adding new tables, update this whitelist. The `_validate_table_name()` method will reject any table not in this set.
 
-#### 2. Field Name Validation
+### 3. Validate Field Names
 
-All field names are validated against the actual database schema using `PRAGMA table_info()`. Invalid field names raise `ValueError` with details about allowed fields.
+**Required:** All field names must be validated against the database schema before use in SQL queries.
 
-#### 3. Parameterized Queries
+The `DBHandler` class provides validation methods:
+- `_validate_field_names(table, fields)` - Validates field names against schema
+- `_populate_valid_columns()` - Caches valid column names from `PRAGMA table_info()`
 
-All values are passed using SQLite's parameterized query mechanism (`?` placeholders), preventing SQL injection through values.
+When using `write_to_database()` or `update_table_entry()`, field validation is automatic. For custom queries with dynamic field names, validate explicitly.
 
-### Test Coverage
+### 4. Security Test Requirements
 
-A comprehensive test suite was added in `tests/test_sql_injection.py`:
+When adding new database operations, add tests in `tests/test_sql_injection.py` to verify:
 
-1. **test_write_to_database_field_injection**: Verifies malicious field names are rejected
-2. **test_update_table_entry_field_injection**: Verifies malicious field names in updates are rejected
-3. **test_album_update_with_malicious_fields**: Tests the full album update flow
-4. **test_metadata_extraction_sql_injection**: Verifies ID3 tags cannot inject SQL
-5. **test_value_injection_is_prevented**: Confirms values are safely parameterized
-6. **test_invalid_table_name_rejected**: Verifies table name whitelist
-7. **test_valid_operations_still_work**: Ensures security fixes don't break functionality
+1. Malicious field names are rejected
+2. Malicious values are safely parameterized
+3. Valid operations still work correctly
 
-All tests pass successfully.
+Example test structure:
+```python
+def test_new_operation_field_injection(temp_db):
+    malicious_data = {"valid_field": "value", "'; DROP TABLE--": "attack"}
+    with pytest.raises(ValueError, match="Invalid field names"):
+        temp_db.new_operation(malicious_data)
+```
 
-### CodeQL Analysis
+### 5. Data Source Protections
 
-CodeQL security scanner was run on the codebase:
-- **Python:** 0 alerts found
-- No security vulnerabilities detected
+All data sources are protected:
+- **Web frontend:** Pydantic validation + field name validation
+- **MP3/OGG ID3 tags:** Values parameterized automatically
+- **File names/paths:** Sanitized via `cleanup_filename()` + parameterized
 
-### Verification of All Database Operations
+### Quick Reference
 
-All database operations in the codebase were audited:
+| Operation | Security Method | Location |
+|-----------|----------------|----------|
+| Table name validation | `_validate_table_name()` | `db_handler.py` |
+| Field name validation | `_validate_field_names()` | `db_handler.py` |
+| Value parameterization | `execute(query, params)` | All database calls |
+| Security tests | Test suite | `tests/test_sql_injection.py` |
 
-| File | Line | Operation | Status |
-|------|------|-----------|--------|
-| db_handler.py | 354 | execute with params | ✅ Secure |
-| db_handler.py | 380 | PRAGMA (whitelisted table) | ✅ Secure |
-| db_handler.py | 445 | INSERT (validated) | ✅ Secure |
-| db_handler.py | 581 | UPDATE (validated) | ✅ Secure |
-| db_handler.py | 1046 | DELETE with params | ✅ Secure |
-| db_handler.py | 1047 | DELETE with params | ✅ Secure |
-| db_handler.py | 1061 | DELETE with params | ✅ Secure |
-| db_handler.py | 1148 | UPDATE with params | ✅ Secure |
-| tttool_handler.py | 90 | INSERT with params | ✅ Secure |
-| tttool_handler.py | 204 | UPDATE with params | ✅ Secure |
-| ttmp32gme.py | 109 | INSERT with params | ✅ Secure |
-| ttmp32gme.py | 173 | UPDATE with params | ✅ Secure |
+### Adding New Database Operations
 
-### Attack Surfaces Analyzed
+When implementing new database operations:
 
-#### 1. Web Frontend Input
-- **Risk Level:** Low (after fixes)
-- **Mitigation:** Pydantic validation + field name validation
-- **Status:** ✅ Secured
-
-#### 2. MP3/OGG ID3 Tags
-- **Risk Level:** Low
-- **Mitigation:** All metadata values are parameterized
-- **Status:** ✅ Already Secure
-
-#### 3. File Names and Paths
-- **Risk Level:** Low
-- **Mitigation:** Sanitized through `cleanup_filename()` and parameterized
-- **Status:** ✅ Already Secure
-
-#### 4. Configuration Updates
-- **Risk Level:** Low
-- **Mitigation:** Parameterized queries, Pydantic validation
-- **Status:** ✅ Already Secure
-
-### Recommendations
-
-1. ✅ **Implemented:** Continue using parameterized queries for all database operations
-2. ✅ **Implemented:** Validate all field names against database schema
-3. ✅ **Implemented:** Use table name whitelisting
-4. ✅ **Implemented:** Maintain comprehensive security tests
-5. 📋 **Recommended:** Consider using an ORM like SQLAlchemy for additional safety
-6. 📋 **Recommended:** Regular security audits when adding new database operations
-
-### Conclusion
-
-The ttmp32gme application is now secured against SQL injection attacks. All identified vulnerabilities have been fixed, and comprehensive tests have been added to prevent regressions. The application follows security best practices:
-
-- ✅ Parameterized queries for all values
-- ✅ Table name whitelisting
-- ✅ Field name validation
-- ✅ Comprehensive test coverage
-- ✅ CodeQL security scanning passed
-
-No additional hardening with external libraries (like bleach) is necessary for SQL injection protection, as SQLite's parameterized queries and our validation layer provide robust security.
+1. Use `db.execute(query, params)` with parameterized queries for all values
+2. Use tables from `VALID_TABLES` only (or update the whitelist)
+3. For dynamic fields, use `write_to_database()` or `update_table_entry()` which include validation
+4. Add security tests to verify injection protection
+5. Run CodeQL scanner: `codeql_checker` tool available in development environment
