@@ -33,7 +33,7 @@ def format_tracks(
 
     for i, track_key in enumerate(tracks):
         track = album[track_key]
-        tt_script = track.get("tt_script", f"t{i}")
+        tt_script = track.get("tt_script") or f"t{i}"
         oid_code = oid_map.get(tt_script, {}).get("code", 0)
 
         # Create OID image

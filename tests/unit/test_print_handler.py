@@ -85,6 +85,39 @@ class TestFormatTracks:
         assert "Track 2" in result
         assert result.count('<li class="list-group-item">') == 2
 
+    @patch("ttmp32gme.print_handler.get_sorted_tracks")
+    @patch("ttmp32gme.print_handler.create_oids")
+    def test_format_tracks_with_none_tt_script(
+        self, mock_create_oids, mock_get_sorted_tracks, db
+    ):
+        """Test track formatting when tt_script is None (before GME generation)."""
+        mock_get_sorted_tracks.return_value = ["track_1", "track_2"]
+
+        def create_oids_side_effect(oids, *args):
+            return [Mock(spec=["name"], **{"name": f"oid_{oid}.png"}) for oid in oids]
+
+        mock_create_oids.side_effect = create_oids_side_effect
+
+        # Tracks with None tt_script (before GME is generated)
+        album = {
+            "track_1": {"title": "Track 1", "duration": 120000, "tt_script": None},
+            "track_2": {"title": "Track 2", "duration": 180000, "tt_script": None},
+        }
+        oid_map = {"t0": {"code": 2663}, "t1": {"code": 2664}}
+
+        result = format_tracks(album, oid_map, db)
+
+        # Should fall back to t0, t1 based on index
+        assert "Track 1" in result
+        assert "Track 2" in result
+        assert "oid_2663.png" in result  # t0 -> 2663
+        assert "oid_2664.png" in result  # t1 -> 2664
+        # Verify create_oids was called with correct codes (not 0)
+        calls = mock_create_oids.call_args_list
+        assert len(calls) == 2
+        assert calls[0][0][0] == [2663]  # First track: code 2663
+        assert calls[1][0][0] == [2664]  # Second track: code 2664
+
 
 class TestFormatControls:
     """Test format_controls function."""
