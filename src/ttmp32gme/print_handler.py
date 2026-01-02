@@ -269,7 +269,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     # --headless: Run in headless mode
     # --disable-gpu: Disable GPU hardware acceleration
     # --no-pdf-header-footer: Disable headers and footers in PDF
-    # --print-to-pdf: Output to PDF file
+    # --print-to-pdf=<path>: Output to PDF file at specified path
     args = [
         chromium_path,
         "--headless",
