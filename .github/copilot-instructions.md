@@ -86,6 +86,13 @@ pytest -k upload -v
 
 Aim for test coverage >75%.
 
+### Changing the database schema
+
+Whenever the database schema is changed, or options are added/removed in the `config` table:
+
+- increase the database version in the `config` table to the version of the next release (assume the next feature release)
+- make sure DBHandler.update_db updates old versions of the database the first time they are opened
+
 ### Building & Linting
 
 Pre-commit hooks perform the following steps:
