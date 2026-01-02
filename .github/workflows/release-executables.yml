@@ -188,7 +188,7 @@ jobs:
           mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
 
           # Remove quarantine attribute to allow execution on macOS
-          xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/ffmpeg" 2>/dev/null || true
+          sudo xattr -d com.apple.quarantine "$GITHUB_WORKSPACE/lib/mac/ffmpeg" 2>/dev/null || true
 
           # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
