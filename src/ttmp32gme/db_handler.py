@@ -300,25 +300,33 @@ class AlbumMetadataModel(BaseModel):
     @field_validator("album_title", mode="before")
     @classmethod
     def validate_album_title(cls, v):
-        """Ensure album title is not empty."""
-        return validate_non_empty_str(v, "Album title")
+        """Ensure album title is not empty and sanitize."""
+        return validate_non_empty_str(v, "Album title", allow_html=False)
 
     @field_validator("album_artist", mode="before")
     @classmethod
     def validate_album_artist(cls, v):
-        """Trim album artist."""
-        return trim_optional_str(v)
+        """Trim and sanitize album artist."""
+        return trim_optional_str(v, allow_html=False)
 
     @field_validator("album_year", mode="before")
     @classmethod
     def validate_year(cls, v):
-        """Validate year format."""
+        """Validate and sanitize year format."""
         if v:
             v = str(v).strip()
+            # Sanitize for SQL injection
+            v = sanitize_string(v, allow_html=False)
             # Accept various year formats (YYYY, YYYY-MM-DD, etc.)
             if len(v) >= 4:
                 return v[:10]  # Limit to 10 chars
         return v
+
+    @field_validator("picture_filename", "path", mode="before")
+    @classmethod
+    def sanitize_paths(cls, v):
+        """Sanitize path and filename fields."""
+        return trim_optional_str(v, allow_html=False)
 
 
 class TrackMetadataModel(BaseModel):
@@ -346,6 +354,20 @@ class TrackMetadataModel(BaseModel):
     def trim_string_fields(cls, v):
         """Trim and sanitize string fields."""
         return trim_optional_str(v, allow_html=False)
+
+    @field_validator("disc", mode="before")
+    @classmethod
+    def sanitize_disc(cls, v):
+        """Sanitize disc number field."""
+        return trim_optional_str(v, allow_html=False)
+
+    @field_validator("filename", mode="before")
+    @classmethod
+    def sanitize_filename(cls, v):
+        """Sanitize filename field."""
+        if v and isinstance(v, str):
+            return sanitize_string(v.strip(), allow_html=False)
+        return v
 
     @field_validator("lyrics", mode="before")
     @classmethod
