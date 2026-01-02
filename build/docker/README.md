@@ -10,18 +10,6 @@ A containerized version of ttmp32gme that converts MP3/audio files into TipToi G
 
 ## Quick Start
 
-### Using Docker
-
-```bash
-docker run -d \
-  --rm \
-  --name ttmp32gme \
-  --publish 8080:8080 \
-  --volume ttmp32gme-data:/data \
-  --volume /path/to/tiptoi:/mnt/tiptoi \
-  thawn/ttmp32gme:latest
-```
-
 ### Using Podman
 
 ```bash
@@ -35,6 +23,18 @@ podman run -d \
 ```
 
 **Note for Podman users**: The `:Z` flag on the TipToi volume enables proper SELinux labeling for shared access.
+
+### Using Docker (Alternative)
+
+```bash
+docker run -d \
+  --rm \
+  --name ttmp32gme \
+  --publish 8080:8080 \
+  --volume ttmp32gme-data:/data \
+  --volume /path/to/tiptoi:/mnt/tiptoi \
+  thawn/ttmp32gme:latest
+```
 
 ## Volume Mounts
 
@@ -96,7 +96,7 @@ Once running, open your web browser to:
 Example with custom settings:
 
 ```bash
-docker run -d \
+podman run -d \
   --env HOST=127.0.0.1 \
   --env PORT=9000 \
   --publish 9000:9000 \

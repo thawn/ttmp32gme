@@ -24,9 +24,9 @@ pip install -e .
 ttmp32gme  # Opens at http://localhost:10020
 ```
 
-**Docker**:
+**Podman**:
 ```bash
-docker run -d --rm --publish 8080:8080 \
+podman run -d --rm --publish 8080:8080 \
   --volume ~/.ttmp32gme:/var/lib/ttmp32gme \
   --name ttmp32gme thawn/ttmp32gme:latest
 ```
