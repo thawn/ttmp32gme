@@ -31,7 +31,7 @@ docker run -d --rm --publish 8080:8080 \
   --name ttmp32gme thawn/ttmp32gme:latest
 ```
 
-See [Installation Guide](docs/installation.md) for detailed instructions and options.
+See [Installation Guide](https://thawn.github.io/ttmp32gme/installation.html) for detailed instructions and options.
 
 ## Basic Usage
 
@@ -41,7 +41,7 @@ See [Installation Guide](docs/installation.md) for detailed instructions and opt
 4. **Print**: Print control sheets with OID codes
 5. **Copy**: Transfer GME files to connected TipToi pen
 
-See [Usage Guide](docs/usage.md) for detailed instructions.
+See [Usage Guide](https://thawn.github.io/ttmp32gme/usage.html) for detailed instructions.
 
 ## Command Line
 
@@ -62,7 +62,7 @@ ttmp32gme --help                   # Show all options
 4. If test fails: printer issue (try different printer/paper)
 5. If test works: increase pixels per dot (3-4) in print config
 
-See [Print Configuration](docs/print-configuration.md) and [Troubleshooting](docs/troubleshooting.md) for detailed help.
+See [Print Configuration](https://thawn.github.io/ttmp32gme/print-configuration.html) and [Troubleshooting](https://thawn.github.io/ttmp32gme/troubleshooting.html) for detailed help.
 
 ## Screenshots
 
@@ -84,13 +84,13 @@ See [Print Configuration](docs/print-configuration.md) and [Troubleshooting](doc
 
 [Comprehensive documentation available here](https://thawn.github.io/ttmp32gme/).
 
-* [Getting Started](docs/getting-started.md) - Quick introduction
-* [Installation](docs/installation.md) - Platform-specific instructions
-* [Usage Guide](docs/usage.md) - Complete feature guide
-* [Print Configuration](docs/print-configuration.md) - Print setup and troubleshooting
-* [Troubleshooting](docs/troubleshooting.md) - Common problems and solutions
-* [Development](docs/development.md) - Architecture and contribution guide
-* [API Reference](docs/api/index.md) - API documentation
+* [Getting Started](https://thawn.github.io/ttmp32gme/getting-started.html) - Quick introduction
+* [Installation](https://thawn.github.io/ttmp32gme/installation.html) - Platform-specific instructions
+* [Usage Guide](https://thawn.github.io/ttmp32gme/usage.html) - Complete feature guide
+* [Print Configuration](https://thawn.github.io/ttmp32gme/print-configuration.html) - Print setup and troubleshooting
+* [Troubleshooting](https://thawn.github.io/ttmp32gme/troubleshooting.html) - Common problems and solutions
+* [Development](https://thawn.github.io/ttmp32gme/development.html) - Architecture and contribution guide
+* [API Reference](https://thawn.github.io/ttmp32gme/api/index.html) - API documentation
 
 Build documentation locally:
 ```bash
@@ -118,11 +118,11 @@ pytest tests/ -v
 pytest --cov=ttmp32gme
 ```
 
-See [Development Guide](docs/development.md) for details.
+See [Development Guide](https://thawn.github.io/ttmp32gme/development.html) for details.
 
 ## Contributing
 
-Contributions welcome! See [Contributing Guide](CONTRIBUTING.md) for workflow and guidelines.
+Contributions welcome! See [Contributing Guide](https://thawn.github.io/ttmp32gme/contributing.html) for workflow and guidelines.
 
 ## License
 
