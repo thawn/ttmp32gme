@@ -20,6 +20,63 @@ logger = logging.getLogger(__name__)
 # Pydantic Models for Input Validation
 
 
+# Reusable field validators to avoid code duplication
+def convert_str_to_int(v):
+    """Convert string to integer.
+
+    Args:
+        v: Value to convert (can be str, int, or None)
+
+    Returns:
+        Integer value or None
+
+    Raises:
+        ValueError: If conversion fails
+    """
+    if v is not None and isinstance(v, str):
+        try:
+            return int(v)
+        except ValueError:
+            raise ValueError(f"Invalid integer value: {v}")
+    return v
+
+
+def trim_optional_str(v):
+    """Trim optional string fields.
+
+    Args:
+        v: String value or None
+
+    Returns:
+        Trimmed string or None
+    """
+    if v and isinstance(v, str):
+        return v.strip()
+    return v
+
+
+def validate_non_empty_str(v, field_name: str = "field"):
+    """Validate and trim non-empty string fields.
+
+    Args:
+        v: String value to validate
+        field_name: Name of the field (for error messages)
+
+    Returns:
+        Trimmed string
+
+    Raises:
+        ValueError: If string is empty or whitespace only
+        TypeError: If value is not a string
+    """
+    if not isinstance(v, str):
+        raise TypeError(f"{field_name} must be a string")
+    stripped = v.strip()
+    if not stripped:
+        raise ValueError(f"{field_name} cannot be empty")
+    return stripped
+
+
 class AlbumUpdateModel(BaseModel):
     """Validates album update data from frontend."""
 
@@ -39,12 +96,7 @@ class AlbumUpdateModel(BaseModel):
     @classmethod
     def convert_to_int(cls, v):
         """Convert string OIDs to integers."""
-        if v is not None and isinstance(v, str):
-            try:
-                return int(v)
-            except ValueError:
-                raise ValueError(f"Invalid OID/UID: {v}")
-        return v
+        return convert_str_to_int(v)
 
 
 class ConfigUpdateModel(BaseModel):
@@ -76,12 +128,7 @@ class LibraryActionModel(BaseModel):
     @classmethod
     def convert_uid_to_int(cls, v):
         """Convert string UID to integer."""
-        if isinstance(v, str):
-            try:
-                return int(v)
-            except ValueError:
-                raise ValueError(f"Invalid UID: {v}")
-        return v
+        return convert_str_to_int(v)
 
 
 class AlbumMetadataModel(BaseModel):
@@ -103,17 +150,13 @@ class AlbumMetadataModel(BaseModel):
     @classmethod
     def validate_album_title(cls, v):
         """Ensure album title is not empty."""
-        if not v or not v.strip():
-            raise ValueError("Album title cannot be empty")
-        return v.strip()
+        return validate_non_empty_str(v, "Album title")
 
     @field_validator("album_artist", mode="before")
     @classmethod
     def validate_album_artist(cls, v):
         """Trim album artist."""
-        if v:
-            return v.strip()
-        return v
+        return trim_optional_str(v)
 
     @field_validator("album_year", mode="before")
     @classmethod
@@ -145,17 +188,13 @@ class TrackMetadataModel(BaseModel):
     @classmethod
     def validate_title(cls, v):
         """Ensure track title is not empty."""
-        if not v or not v.strip():
-            raise ValueError("Track title cannot be empty")
-        return v.strip()
+        return validate_non_empty_str(v, "Track title")
 
     @field_validator("album", "artist", "genre", mode="before")
     @classmethod
     def trim_string_fields(cls, v):
         """Trim string fields."""
-        if v:
-            return v.strip()
-        return v
+        return trim_optional_str(v)
 
 
 class DBHandler:
