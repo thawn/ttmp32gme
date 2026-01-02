@@ -377,6 +377,7 @@ class DBHandler:
         for table in self.VALID_TABLES:
             try:
                 cursor = self.conn.cursor()
+                # Safe to use f-string here: table is from VALID_TABLES whitelist
                 cursor.execute(f"PRAGMA table_info({table});")
                 columns = [row[1] for row in cursor.fetchall()]
                 self._valid_columns[table] = set(columns)
