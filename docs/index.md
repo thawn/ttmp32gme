@@ -1,28 +1,18 @@
 # ttmp32gme Documentation
 
-Welcome to the documentation for **ttmp32gme**, a cross-platform tool that converts MP3/audio files into TipToi GME (for Ravensburger tiptoi®) files playable on the TipToi pen.
+**ttmp32gme** converts MP3/audio files into TipToi GME files playable on the TipToi pen.
 
-## What is ttmp32gme?
+## Overview
 
-ttmp32gme is inspired by the Windows tool [ttaudio](https://github.com/sidiandi/ttaudio) and provides a platform-independent solution for:
+Cross-platform tool for creating TipToi-compatible audio files with printable control sheets.
 
-* Converting music/audiobook albums from MP3 to GME format playable with the TipToi pen
-* Automatic generation of printable control sheets with OID codes
-* Flexible print layouts for various applications (list, tiles, CD booklet)
-* Automatic readout of ID3 tags to extract album and track information
-* Support for album cover images in print layouts
-* Direct copying of GME files to TipToi pen when connected
-
-## Features
-
-- **Multi-format Support**: Convert MP3 and OGG audio files to GME format
-- **Metadata Extraction**: Automatically read ID3 tags for artist, album, and track information
-- **Cover Image Support**: Add and display album cover images in printable layouts
-- **Flexible Print Layouts**: Choose from list, tiles, or CD booklet formats
-- **OID Code Generation**: Automatically generate optical identification codes for TipToi pen recognition
-- **TipToi Integration**: Direct copy of GME files to connected TipToi pens
-- **Web Interface**: User-friendly web-based interface accessible from any browser
-- **Cross-platform**: Works on Windows, macOS, and Linux
+**Key Features**:
+* Convert MP3/OGG to GME format
+* Auto-generate OID-coded control sheets
+* Flexible print layouts (list, tiles, CD booklet)
+* Auto-extract ID3 metadata and covers
+* Direct TipToi pen integration
+* Web-based interface
 
 ## Quick Links
 
@@ -47,15 +37,8 @@ contributing
 SECURITY
 ```
 
-## External Resources
+## Resources
 
-* [TtTool Home Page](http://tttool.entropia.de/)
-* [TtTool Manual](https://tttool.readthedocs.io/de/latest/)
-* [TtAudio (Windows tool)](https://github.com/sidiandi/ttaudio/)
+* [tttool](http://tttool.entropia.de/) - Core TipToi tool
 * [GitHub Repository](https://github.com/thawn/ttmp32gme)
-
-## Indices and tables
-
-* {ref}`genindex`
-* {ref}`modindex`
-* {ref}`search`
+* [ttaudio](https://github.com/sidiandi/ttaudio/) - Windows alternative

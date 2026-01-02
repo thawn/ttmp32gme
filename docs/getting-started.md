@@ -1,90 +1,54 @@
 # Getting Started
 
-This guide will help you get started with ttmp32gme quickly.
-
-## Overview
-
-ttmp32gme is a tool that converts MP3/audio files into TipToi GME (for Ravensburger tiptoi®) files. The process involves four main steps:
-
-1. Upload MP3/audio files
-2. Configure album information
-3. Generate GME files
-4. Print control sheets and copy to TipToi pen
+Quick guide to using ttmp32gme.
 
 ## Prerequisites
 
-Before using ttmp32gme, you'll need:
+* TipToi pen
+* MP3/OGG audio files
+* Printer (600+ DPI, 1200+ recommended)
+* [tttool](https://github.com/entropia/tip-toi-reveng) installed
 
-* A TipToi pen
-* MP3 or OGG audio files (music or audiobooks)
-* A printer capable of at least 600 DPI (1200 DPI recommended)
-* [tttool](https://github.com/entropia/tip-toi-reveng) installed on your system
+## Workflow
 
-## Basic Workflow
+### 1. Upload Files
 
-### 1. Add Audio Files
+Navigate to Upload page, add MP3/OGG files (one album at a time), optionally add cover image. Metadata extracted automatically.
 
-Navigate to the "Upload" page and add your MP3 files:
+### 2. Configure Album
 
-* Upload one album at a time
-* Optionally add a cover image (JPEG or PNG)
-* The system will automatically extract ID3 tag information
+On Library page:
+* Review/edit album info (title, artist, tracks)
+* Select unique OID number (1-999)
+* Choose player mode (Music or Audiobook)
 
-**Note**: Only upload files for a single album in one session to keep your library organized.
+### 3. Create GME
 
-### 2. Configure Album Information
-
-On the "Library" page:
-
-* Review the automatically extracted album and track information
-* Edit artist name, album title, or track titles if needed
-* Choose player mode (music or audiobook)
-* Select an OID (Object Identification) number for the album
-
-The OID is a unique identifier (between 1-999) that links your printed control sheet to the GME file.
-
-### 3. Generate GME Files
-
-Once your album is configured:
-
-1. Click the "Create GME" button
-2. Wait for the conversion process to complete
-3. The GME file will be created and stored in your library
-
-The GME file contains the compressed audio and control scripts for the TipToi pen.
+Click "Create GME" button, wait for conversion (1-5 minutes).
 
 ### 4. Print Control Sheets
 
-Select albums to print from the library:
+1. Select albums (checkboxes), click "Print Selected"
+2. Configure layout (gear icon) - see [Print Configuration](print-configuration.md)
+3. Print at 100% scale, 1200 DPI
 
-1. Choose one or more albums using checkboxes
-2. Click "Print Selected"
-3. A new page opens with printable control sheets
-4. Configure print layout (see [Print Configuration](print-configuration.md) for details)
-5. Print at 100% scale, no auto-scaling
-6. Use highest quality settings (1200 DPI recommended)
+### 5. Copy to TipToi
 
-### 5. Copy to TipToi Pen
-
-Connect your TipToi pen to your computer:
-
-1. The system will automatically detect the pen
-2. Select albums in the library
-3. Click "Copy selected to TipToi"
-4. Wait for the operation to complete
-5. Safely disconnect the pen when prompted
+1. Connect TipToi pen (auto-detected)
+2. Select albums, click "Copy selected to TipToi"
+3. Wait for completion, safely disconnect
 
 ## Next Steps
 
-* Learn more about [installation options](installation.md)
-* Explore [print configuration options](print-configuration.md)
-* Read the [troubleshooting guide](troubleshooting.md) if you encounter issues
-* Check out the [usage guide](usage.md) for detailed instructions
+* [Installation options](installation.md)
+* [Print configuration](print-configuration.md)
+* [Troubleshooting](troubleshooting.md)
+* [Full usage guide](usage.md)
 
-## Quick Tips
+## Tips
 
-* **Album Organization**: Keep albums organized by uploading one album at a time
-* **Cover Images**: Album covers make printed sheets more attractive and easier to identify
-* **OID Numbers**: Keep track of which OID numbers you've used to avoid conflicts
-* **Print Quality**: Higher DPI produces more reliable OID code recognition
-* **Test First**: Print a test page before printing many albums
+* Upload one album at a time
+* Use unique OID numbers
+* Include cover images for easier identification
+* Test print quality with [OID table](https://github.com/thawn/ttmp32gme/blob/master/src/assets/images/oid-table.png)
+* Backup `~/.ttmp32gme/` directory regularly
