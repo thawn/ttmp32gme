@@ -71,9 +71,10 @@ def validate_non_empty_str(v, field_name: str = "field"):
     """
     if not isinstance(v, str):
         raise TypeError(f"{field_name} must be a string")
-    if not v or not v.strip():
+    stripped = v.strip()
+    if not stripped:
         raise ValueError(f"{field_name} cannot be empty")
-    return v.strip()
+    return stripped
 
 
 class AlbumUpdateModel(BaseModel):

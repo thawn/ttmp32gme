@@ -56,8 +56,6 @@ class TestReusableValidators:
 
     def test_trim_optional_str_with_empty(self):
         """Test that empty string returns empty string unchanged."""
-        # Empty string fails the `if v and isinstance(v, str):` check
-        # because empty string is falsy, so it returns as-is
         assert trim_optional_str("") == ""
 
     def test_trim_optional_str_with_non_string(self):
