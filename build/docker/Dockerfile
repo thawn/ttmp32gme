@@ -4,7 +4,7 @@ FROM python:3.12-slim AS base
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (wget, unzip for downloads, ffmpeg for audio conversion, git for setuptools-scm, software-properties-common for add-apt-repository)
+# Install system dependencies (wget, unzip for downloads, ffmpeg for audio conversion, git for setuptools-scm, chromium for PDF generation)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         wget \
@@ -13,15 +13,7 @@ RUN apt-get update && \
         ca-certificates \
         ffmpeg \
         git \
-        software-properties-common \
-        gnupg && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install Chromium from PPA (not snap)
-# Using ppa:xtradeb/apps to get chromium as a normal package
-RUN add-apt-repository ppa:xtradeb/apps -y && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends chromium-browser && \
+        chromium && \
     rm -rf /var/lib/apt/lists/*
 
 # Install tttool (from releases)
