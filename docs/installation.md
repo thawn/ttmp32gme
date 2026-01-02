@@ -30,7 +30,7 @@ podman run -d --rm \
   --name ttmp32gme thawn/ttmp32gme:latest
 ```
 
-**Podman Compose**: Download [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml), run `podman-compose up -d`
+**Podman Compose**: Download [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml), run `podman-compose up -d` (the docker-compose.yml file format is compatible with podman-compose)
 
 ## Command Line Options
 
