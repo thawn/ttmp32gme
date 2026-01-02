@@ -132,7 +132,7 @@ jobs:
 
       - name: Download tttool for macOS
         run: |
-          TTTOOL_VERSION="1.8.1"
+          TTTOOL_VERSION="1.11.1"
           echo "Downloading tttool version $TTTOOL_VERSION for macOS"
 
           # Create lib/mac directory if it doesn't exist
