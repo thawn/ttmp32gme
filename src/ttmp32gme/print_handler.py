@@ -270,13 +270,11 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     # --disable-gpu: Disable GPU hardware acceleration
     # --no-pdf-header-footer: Disable headers and footers in PDF
     # --print-to-pdf: Output to PDF file
-    # --print-to-pdf-no-header: Additional flag to ensure no headers
     args = [
         chromium_path,
         "--headless",
         "--disable-gpu",
         "--no-pdf-header-footer",
-        "--print-to-pdf-no-header",
         f"--print-to-pdf={pdf_file}",
         f"http://localhost:{port}/pdf",
     ]
@@ -284,13 +282,8 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     logger.info(f"Creating PDF: {' '.join(args)}")
 
     try:
-        if platform.system() == "Windows":
-            # Run in background on Windows
-            subprocess.Popen(args)
-        else:
-            # Run in background on Unix-like systems
-            subprocess.Popen(args)
-
+        # Run in background
+        subprocess.Popen(args)
         return pdf_file
     except Exception as e:
         logger.error(f"Could not create PDF: {e}")
