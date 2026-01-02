@@ -7,6 +7,7 @@ This guide explains how to build standalone executables for Windows and macOS.
 - Python 3.11 or later
 - PyInstaller 6.0 or later
 - Git
+- Internet connection (to download tttool and ffmpeg)
 
 ## Setup
 
@@ -24,6 +25,23 @@ pip install -e ".[build]"
 On a Windows machine:
 
 ```bash
+# Download dependencies
+# tttool
+$TTTOOL_VERSION = "1.8.1"
+New-Item -ItemType Directory -Force -Path lib/win
+Invoke-WebRequest -Uri "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip" -OutFile tttool.zip
+Expand-Archive -Path tttool.zip -DestinationPath .
+Move-Item -Path tttool.exe -Destination lib/win/tttool.exe -Force
+Remove-Item tttool.zip
+
+# ffmpeg
+Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile ffmpeg.zip
+Expand-Archive -Path ffmpeg.zip -DestinationPath .
+$ffmpegDir = Get-ChildItem -Directory -Filter "ffmpeg-*" | Select-Object -First 1
+Move-Item -Path "$($ffmpegDir.FullName)/bin/ffmpeg.exe" -Destination lib/win/ffmpeg.exe -Force
+Remove-Item -Recurse -Force $ffmpegDir
+Remove-Item ffmpeg.zip
+
 # Build the executable
 pyinstaller ttmp32gme-windows.spec --clean
 
@@ -35,8 +53,8 @@ Compress-Archive -Path ttmp32gme -DestinationPath ttmp32gme-windows.zip
 
 The resulting `ttmp32gme-windows.zip` contains:
 - `ttmp32gme.exe` - Main executable
-- `lib/win/tttool.exe` - TipToi tool binary
-- `lib/win/ffmpeg.exe` - FFmpeg for audio conversion
+- `lib/win/tttool.exe` - TipToi tool binary (downloaded during build)
+- `lib/win/ffmpeg.exe` - FFmpeg for audio conversion (downloaded during build)
 - All Python dependencies and application files
 
 ## Building for macOS
@@ -44,6 +62,23 @@ The resulting `ttmp32gme-windows.zip` contains:
 On a macOS machine:
 
 ```bash
+# Download dependencies
+# tttool
+TTTOOL_VERSION="1.8.1"
+mkdir -p lib/mac
+wget "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
+unzip "tttool-${TTTOOL_VERSION}.zip"
+chmod +x tttool
+mv tttool lib/mac/tttool
+rm "tttool-${TTTOOL_VERSION}.zip"
+
+# ffmpeg
+wget "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip
+unzip ffmpeg.zip
+chmod +x ffmpeg
+mv ffmpeg lib/mac/ffmpeg
+rm ffmpeg.zip
+
 # Build the executable
 pyinstaller ttmp32gme-macos.spec --clean
 
@@ -55,9 +90,8 @@ zip -r ttmp32gme-macos.zip ttmp32gme.app
 
 The resulting `ttmp32gme-macos.zip` contains:
 - `ttmp32gme.app` - macOS application bundle
-- `lib/mac/tttool` - TipToi tool binary
-- `lib/mac/ffmpeg` - FFmpeg for audio conversion
-- Required dynamic libraries (.dylib files)
+- `lib/mac/tttool` - TipToi tool binary (downloaded during build)
+- `lib/mac/ffmpeg` - FFmpeg for audio conversion (downloaded during build)
 - All Python dependencies and application files
 
 ## CI/CD Build Process
@@ -68,8 +102,11 @@ The build process is automated via GitHub Actions:
    - On pull requests that change source code, specs, or dependencies
    - When a new release is published
    - Manually via workflow dispatch
-2. **Parallel builds**: Windows and macOS builds run in parallel on their respective platforms
-3. **Artifacts**: Built executables are automatically uploaded:
+2. **Dependency Download**: tttool and ffmpeg are downloaded dynamically during the build:
+   - tttool v1.8.1 from GitHub releases
+   - ffmpeg from official sources (Windows: gyan.dev, macOS: evermeet.cx)
+3. **Parallel builds**: Windows and macOS builds run in parallel on their respective platforms
+4. **Artifacts**: Built executables are automatically uploaded:
    - As workflow artifacts for pull requests (retained for 30 days)
    - As release assets when a release is published
 

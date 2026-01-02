@@ -6,7 +6,6 @@ on:
   pull_request:
     paths:
       - 'src/**'
-      - 'lib/**'
       - 'resources/**'
       - 'ttmp32gme-*.spec'
       - 'pyproject.toml'
@@ -39,6 +38,44 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[build]"
+
+      - name: Download tttool for Windows
+        run: |
+          $TTTOOL_VERSION = "1.8.1"
+          Write-Host "Downloading tttool version $TTTOOL_VERSION for Windows"
+
+          # Create lib/win directory if it doesn't exist
+          New-Item -ItemType Directory -Force -Path lib/win
+
+          # Download tttool
+          $url = "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
+          Invoke-WebRequest -Uri $url -OutFile tttool.zip
+
+          # Extract and move to lib/win
+          Expand-Archive -Path tttool.zip -DestinationPath .
+          Move-Item -Path tttool.exe -Destination lib/win/tttool.exe -Force
+          Remove-Item tttool.zip
+
+          # Verify
+          lib/win/tttool.exe --help
+
+      - name: Download ffmpeg for Windows
+        run: |
+          Write-Host "Downloading ffmpeg for Windows"
+
+          # Download ffmpeg static build
+          $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          Invoke-WebRequest -Uri $url -OutFile ffmpeg.zip
+
+          # Extract and move to lib/win
+          Expand-Archive -Path ffmpeg.zip -DestinationPath .
+          $ffmpegDir = Get-ChildItem -Directory -Filter "ffmpeg-*" | Select-Object -First 1
+          Move-Item -Path "$($ffmpegDir.FullName)/bin/ffmpeg.exe" -Destination lib/win/ffmpeg.exe -Force
+          Remove-Item -Recurse -Force $ffmpegDir
+          Remove-Item ffmpeg.zip
+
+          # Verify
+          lib/win/ffmpeg.exe -version
 
       - name: Build Windows executable with PyInstaller
         run: |
@@ -83,6 +120,42 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[build]"
+
+      - name: Download tttool for macOS
+        run: |
+          TTTOOL_VERSION="1.8.1"
+          echo "Downloading tttool version $TTTOOL_VERSION for macOS"
+
+          # Create lib/mac directory if it doesn't exist
+          mkdir -p lib/mac
+
+          # Download and extract tttool
+          wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
+          unzip -q "tttool-${TTTOOL_VERSION}.zip"
+
+          # Move to lib/mac
+          chmod +x tttool
+          mv tttool lib/mac/tttool
+          rm "tttool-${TTTOOL_VERSION}.zip"
+
+          # Verify
+          lib/mac/tttool --help
+
+      - name: Download ffmpeg for macOS
+        run: |
+          echo "Downloading ffmpeg for macOS"
+
+          # Download ffmpeg static build for macOS
+          wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip
+          unzip -q ffmpeg.zip
+
+          # Move to lib/mac
+          chmod +x ffmpeg
+          mv ffmpeg lib/mac/ffmpeg
+          rm ffmpeg.zip
+
+          # Verify
+          lib/mac/ffmpeg -version
 
       - name: Build macOS executable with PyInstaller
         run: |
