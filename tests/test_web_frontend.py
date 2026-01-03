@@ -3,6 +3,7 @@ Integration tests for ttmp32gme web frontend
 These tests verify that the web pages load correctly
 """
 
+import json
 import logging
 import subprocess
 import time
@@ -242,32 +243,22 @@ class TestOIDImagesDownload:
 class TestPrintPDFDownload:
     """Test print PDF download functionality via HTTP"""
 
-    def test_download_print_pdf_endpoint_exists(self, clean_server_http):
-        """Test that print PDF download endpoint exists"""
-        server_info = clean_server_http
-        response = requests.get(f"{server_info['url']}/download/print.pdf", timeout=5)
-        # Should return 404 if no PDF exists yet
-        assert (
-            response.status_code == 404
-        ), f"Expected 404 (no PDF), got {response.status_code}"
-        assert (
-            "PDF file not available" in response.text
-        ), "Should indicate PDF not available"
-
-    def test_download_print_pdf_with_file(self, clean_server_http):
-        """Test that print PDF download works when file exists and cleans up afterwards"""
+    def test_print_pdf_generation_and_download(self, clean_server_http):
+        """Test that save_pdf action generates and returns PDF directly"""
         server_info = clean_server_http
         library_path = server_info["library_path"]
 
-        # Create a test PDF file
-        pdf_file = library_path / PRINT_PDF_FILENAME
-        pdf_file.write_text("%PDF-1.4\nTest PDF\n%%EOF")
+        # Test data for PDF generation
+        test_content = "<div>Test PDF Content</div>"
 
-        # Verify file exists before download
-        assert pdf_file.exists(), "PDF file should exist before download"
+        # Post to /print with save_pdf action
+        response = requests.post(
+            f"{server_info['url']}/print",
+            data={"action": "save_pdf", "data": json.dumps({"content": test_content})},
+            timeout=10,
+        )
 
-        # Now test download
-        response = requests.get(f"{server_info['url']}/download/print.pdf", timeout=5)
+        # Should return PDF file directly
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
         assert (
             response.headers.get("Content-Type") == "application/pdf"
@@ -279,5 +270,9 @@ class TestPrintPDFDownload:
             "Content-Disposition", ""
         ), f"Filename should be {PRINT_PDF_FILENAME}"
 
+        # Verify PDF content is not empty
+        assert len(response.content) > 100, "PDF content should not be empty"
+
         # Verify file is deleted after download (cleanup)
+        pdf_file = library_path / PRINT_PDF_FILENAME
         assert not pdf_file.exists(), "PDF file should be deleted after download"

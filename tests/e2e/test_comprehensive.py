@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 
 import pytest
-import requests
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -1137,25 +1136,14 @@ class TestWebInterface:
                 pdf_created
             ), f"PDF file not created within {max_wait} seconds at {pdf_file}"
 
-            # Step 8: Verify PDF can be downloaded via the route
-            response = requests.get(
-                f"{server_info['url']}/download/print.pdf", timeout=5
-            )
-            assert (
-                response.status_code == 200
-            ), f"Expected 200 status for PDF download, got {response.status_code}"
-            assert (
-                response.headers.get("Content-Type") == "application/pdf"
-            ), "Expected PDF content type"
-            assert "attachment" in response.headers.get(
-                "Content-Disposition", ""
-            ), "Expected attachment in Content-Disposition header"
-            logger.info("PDF download route works correctly")
-
-            # Step 9: Verify PDF file size is reasonable (not empty)
+            # Step 8: Verify PDF file size is reasonable (not empty)
             pdf_size = pdf_file.stat().st_size
             assert pdf_size > 1000, f"PDF file seems too small: {pdf_size} bytes"
             logger.info(f"PDF file size: {pdf_size} bytes - looks good!")
+
+            # Note: PDF file should be automatically downloaded by the browser
+            # and cleaned up after download. The file may no longer exist at this point.
+            logger.info("PDF generation workflow completed successfully")
 
         except NoSuchElementException:
             # If chromium is not available, the PDF save button won't be present

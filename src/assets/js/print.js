@@ -287,24 +287,24 @@ var savePDF = function() {
 			'action=save_config&data=' + encodeURIComponent(JSON.stringify(configVars)),
 			function(configData, textStatus, jqXHR) {
 				if (configData.success) {
-					// Configuration saved, now generate PDF
-					$.post(
-							document.baseURI,
-							'action=save_pdf&data=' + encodeURIComponent(JSON.stringify({content: $('#wrap-all-print').html()})),
-							function(data,textStatus,jqXHR) {
-								if (data.success) {
-									window.open('/download/print.pdf');
-									notify($('#pdf-save'), '', 'PDF created successfully! (you need to allow popups to see the pdf. otherwise open "http://'+window.location.host+'/download/print.pdf" manually)', 'bg-success',
-											5000);
-								} else {
-									notify($('#pdf-save'), '', jqXHR.statusText, 'bg-danger',
-											4000);
-								}
-							}, 'json').fail(
-							function() {
-								notify($('#pdf-save'), '', 'Connection error', 'bg-danger',
-										4000);
-							});
+					// Configuration saved, now generate and download PDF
+					// Create a form to submit the PDF request
+					var form = $('<form>', {
+						'method': 'POST',
+						'action': document.baseURI
+					});
+					form.append($('<input>', {
+						'type': 'hidden',
+						'name': 'action',
+						'value': 'save_pdf'
+					}));
+					form.append($('<input>', {
+						'type': 'hidden',
+						'name': 'data',
+						'value': JSON.stringify({content: $('#wrap-all-print').html()})
+					}));
+					form.appendTo('body').submit();
+					notify($('#pdf-save'), '', 'PDF created successfully and downloading!', 'bg-success', 3000);
 				} else {
 					notify($('#pdf-save'), '', 'Failed to save configuration: ' + configData.error, 'bg-danger',
 							4000);
