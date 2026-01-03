@@ -17,9 +17,6 @@ from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 
 logger = logging.getLogger(__name__)
 
-# Constants
-PRINT_PDF_FILENAME = "print.pdf"
-
 
 def format_tracks(
     album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
@@ -280,7 +277,7 @@ def create_pdf(
     test_temp_dir = os.environ.get("TTMP32GME_TEST_TEMP_DIR")
     if test_temp_dir:
         # For E2E testing: create PDF in specified directory
-        pdf_file = Path(test_temp_dir) / PRINT_PDF_FILENAME
+        pdf_file = Path(test_temp_dir) / "print.pdf"
         # Create empty file for chromium to write to
         pdf_file.touch()
         temp_fd = None
