@@ -153,11 +153,10 @@ if ! command -v ffmpeg &> /dev/null; then
             exit 1
         fi
     fi
-    ffmpeg -version | head -n1
 else
     print_success "ffmpeg already installed"
-    ffmpeg -version | head -n1
 fi
+ffmpeg -version | head -n1
 
 print_step "Step 5: Installing Python dependencies"
 PIP_LOG="/tmp/pip_install.log"
