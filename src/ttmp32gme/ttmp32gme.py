@@ -19,7 +19,6 @@ from packaging.version import Version
 from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
-from . import __version__
 from .build.file_handler import (
     check_config_file,
     get_default_library_path,
@@ -28,6 +27,7 @@ from .build.file_handler import (
     make_temp_album_dir,
     open_browser,
 )
+from . import __version__
 from .db_handler import (
     AlbumUpdateModel,
     ConfigUpdateModel,

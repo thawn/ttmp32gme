@@ -55,3 +55,12 @@ google-chrome-stable_current_amd64.deb
 
 # Pre-commit
 .pre-commit-config.yaml.bak
+
+# PyInstaller build artifacts
+*.spec.bak
+build/
+!build/docker/
+!build/mac/
+!build/win/
+dist/
+*.pyc
