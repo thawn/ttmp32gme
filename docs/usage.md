@@ -59,8 +59,8 @@ On Library page:
 ttmp32gme --port 8080              # Custom port
 ttmp32gme --host 0.0.0.0           # Network access
 ttmp32gme --library /path/to/lib   # Custom library
-ttmp32gme -v                       # Info level output
-ttmp32gme -vv                      # Debug level output
+ttmp32gme -v                       # Increase verbosity (-v for INFO, -vv for DEBUG)
+ttmp32gme --version                # Show version
 ```
 
 ## Tips
