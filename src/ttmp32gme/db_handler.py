@@ -3,9 +3,10 @@ import logging
 import shutil
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from types import TracebackType
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from mutagen import File as MutagenFile
+from mutagen import File as MutagenFile  # type: ignore[attr-defined]
 from mutagen.easyid3 import EasyID3
 from mutagen.mp3 import MP3
 from packaging.version import Version
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 # Reusable field validators to avoid code duplication
-def convert_str_to_int(v):
+def convert_str_to_int(v: Union[str, int, None]) -> Union[int, None]:
     """Convert string to integer.
 
     Args:
@@ -45,21 +46,21 @@ def convert_str_to_int(v):
     return v
 
 
-def trim_optional_str(v):
+def trim_optional_str(v: Any) -> Any:
     """Trim optional string fields.
 
     Args:
-        v: String value or None
+        v: String value or None or any other type
 
     Returns:
-        Trimmed string or None
+        Trimmed string or original value if not a string
     """
     if v and isinstance(v, str):
         return v.strip()
     return v
 
 
-def validate_non_empty_str(v, field_name: str = "field"):
+def validate_non_empty_str(v: Any, field_name: str = "field") -> str:
     """Validate and trim non-empty string fields.
 
     Args:
@@ -98,7 +99,7 @@ class AlbumUpdateModel(BaseModel):
 
     @field_validator("oid", "uid", mode="before")
     @classmethod
-    def convert_to_int(cls, v):
+    def convert_to_int(cls, v: Union[str, int, None]) -> Union[int, None]:
         """Convert string OIDs to integers."""
         return convert_str_to_int(v)
 
@@ -130,7 +131,7 @@ class LibraryActionModel(BaseModel):
 
     @field_validator("uid", mode="before")
     @classmethod
-    def convert_uid_to_int(cls, v):
+    def convert_uid_to_int(cls, v: Union[str, int, None]) -> Union[int, None]:
         """Convert string UID to integer."""
         return convert_str_to_int(v)
 
@@ -152,19 +153,19 @@ class AlbumMetadataModel(BaseModel):
 
     @field_validator("album_title", mode="before")
     @classmethod
-    def validate_album_title(cls, v):
+    def validate_album_title(cls, v: Any) -> str:
         """Ensure album title is not empty."""
         return validate_non_empty_str(v, "Album title")
 
     @field_validator("album_artist", mode="before")
     @classmethod
-    def validate_album_artist(cls, v):
+    def validate_album_artist(cls, v: Any) -> Any:
         """Trim album artist."""
         return trim_optional_str(v)
 
     @field_validator("album_year", mode="before")
     @classmethod
-    def validate_year(cls, v):
+    def validate_year(cls, v: Any) -> Optional[str]:
         """Validate year format."""
         if v:
             v = str(v).strip()
@@ -190,13 +191,13 @@ class TrackMetadataModel(BaseModel):
 
     @field_validator("title", mode="before")
     @classmethod
-    def validate_title(cls, v):
+    def validate_title(cls, v: Any) -> str:
         """Ensure track title is not empty."""
         return validate_non_empty_str(v, "Track title")
 
     @field_validator("album", "artist", "genre", mode="before")
     @classmethod
-    def trim_string_fields(cls, v):
+    def trim_string_fields(cls, v: Any) -> Any:
         """Trim string fields."""
         return trim_optional_str(v)
 
@@ -206,7 +207,7 @@ class DBHandler:
     VALID_TABLES = {"config", "gme_library", "script_codes", "tracks"}
 
     # Valid column names for each table (populated dynamically)
-    _valid_columns: Dict[str, set] = {}
+    _valid_columns: Dict[str, set[str]] = {}
 
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -217,6 +218,7 @@ class DBHandler:
     def gme_library_columns(self) -> List[str]:
         if self._gme_library_columns is None:
             self.connect()
+            assert self.conn is not None
             cursor = self.conn.cursor()
             cursor.execute("PRAGMA table_info(gme_library);")
             self._gme_library_columns = [row[1] for row in cursor.fetchall()]
@@ -239,6 +241,7 @@ class DBHandler:
 
     def initialize(self):
         self.connect()
+        assert self.conn is not None
         cursor = self.conn.cursor()
         cursor.execute(
             """
@@ -356,6 +359,7 @@ class DBHandler:
 
     def execute(self, query: str, params: Tuple[Any, ...] = ()) -> sqlite3.Cursor:
         self.connect()
+        assert self.conn is not None
         cur = self.conn.cursor()
         cur.execute(query, params)
         return cur
@@ -380,6 +384,7 @@ class DBHandler:
 
     def _populate_valid_columns(self):
         """Populate the cache of valid column names for each table."""
+        assert self.conn is not None
         for table in self.VALID_TABLES:
             try:
                 cursor = self.conn.cursor()
@@ -449,14 +454,19 @@ class DBHandler:
         placeholders = ", ".join("?" * len(fields))
         query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
 
-        self.execute(query, values)
+        self.execute(query, tuple(values))
         self.commit()
 
     def __enter__(self):
         self.connect()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.close()
 
     def get_config(self) -> Dict[str, str]:
@@ -561,7 +571,7 @@ class DBHandler:
         return tracks
 
     def update_table_entry(
-        self, table: str, keyname: str, search_keys: List, data: Dict[str, Any]
+        self, table: str, keyname: str, search_keys: List[Any], data: Dict[str, Any]
     ) -> bool:
         """Update a table entry.
 
@@ -585,7 +595,7 @@ class DBHandler:
         set_clause = ", ".join(f"{field}=?" for field in fields)
         query = f"UPDATE {table} SET {set_clause} WHERE {keyname}"
 
-        self.execute(query, values + search_keys)
+        self.execute(query, tuple(values + search_keys))
         self.commit()
         return True
 
@@ -643,15 +653,15 @@ class DBHandler:
             # Extract track info (using EasyID3 interface)
             track_info = {
                 "parent_oid": oid,
-                "album": str(audio.get("album", [""])[0]),
-                "artist": str(audio.get("artist", [""])[0]),
-                "disc": str(audio.get("discnumber", [""])[0]),
-                "duration": int(audio.info.length * 1000) if audio.info else 0,
-                "genre": str(audio.get("genre", [""])[0]),
-                "lyrics": str(audio.get("lyrics", [""])[0]),
-                "title": str(audio.get("title", [""])[0]),
+                "album": str(audio.get("album", [""])[0]),  # type: ignore[index]
+                "artist": str(audio.get("artist", [""])[0]),  # type: ignore[index]
+                "disc": str(audio.get("discnumber", [""])[0]),  # type: ignore[index]
+                "duration": int(audio.info.length * 1000) if audio.info else 0,  # type: ignore[union-attr]
+                "genre": str(audio.get("genre", [""])[0]),  # type: ignore[index]
+                "lyrics": str(audio.get("lyrics", [""])[0]),  # type: ignore[index]
+                "title": str(audio.get("title", [""])[0]),  # type: ignore[index]
                 "track": int(
-                    str(audio.get("tracknumber", [track_no])[0]).split("/")[0]
+                    str(audio.get("tracknumber", [track_no])[0]).split("/")[0]  # type: ignore[index]
                 ),
                 "filename": file_path,
             }
@@ -788,7 +798,9 @@ class DBHandler:
             validated_data["filename"] = final_filename
             self.write_to_database("tracks", validated_data)
 
-    def create_library_entry(self, album_list: List[Dict], library_path: Path) -> bool:
+    def create_library_entry(
+        self, album_list: List[Dict[str, Any]], library_path: Path
+    ) -> bool:
         """Create a new library entry from uploaded files.
 
         Args:
@@ -817,7 +829,7 @@ class DBHandler:
             # Process all files in the album
             # Sort by filename (not UUID) for predictable track order
             sorted_file_ids = sorted(
-                album.keys(), key=lambda fid: Path(album[fid]).name
+                album.keys(), key=lambda fid: Path(album[fid]).name  # type: ignore[arg-type]
             )
             for file_id in sorted_file_ids:
                 file_path = Path(album[file_id])
@@ -830,28 +842,33 @@ class DBHandler:
 
                     if track_info:
                         # Merge album data (first file wins for album-level metadata)
-                        if not album_data.get("album_title") and audio_album_data.get(
-                            "album_title"
-                        ):
-                            album_data["album_title"] = audio_album_data["album_title"]
-                            album_data["path"] = audio_album_data["path"]
-                        if not album_data.get("album_artist") and audio_album_data.get(
-                            "album_artist"
-                        ):
-                            album_data["album_artist"] = audio_album_data[
+                        if audio_album_data:
+                            if not album_data.get(
+                                "album_title"
+                            ) and audio_album_data.get("album_title"):
+                                album_data["album_title"] = audio_album_data[
+                                    "album_title"
+                                ]
+                                album_data["path"] = audio_album_data["path"]
+                            if not album_data.get(
                                 "album_artist"
-                            ]
-                        if not album_data.get("album_year") and audio_album_data.get(
-                            "album_year"
-                        ):
-                            album_data["album_year"] = audio_album_data["album_year"]
-                        if not album_data.get(
-                            "picture_filename"
-                        ) and audio_album_data.get("picture_filename"):
-                            album_data["picture_filename"] = audio_album_data[
+                            ) and audio_album_data.get("album_artist"):
+                                album_data["album_artist"] = audio_album_data[
+                                    "album_artist"
+                                ]
+                            if not album_data.get(
+                                "album_year"
+                            ) and audio_album_data.get("album_year"):
+                                album_data["album_year"] = audio_album_data[
+                                    "album_year"
+                                ]
+                            if not album_data.get(
                                 "picture_filename"
-                            ]
-                            picture_data = audio_picture_data
+                            ) and audio_album_data.get("picture_filename"):
+                                album_data["picture_filename"] = audio_album_data[
+                                    "picture_filename"
+                                ]
+                                picture_data = audio_picture_data
 
                         track_data.append(track_info)
                         track_no += 1
@@ -894,7 +911,9 @@ class DBHandler:
             )
 
             logger.info("Album %s: Successfully written to database", album_idx)
-            shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)
+            # Clean up temporary upload directory using last file's parent
+            # file_id is guaranteed to be bound since sorted_file_ids is non-empty
+            shutil.rmtree(Path(album[file_id]).parent, ignore_errors=True)  # type: ignore[possibly-unbound]
 
         logger.info("create_library_entry: Completed processing all albums")
         return True
@@ -1172,6 +1191,7 @@ class DBHandler:
                 )
             self.commit()
         except Exception as e:
+            assert self.conn is not None
             self.conn.rollback()
             raise RuntimeError(f"Error updating library paths: {e}")
         return True
@@ -1202,6 +1222,7 @@ class DBHandler:
                 Number of rows fixed
             """
             # Temporarily disable text_factory to read raw bytes
+            assert self.conn is not None
             old_text_factory = self.conn.text_factory
             self.conn.text_factory = bytes
 
@@ -1261,6 +1282,7 @@ class DBHandler:
                 cursor.close()
 
                 # Now apply all fixes with normal text_factory
+                assert self.conn is not None
                 self.conn.text_factory = str
 
                 for row_id, fixed_values in fixes_to_apply:
@@ -1275,6 +1297,7 @@ class DBHandler:
 
             finally:
                 # Restore original text_factory
+                assert self.conn is not None
                 self.conn.text_factory = old_text_factory
 
             return fixed_count
@@ -1359,7 +1382,11 @@ class DBHandler:
                 "UPDATE config SET value='2.0.1' WHERE param='version';",
             ],
         }
-        current_version = Version(self.get_config_value("version"))
+        version_str = self.get_config_value("version")
+        if version_str is None:
+            # No version found, assume current version
+            return True
+        current_version = Version(version_str)
 
         for version_str in sorted(updates.keys(), key=Version):
             update_version = Version(version_str)
@@ -1375,6 +1402,7 @@ class DBHandler:
                             self.execute(sql_or_func)
                     self.commit()
                 except Exception as e:
+                    assert self.conn is not None
                     self.conn.rollback()
                     raise RuntimeError(f"Can't update config database.\n\tError: {e}")
 
@@ -1429,14 +1457,16 @@ class DBHandler:
         return memory_file
 
 
-def extract_tracks_from_album(album: Dict[str, Any]) -> List[Dict[str, Any]]:
+def extract_tracks_from_album(
+    album: Dict[str, Any]
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Extract track dictionaries from an album dictionary.
 
     Args:
         album: Album dictionary
 
     Returns:
-        List of track dictionaries
+        Tuple of (list of track dictionaries, modified album dictionary)
     """
     tracks = []
     for key in sorted(album.keys(), reverse=True):
@@ -1462,7 +1492,8 @@ def get_cover_filename(mimetype: Optional[str], picture_data: bytes) -> Optional
     elif picture_data:
         try:
             img = Image.open(io.BytesIO(picture_data))
-            return f"cover.{img.format.lower()}"
+            if img.format:
+                return f"cover.{img.format.lower()}"
         except Exception:
             return None
     return None

@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from flask import (
     Flask,
@@ -70,7 +70,7 @@ db_handler = None
 config = {}
 file_count = 0
 album_count = 0
-current_album = None
+current_album: Optional[Path] = None
 file_list = []
 album_list = []
 print_content = (
@@ -108,7 +108,7 @@ def fetch_config() -> Dict[str, Any]:
     """Fetch configuration from database."""
     db = get_db()
 
-    temp_config = db.get_config()
+    temp_config: Dict[str, Any] = db.get_config()
 
     # Ensure library_path is set (but don't override if already set in database)
     if not temp_config.get("library_path"):
@@ -237,6 +237,9 @@ def index():
 def upload_post():
     """Handle file uploads."""
     global file_count, album_count, current_album
+
+    # Ensure current_album is initialized (should be set by upload_get)
+    assert current_album is not None, "current_album must be initialized before POST"
 
     if "qquuid" in request.form:
         if "_method" in request.form:
@@ -401,10 +404,15 @@ def library_post():
 
         try:
             # Validate uid
+            if uid is None:
+                return jsonify({"success": False, "error": "Missing UID"}), 400
             try:
                 uid_int = int(uid)
             except (ValueError, TypeError):
                 return jsonify({"success": False, "error": "Invalid UID"}), 400
+
+            if filename is None:
+                return jsonify({"success": False, "error": "Missing filename"}), 400
 
             oid = db.replace_cover(uid_int, filename, file_data)
             album = db.get_album(oid)
@@ -599,7 +607,7 @@ def help_page():
 
 
 @app.route("/images/<path:filename>")
-def serve_dynamic_image(filename):
+def serve_dynamic_image(filename: str):
     """Serve dynamically generated images (OID codes, covers, etc.)."""
     db = get_db()
 
@@ -631,7 +639,7 @@ def serve_dynamic_image(filename):
 
 
 @app.route("/download_gme/<int:oid>")
-def download_gme(oid):
+def download_gme(oid: int):
     """Download GME file for an album."""
     try:
         db = get_db()
