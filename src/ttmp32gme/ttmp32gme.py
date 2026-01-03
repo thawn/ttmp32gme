@@ -39,9 +39,9 @@ from ttmp32gme.db_handler import (
 from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
 from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
-# Configure logging
+# Configure logging (default to WARNING, can be overridden by -v flags)
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.WARNING, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -668,8 +668,14 @@ def main():
     )
     parser.add_argument("--port", "-p", type=int, help="Server port")
     parser.add_argument("--host", default="127.0.0.1", help="Server host")
-    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug mode")
-    parser.add_argument("--version", "-v", action="store_true", help="Show version")
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="Increase verbosity (-v for INFO, -vv for DEBUG)",
+    )
+    parser.add_argument("--version", action="store_true", help="Show version")
     parser.add_argument("--database", type=str, help="Path to database file")
     parser.add_argument("--library", type=str, help="Path to library directory")
     parser.add_argument(
@@ -678,10 +684,13 @@ def main():
 
     args = parser.parse_args()
 
-    # Set logging level based on debug flag (do this early)
-    if args.debug:
+    # Set logging level based on verbose flag (do this early)
+    if args.verbose == 1:
+        logging.getLogger().setLevel(logging.INFO)
+        logger.info("Verbose mode enabled (INFO level)")
+    elif args.verbose >= 2:
         logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Debug mode enabled")
+        logger.debug("Verbose mode enabled (DEBUG level)")
 
     if args.version:
         print(f"ttmp32gme version {__version__}")
@@ -734,8 +743,8 @@ def main():
     logger.info(f"Server running on http://{host}:{port}/")
     logger.info("Open this URL in your web browser to continue.")
 
-    # Run Flask app
-    app.run(host=host, port=port, debug=args.debug)
+    # Run Flask app (enable Flask debug mode only with -vv or more)
+    app.run(host=host, port=port, debug=(args.verbose >= 2))
 
 
 if __name__ == "__main__":
