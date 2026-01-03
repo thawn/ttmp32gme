@@ -12,27 +12,28 @@ URL="https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
 echo "Downloading and installing ffmpeg for macOS..."
 
 # Function to run command with timeout using Python
+# Only used internally with controlled commands (no user input)
 run_with_timeout() {
   local timeout=$1
   shift
-  python3 -c "
+  # Pass command as separate arguments to avoid injection issues
+  python3 -c '
 import subprocess
 import sys
 
-timeout = $timeout
-cmd = \"\"\"$*\"\"\"
+timeout = int(sys.argv[1])
+cmd = sys.argv[2:]
 
 try:
     result = subprocess.run(
         cmd,
-        shell=True,
         timeout=timeout,
         capture_output=False
     )
     sys.exit(result.returncode)
 except subprocess.TimeoutExpired:
     sys.exit(124)
-"
+' "$timeout" "$@"
 }
 
 # Function to attempt download and extraction
