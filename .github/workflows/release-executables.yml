@@ -226,49 +226,7 @@ jobs:
           }
 
       - name: Download ffmpeg for macOS
-        run: |
-          echo "Downloading ffmpeg for macOS"
-
-          # Create temp directory for extraction
-          TEMP_DIR=$(mktemp -d)
-          cd "$TEMP_DIR"
-
-          # Try to download and extract ffmpeg with 60 second timeout
-          if timeout 60 wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip && \
-             timeout 60 unzip -q ffmpeg.zip; then
-            # Move binary to lib/mac
-            chmod +x ffmpeg
-            mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
-            echo "ffmpeg downloaded successfully on first attempt"
-          else
-            echo "First attempt failed or timed out, retrying..."
-            # Clean up any partial downloads
-            cd "$GITHUB_WORKSPACE"
-            chmod -R u+w "$TEMP_DIR" || true
-            rm -rf "$TEMP_DIR"
-            # Create new temp directory
-            TEMP_DIR=$(mktemp -d)
-            cd "$TEMP_DIR"
-            # Retry with 60 second timeout
-            if timeout 60 wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip && \
-               timeout 60 unzip -q ffmpeg.zip; then
-              # Move binary to lib/mac
-              chmod +x ffmpeg
-              mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
-              echo "ffmpeg downloaded successfully on second attempt"
-            else
-              echo "ffmpeg installation failed after 2 attempts"
-              exit 1
-            fi
-          fi
-
-          # Cleanup temp directory - change permissions first to ensure deletion succeeds
-          cd "$GITHUB_WORKSPACE"
-          chmod -R u+w "$TEMP_DIR" || true
-          rm -rf "$TEMP_DIR"
-
-          # Verify
-          lib/mac/ffmpeg -version
+        run: .github/scripts/install-ffmpeg-macos.sh lib/mac
 
       - name: Build macOS executable with PyInstaller
         run: |
