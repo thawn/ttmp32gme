@@ -1160,6 +1160,101 @@ class DBHandler:
             raise RuntimeError(f"Error updating library paths: {e}")
         return True
 
+    def _fix_text_encoding(
+        self, table: str, rowid_col: str, text_columns: List[str]
+    ) -> int:
+        """Fix text encoding issues in a database table.
+
+        This method fixes text data that was stored with incorrect encoding (e.g., from legacy Perl code)
+        by reading it as raw bytes and re-encoding as UTF-8.
+
+        Args:
+            table: Table name to fix
+            rowid_col: Name of the row identifier column (e.g., 'oid', 'rowid')
+            text_columns: List of text column names to fix
+
+        Returns:
+            Number of rows fixed
+        """
+        # Temporarily disable text_factory to read raw bytes
+        old_text_factory = self.conn.text_factory
+        self.conn.text_factory = bytes
+
+        fixed_count = 0
+
+        try:
+            # Get all rows with their identifiers
+            cursor = self.conn.cursor()
+
+            # Build query to select rowid and text columns
+            if rowid_col == "rowid":
+                select_cols = f"rowid, {', '.join(text_columns)}"
+            else:
+                select_cols = f"{rowid_col}, {', '.join(text_columns)}"
+
+            cursor.execute(f"SELECT {select_cols} FROM {table}")
+            rows = cursor.fetchall()
+
+            for row in rows:
+                row_id = row[0]
+                needs_fix = False
+                fixed_values = {}
+
+                # Check each text column
+                for i, col_name in enumerate(text_columns, start=1):
+                    value = row[i]
+
+                    if value is None:
+                        continue
+
+                    # Try to decode as UTF-8
+                    try:
+                        if isinstance(value, bytes):
+                            # Try UTF-8 first
+                            text = value.decode("utf-8")
+                        else:
+                            # Already text, no fix needed
+                            continue
+                    except UnicodeDecodeError:
+                        # Failed UTF-8, try Latin-1 (which accepts all bytes)
+                        try:
+                            if isinstance(value, bytes):
+                                text = value.decode("latin-1")
+                                fixed_values[col_name] = text
+                                needs_fix = True
+                                logger.info(
+                                    f"Fixed encoding for {table}.{col_name} "
+                                    f"(row {row_id}): {value[:50]}... -> {text[:50]}..."
+                                )
+                        except Exception as e:
+                            logger.warning(
+                                f"Could not fix encoding for {table}.{col_name} "
+                                f"(row {row_id}): {e}"
+                            )
+
+                # Update the row if any column needed fixing
+                if needs_fix:
+                    # Restore normal text_factory for the update
+                    self.conn.text_factory = str
+
+                    set_clause = ", ".join(f"{col}=?" for col in fixed_values.keys())
+                    values = list(fixed_values.values()) + [row_id]
+
+                    update_sql = f"UPDATE {table} SET {set_clause} WHERE {rowid_col}=?"
+                    cursor.execute(update_sql, values)
+                    fixed_count += 1
+
+                    # Switch back to bytes for reading next row
+                    self.conn.text_factory = bytes
+
+            cursor.close()
+
+        finally:
+            # Restore original text_factory
+            self.conn.text_factory = old_text_factory
+
+        return fixed_count
+
     def update_db(self) -> bool:
         """Update database schema to latest version.
 
@@ -1191,6 +1286,34 @@ class DBHandler:
                 "UPDATE config SET value='2.0.0' WHERE param='version';",
                 "INSERT OR IGNORE INTO config (param, value) VALUES ('print_page_margin', '0.5in');",
             ],
+            "2.0.1": [
+                # Fix encoding issues from legacy Perl databases
+                lambda: self._fix_text_encoding(
+                    "gme_library",
+                    "oid",
+                    [
+                        "album_title",
+                        "album_artist",
+                        "picture_filename",
+                        "gme_file",
+                        "path",
+                    ],
+                ),
+                lambda: self._fix_text_encoding(
+                    "tracks",
+                    "rowid",
+                    [
+                        "album",
+                        "artist",
+                        "genre",
+                        "lyrics",
+                        "title",
+                        "filename",
+                        "tt_script",
+                    ],
+                ),
+                "UPDATE config SET value='2.0.1' WHERE param='version';",
+            ],
         }
         current_version = Version(self.get_config_value("version"))
 
@@ -1198,8 +1321,14 @@ class DBHandler:
             update_version = Version(version_str)
             if update_version > current_version:
                 try:
-                    for sql in updates[version_str]:
-                        self.execute(sql)
+                    for sql_or_func in updates[version_str]:
+                        if callable(sql_or_func):
+                            # Execute function (e.g., for encoding fixes)
+                            result = sql_or_func()
+                            logger.info(f"Executed update function, result: {result}")
+                        else:
+                            # Execute SQL
+                            self.execute(sql_or_func)
                     self.commit()
                 except Exception as e:
                     self.conn.rollback()
