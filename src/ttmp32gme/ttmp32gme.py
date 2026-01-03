@@ -92,13 +92,7 @@ def get_db():
             config_file.parent.mkdir(parents=True, exist_ok=True)
             # If custom path doesn't exist, copy default config
             if not config_file.exists():
-                if getattr(sys, "frozen", False):
-                    # Running in PyInstaller bundle
-                    base_path = Path(getattr(sys, "_MEIPASS", "."))
-                    default_config = base_path / "ttmp32gme" / "config.sqlite"
-                else:
-                    # Running in development
-                    default_config = Path(__file__).parent / "config.sqlite"
+                default_config = get_resource_path("ttmp32gme/config.sqlite")
                 if default_config.exists():
                     import shutil
 

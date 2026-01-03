@@ -77,14 +77,7 @@ def check_config_file() -> Path:
 
     if not config_file.exists():
         # Copy default config from package
-        if getattr(sys, "frozen", False):
-            # Running in PyInstaller bundle
-            base_path = Path(getattr(sys, "_MEIPASS", "."))
-            default_config = base_path / "ttmp32gme" / "config.sqlite"
-        else:
-            # Running in development
-            src_dir = Path(__file__).parent.parent
-            default_config = src_dir / "config.sqlite"
+        default_config = get_resource_path("ttmp32gme/config.sqlite")
         if default_config.exists():
             shutil.copy(default_config, config_file)
         else:
