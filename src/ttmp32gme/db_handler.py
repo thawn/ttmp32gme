@@ -1181,23 +1181,20 @@ class DBHandler:
         self.conn.text_factory = bytes
 
         fixed_count = 0
+        fixes_to_apply = []
 
         try:
             # Get all rows with their identifiers
             cursor = self.conn.cursor()
 
             # Build query to select rowid and text columns
-            if rowid_col == "rowid":
-                select_cols = f"rowid, {', '.join(text_columns)}"
-            else:
-                select_cols = f"{rowid_col}, {', '.join(text_columns)}"
+            select_cols = f"{rowid_col}, {', '.join(text_columns)}"
 
             cursor.execute(f"SELECT {select_cols} FROM {table}")
             rows = cursor.fetchall()
 
             for row in rows:
                 row_id = row[0]
-                needs_fix = False
                 fixed_values = {}
 
                 # Check each text column
@@ -1221,33 +1218,35 @@ class DBHandler:
                             if isinstance(value, bytes):
                                 text = value.decode("latin-1")
                                 fixed_values[col_name] = text
-                                needs_fix = True
-                                logger.info(
-                                    f"Fixed encoding for {table}.{col_name} "
-                                    f"(row {row_id}): {value[:50]}... -> {text[:50]}..."
-                                )
+                                if logger.isEnabledFor(logging.INFO):
+                                    logger.info(
+                                        f"Fixed encoding for {table}.{col_name} "
+                                        f"(row {row_id}): {value[:50]}... -> {text[:50]}..."
+                                    )
                         except Exception as e:
                             logger.warning(
                                 f"Could not fix encoding for {table}.{col_name} "
                                 f"(row {row_id}): {e}"
                             )
 
-                # Update the row if any column needed fixing
-                if needs_fix:
-                    # Restore normal text_factory for the update
-                    self.conn.text_factory = str
-
-                    set_clause = ", ".join(f"{col}=?" for col in fixed_values.keys())
-                    values = list(fixed_values.values()) + [row_id]
-
-                    update_sql = f"UPDATE {table} SET {set_clause} WHERE {rowid_col}=?"
-                    cursor.execute(update_sql, values)
-                    fixed_count += 1
-
-                    # Switch back to bytes for reading next row
-                    self.conn.text_factory = bytes
+                # Collect fixes to apply later
+                if fixed_values:
+                    fixes_to_apply.append((row_id, fixed_values))
 
             cursor.close()
+
+            # Now apply all fixes with normal text_factory
+            self.conn.text_factory = str
+
+            for row_id, fixed_values in fixes_to_apply:
+                set_clause = ", ".join(f"{col}=?" for col in fixed_values.keys())
+                values = list(fixed_values.values()) + [row_id]
+
+                update_sql = f"UPDATE {table} SET {set_clause} WHERE {rowid_col}=?"
+                cursor = self.conn.cursor()
+                cursor.execute(update_sql, values)
+                cursor.close()
+                fixed_count += 1
 
         finally:
             # Restore original text_factory
