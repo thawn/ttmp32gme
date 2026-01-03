@@ -143,7 +143,7 @@ if ! command -v ffmpeg &> /dev/null; then
         print_success "ffmpeg installed on first attempt"
     else
         echo "=> First attempt failed or timed out, retrying..." >> "$INSTALL_LOG"
-        echo "First ffmpeg installation attempt failed or timed out, retrying..."
+        echo "Retrying ffmpeg installation (timeout or failure on first attempt)..."
         # Retry with 60 second timeout
         if timeout 60 sudo apt-get install -y ffmpeg >> "$INSTALL_LOG" 2>&1; then
             print_success "ffmpeg installed on second attempt"

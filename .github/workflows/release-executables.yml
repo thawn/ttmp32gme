@@ -124,8 +124,7 @@ jobs:
             Write-Host "ffmpeg installed successfully on first attempt"
           } else {
             Write-Host "First attempt failed or timed out, retrying..."
-            # Clean up any partial downloads and stale temp directories
-            Remove-Item -Path lib/win/ffmpeg.exe -Force -ErrorAction SilentlyContinue
+            # Clean up any stale temp directories (Install-Ffmpeg cleans up its own temp dir in finally block)
             Get-ChildItem -Path $env:TEMP -Directory -Filter "ffmpeg-temp-*" -ErrorAction SilentlyContinue |
               Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
@@ -134,7 +133,7 @@ jobs:
             if (Install-Ffmpeg -TimeoutSeconds 60) {
               Write-Host "ffmpeg installed successfully on second attempt"
             } else {
-              Write-Error "ffmpeg installation failed after 2 attempts"
+              Write-Host "ffmpeg installation failed after 2 attempts"
               exit 1
             }
           }
