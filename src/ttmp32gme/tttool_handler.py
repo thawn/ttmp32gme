@@ -7,12 +7,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from ttmp32gme.build.file_handler import (
-    cleanup_filename,
-    get_executable_path,
-    get_tiptoi_dir,
-)
-from ttmp32gme.db_handler import DBHandler
+from .build.file_handler import cleanup_filename, get_executable_path, get_tiptoi_dir
+from .db_handler import DBHandler
 
 logger = logging.getLogger(__name__)
 
