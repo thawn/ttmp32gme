@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 # Reusable field validators to avoid code duplication
-def convert_str_to_int(v: Union[str, int, None]) -> Union[int, None]:
-    """Convert string to integer.
+def convert_str_to_int(v: Any) -> Union[int, None]:
+    """Convert string to integer if needed.
 
     Args:
         v: Value to convert (can be str, int, or None)
@@ -38,26 +38,29 @@ def convert_str_to_int(v: Union[str, int, None]) -> Union[int, None]:
     Raises:
         ValueError: If conversion fails
     """
-    if v is not None and isinstance(v, str):
-        try:
-            return int(v)
-        except ValueError:
-            raise ValueError(f"Invalid integer value: {v}")
-    return v
+    if v is None:
+        return None
+    if isinstance(v, str):
+        return int(v)
+    if isinstance(v, int):
+        return v
+    raise ValueError(f"Value {v} must be an integer or string representing an integer")
 
 
-def trim_optional_str(v: Any) -> Any:
+def trim_optional_str(v: Any) -> Union[str, None]:
     """Trim optional string fields.
 
     Args:
         v: String value or None or any other type
 
     Returns:
-        Trimmed string or original value if not a string
+        Trimmed string or None
     """
-    if v and isinstance(v, str):
+    if v is None:
+        return None
+    if isinstance(v, str):
         return v.strip()
-    return v
+    raise ValueError(f"Value {v} must be a string or None")
 
 
 def validate_non_empty_str(v: Any, field_name: str = "field") -> str:
@@ -99,7 +102,7 @@ class AlbumUpdateModel(BaseModel):
 
     @field_validator("oid", "uid", mode="before")
     @classmethod
-    def convert_to_int(cls, v: Union[str, int, None]) -> Union[int, None]:
+    def convert_to_int(cls, v: Any) -> Union[int, None]:
         """Convert string OIDs to integers."""
         return convert_str_to_int(v)
 
@@ -131,7 +134,7 @@ class LibraryActionModel(BaseModel):
 
     @field_validator("uid", mode="before")
     @classmethod
-    def convert_uid_to_int(cls, v: Union[str, int, None]) -> Union[int, None]:
+    def convert_uid_to_int(cls, v: Any) -> Union[int, None]:
         """Convert string UID to integer."""
         return convert_str_to_int(v)
 
@@ -159,7 +162,7 @@ class AlbumMetadataModel(BaseModel):
 
     @field_validator("album_artist", mode="before")
     @classmethod
-    def validate_album_artist(cls, v: Any) -> Any:
+    def validate_album_artist(cls, v: Any) -> Union[str, None]:
         """Trim album artist."""
         return trim_optional_str(v)
 
@@ -197,7 +200,7 @@ class TrackMetadataModel(BaseModel):
 
     @field_validator("album", "artist", "genre", mode="before")
     @classmethod
-    def trim_string_fields(cls, v: Any) -> Any:
+    def trim_string_fields(cls, v: Any) -> Union[str, None]:
         """Trim string fields."""
         return trim_optional_str(v)
 
@@ -1458,7 +1461,7 @@ class DBHandler:
 
 
 def extract_tracks_from_album(
-    album: Dict[str, Any]
+    album: Dict[str, Any],
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Extract track dictionaries from an album dictionary.
 
