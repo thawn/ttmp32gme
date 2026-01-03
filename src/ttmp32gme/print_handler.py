@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional
 
 from flask import render_template
 
-from .build.file_handler import get_default_library_path, get_executable_path
-from .db_handler import DBHandler
-from .tttool_handler import create_oids, get_sorted_tracks
+from ttmp32gme.build.file_handler import get_default_library_path, get_executable_path
+from ttmp32gme.db_handler import DBHandler
+from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ def create_print_layout(
 
         if not album.get("gme_file"):
             # Create GME if it doesn't exist
-            from .tttool_handler import make_gme
+            from ttmp32gme.tttool_handler import make_gme
 
             make_gme(oid, config, db_handler)
             album = db_handler.get_album(oid)

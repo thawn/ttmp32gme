@@ -19,7 +19,8 @@ from packaging.version import Version
 from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
-from .build.file_handler import (
+from ttmp32gme import __version__
+from ttmp32gme.build.file_handler import (
     check_config_file,
     get_default_library_path,
     get_executable_path,
@@ -27,15 +28,14 @@ from .build.file_handler import (
     make_temp_album_dir,
     open_browser,
 )
-from . import __version__
-from .db_handler import (
+from ttmp32gme.db_handler import (
     AlbumUpdateModel,
     ConfigUpdateModel,
     DBHandler,
     LibraryActionModel,
 )
-from .print_handler import create_pdf, create_print_layout, format_print_button
-from .tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
+from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
+from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
 # Configure logging
 logging.basicConfig(
@@ -145,7 +145,7 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
         new_path = Path(config_params["library_path"]).absolute()
         if config.get("library_path") and str(new_path) != config["library_path"]:
             logger.info(f"Moving library to new path: {new_path}")
-            from .build.file_handler import copy_library
+            from ttmp32gme.build.file_handler import copy_library
 
             try:
                 copy_library(Path(config["library_path"]), new_path)
