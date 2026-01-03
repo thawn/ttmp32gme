@@ -33,6 +33,7 @@
 - Code formatting (Black)
 - Import sorting (isort)
 - Linting (flake8)
+- Type checking (pyright strict mode)
 
 Run manually: `pre-commit run --all-files`
 

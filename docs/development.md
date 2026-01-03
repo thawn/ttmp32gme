@@ -22,6 +22,21 @@ pre-commit install
 
 Run: `ttmp32gme -vv` (for debug output)
 
+## Code Quality
+
+**Pre-commit hooks** automatically run:
+- Black (code formatting)
+- isort (import sorting)
+- flake8 (linting)
+- pyright (strict mode type checking)
+
+Run manually: `pre-commit run --all-files`
+
+**Type Checking**: Source code uses strict pyright mode.
+```bash
+pyright src/ttmp32gme  # Check types
+```
+
 ## Testing
 
 ```bash
