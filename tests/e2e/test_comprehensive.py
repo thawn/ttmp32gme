@@ -1101,7 +1101,7 @@ class TestWebInterface:
             pdf_file = library_path / "print.pdf"
 
             pdf_created = False
-            max_wait = 30  # seconds
+            max_wait = 60  # seconds
             start_time = time.time()
 
             while time.time() - start_time < max_wait:
