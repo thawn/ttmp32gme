@@ -1054,8 +1054,9 @@ class TestWebInterface:
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
 
-    def test_pdf_generation_workflow(self, driver, base_config_with_album):
+    def test_pdf_generation_workflow(self, driver, base_config_with_album, caplog):
         """Test the complete workflow of generating and downloading a PDF."""
+        caplog.set_level(logging.INFO)
         server_info = base_config_with_album
 
         # Step 1: Navigate to library page
@@ -1101,7 +1102,7 @@ class TestWebInterface:
             pdf_file = library_path / "print.pdf"
 
             pdf_created = False
-            max_wait = 60  # seconds
+            max_wait = 30  # seconds
             start_time = time.time()
 
             while time.time() - start_time < max_wait:
