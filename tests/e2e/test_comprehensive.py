@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import pytest
+import requests
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
@@ -1052,6 +1053,95 @@ class TestWebInterface:
 
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
+
+    def test_pdf_generation_workflow(self, driver, base_config_with_album):
+        """Test the complete workflow of generating and downloading a PDF."""
+        server_info = base_config_with_album
+
+        # Step 1: Navigate to library page
+        driver.get(f"{server_info['url']}/library")
+        WebDriverWait(driver, 5).until(
+            lambda d: "Test Album" in d.find_element(By.TAG_NAME, "body").text
+        )
+
+        # Step 2: Select all albums
+        select_menu = driver.find_element(By.ID, "dropdownMenu1")
+        select_menu.click()
+        time.sleep(0.1)
+        select_all_option = driver.find_element(By.ID, "select-all")
+        select_all_option.click()
+        time.sleep(0.5)
+
+        # Step 3: Click print button
+        print_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, "print-selected"))
+        )
+        print_button.click()
+
+        # Step 4: Wait for redirect to /print page
+        WebDriverWait(driver, 5).until(lambda d: "/print" in d.current_url)
+        WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        time.sleep(1)  # Wait for page to fully render
+
+        # Step 5: Check if PDF save button exists (requires chromium)
+        try:
+            pdf_save_button = driver.find_element(By.ID, "pdf-save")
+            logger.info("PDF save button found - chromium is available")
+
+            # Step 6: Click the PDF save button
+            pdf_save_button.click()
+            logger.info("Clicked PDF save button")
+
+            # Step 7: Wait for PDF generation
+            # The create_pdf function spawns chromium in background, so we need to poll
+            # for the file to exist. Give it up to 30 seconds.
+            library_path = server_info["library_path"]
+            pdf_file = library_path / "print.pdf"
+
+            pdf_created = False
+            max_wait = 30  # seconds
+            start_time = time.time()
+
+            while time.time() - start_time < max_wait:
+                if pdf_file.exists():
+                    pdf_created = True
+                    logger.info(f"PDF file created at {pdf_file}")
+                    break
+                time.sleep(1)
+
+            assert (
+                pdf_created
+            ), f"PDF file not created within {max_wait} seconds at {pdf_file}"
+
+            # Step 8: Verify PDF can be downloaded via the route
+            response = requests.get(
+                f"{server_info['url']}/download/print.pdf", timeout=5
+            )
+            assert (
+                response.status_code == 200
+            ), f"Expected 200 status for PDF download, got {response.status_code}"
+            assert (
+                response.headers.get("Content-Type") == "application/pdf"
+            ), "Expected PDF content type"
+            assert "attachment" in response.headers.get(
+                "Content-Disposition", ""
+            ), "Expected attachment in Content-Disposition header"
+            logger.info("PDF download route works correctly")
+
+            # Step 9: Verify PDF file size is reasonable (not empty)
+            pdf_size = pdf_file.stat().st_size
+            assert pdf_size > 1000, f"PDF file seems too small: {pdf_size} bytes"
+            logger.info(f"PDF file size: {pdf_size} bytes - looks good!")
+
+        except NoSuchElementException:
+            # If chromium is not available, the PDF save button won't be present
+            logger.warning(
+                "PDF save button not found - chromium may not be available. "
+                "Skipping PDF generation test."
+            )
+            pytest.skip("Chromium not available for PDF generation")
 
 
 @pytest.mark.e2e

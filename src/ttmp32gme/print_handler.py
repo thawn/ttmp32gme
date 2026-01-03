@@ -271,6 +271,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     # Chromium headless PDF printing arguments
     # --headless: Run in headless mode
     # --disable-gpu: Disable GPU hardware acceleration
+    # --no-sandbox: Disable sandbox (required in Docker and CI environments)
     # --no-pdf-header-footer: Disable headers and footers in PDF
     # --print-to-pdf=<path>: Output to PDF file at specified path
     # Note: Margins are controlled via CSS @page rules in pdf.html (0.5in all sides)
@@ -279,6 +280,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
         chromium_path,
         "--headless",
         "--disable-gpu",
+        "--no-sandbox",
         "--no-pdf-header-footer",
         f"--print-to-pdf={pdf_file}",
         f"http://localhost:{port}/pdf",
