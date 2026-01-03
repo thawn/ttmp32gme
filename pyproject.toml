@@ -30,6 +30,7 @@ dev = [
     "flake8>=7.0.0",
     "flake8-bugbear>=24.0.0",
     "isort>=5.13.0",
+    "pyright>=1.1.407",
 ]
 build = [
     "pyinstaller>=6.0.0",
@@ -108,6 +109,27 @@ force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 skip_glob = ["build/*", "dist/*", "node_modules/*", "__pycache__/*", ".venv/*"]
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/__pycache__",
+    "**/.pytest_cache",
+    "**/node_modules",
+    "**/.venv",
+    "build",
+    "dist",
+    "tests"
+]
+typeCheckingMode = "strict"
+pythonVersion = "3.11"
+# Disable some overly strict checks that don't add value
+reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportUntypedFunctionDecorator = false
+reportUnknownParameterType = false
 
 [tool.uv]
 # Using same dependencies as project.optional-dependencies.test

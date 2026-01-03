@@ -166,7 +166,8 @@ def convert_tracks(
     prev_script = "  prev:\n"
     track_scripts = ""
 
-    for i, _track_key in enumerate(tracks):
+    for i, track_key in enumerate(tracks):
+        track = album[track_key]
         if i < len(tracks) - 1:
             play_script += f"  - $current=={i}? P({i})"
             play_script += (
@@ -469,9 +470,12 @@ def copy_gme(oid: int, config: Dict[str, Any], db_handler: DBHandler) -> int:
     if not gme_file:
         # Create GME if it doesn't exist
         make_gme(oid, config, db_handler)
-        path, gme_file = db_handler.fetchone(
+        row2 = db_handler.fetchone(
             "SELECT path, gme_file FROM gme_library WHERE oid=?", (oid,)
         )
+        if not row2:
+            raise ValueError(f"Album {oid} still not found after make_gme")
+        path, gme_file = row2
 
     tiptoi_dir = get_tiptoi_dir()
     if not tiptoi_dir:

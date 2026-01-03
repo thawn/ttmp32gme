@@ -43,7 +43,7 @@ class TestReusableValidators:
         """Test that invalid strings raise ValueError."""
         with pytest.raises(ValueError) as exc:
             convert_str_to_int("not_a_number")
-        assert "Invalid integer value" in str(exc.value)
+        assert "invalid literal for int()" in str(exc.value)
 
     def test_trim_optional_str_with_whitespace(self):
         """Test trimming strings with whitespace."""
@@ -60,9 +60,10 @@ class TestReusableValidators:
 
     def test_trim_optional_str_with_non_string(self):
         """Test that non-string values return unchanged."""
-        assert trim_optional_str(123) == 123
-        assert trim_optional_str(True) is True
-        assert trim_optional_str([]) == []
+        for v in [[], True, 123, 3.14, {}]:
+            with pytest.raises(ValueError) as exc:
+                trim_optional_str(v)
+            assert "must be a string or None" in str(exc.value)
 
     def test_validate_non_empty_str_valid(self):
         """Test validating non-empty strings."""

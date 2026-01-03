@@ -192,6 +192,9 @@ def create_print_layout(
             continue
 
         album = db_handler.get_album(oid)
+        if not album:
+            logger.error(f"Album with OID {oid} not found")
+            continue
 
         if not album.get("gme_file"):
             # Create GME if it doesn't exist
@@ -199,6 +202,11 @@ def create_print_layout(
 
             make_gme(oid, config, db_handler)
             album = db_handler.get_album(oid)
+
+            # If still no album after make_gme, skip
+            if not album:
+                logger.error(f"Failed to create GME for OID {oid}")
+                continue
 
             # Refresh OID map after creating GME
             script_codes = db_handler.fetchall("SELECT script, code FROM script_codes")
@@ -242,7 +250,7 @@ def create_print_layout(
 
 def create_pdf(
     port: int,
-    chromium_names: Optional[Tuple[str]] = (
+    chromium_names: Tuple[str, ...] = (
         "chromium",
         "chromium-browser",
         "google-chrome",

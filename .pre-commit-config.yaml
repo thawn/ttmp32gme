@@ -37,3 +37,17 @@ repos:
     hooks:
       - id: isort
         args: [--profile=black, --line-length=88]
+
+  # Python type checking with pyright
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.407
+    hooks:
+      - id: pyright
+        additional_dependencies:
+          - flask>=3.0.0
+          - werkzeug>=3.0.0
+          - packaging>=23.0
+          - mutagen>=1.47.0
+          - pillow>=10.0.0
+          - requests>=2.31.0
+          - pydantic>=2.0.0

@@ -438,7 +438,7 @@ def delete_gme_tiptoi(gme_filename: str) -> bool:
     return False
 
 
-def copy_library(old_path: Path, new_path: Path) -> str:
+def copy_library(old_path: Path, new_path: Path) -> bool:
     """Move library to a new location.
 
     Args:
@@ -446,7 +446,10 @@ def copy_library(old_path: Path, new_path: Path) -> str:
         new_path: New library path
 
     Returns:
-        Success message or error description
+        True if successful
+
+    Raises:
+        AssertionError: If old path doesn't exist or new path is not empty
     """
     old_path = Path(old_path)
     new_path = Path(new_path)
