@@ -11,13 +11,37 @@ URL="https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
 
 echo "Downloading and installing ffmpeg for macOS..."
 
+# Function to run command with timeout using Python
+run_with_timeout() {
+  local timeout=$1
+  shift
+  python3 -c "
+import subprocess
+import sys
+
+timeout = $timeout
+cmd = \"\"\"$*\"\"\"
+
+try:
+    result = subprocess.run(
+        cmd,
+        shell=True,
+        timeout=timeout,
+        capture_output=False
+    )
+    sys.exit(result.returncode)
+except subprocess.TimeoutExpired:
+    sys.exit(124)
+"
+}
+
 # Function to attempt download and extraction
 attempt_install() {
   local TEMP_DIR=$(mktemp -d)
   cd "$TEMP_DIR"
 
-  if timeout "$TIMEOUT_SECONDS" wget -q "$URL" -O ffmpeg.zip && \
-     timeout "$TIMEOUT_SECONDS" unzip -q ffmpeg.zip; then
+  if run_with_timeout "$TIMEOUT_SECONDS" wget -q "$URL" -O ffmpeg.zip && \
+     run_with_timeout "$TIMEOUT_SECONDS" unzip -q ffmpeg.zip; then
     chmod +x ffmpeg
     mv ffmpeg "$GITHUB_WORKSPACE/$TARGET_DIR/ffmpeg"
     cd "$GITHUB_WORKSPACE"
