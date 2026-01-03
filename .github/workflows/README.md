@@ -61,7 +61,7 @@ The workflows perform the following tests:
 #### Automatic Triggers
 
 - **PR Workflow**: Automatically runs when you create or update a PR that modifies:
-  - Files in `resources/build/docker/`
+  - Files in `resources/build_assets/docker/`
   - `Dockerfile`, `docker-compose.yml`, or `build-docker.sh`
   - Source code in `src/`
   - `pyproject.toml` or Docker workflow files
