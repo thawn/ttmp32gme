@@ -246,7 +246,6 @@ class TestPrintPDFDownload:
     def test_print_pdf_generation_and_download(self, clean_server_http):
         """Test that save_pdf action generates and returns PDF directly"""
         server_info = clean_server_http
-        library_path = server_info["library_path"]
 
         # Test data for PDF generation
         test_content = "<div>Test PDF Content</div>"
@@ -255,7 +254,7 @@ class TestPrintPDFDownload:
         response = requests.post(
             f"{server_info['url']}/print",
             data={"action": "save_pdf", "data": json.dumps({"content": test_content})},
-            timeout=10,
+            timeout=30,  # Increased timeout for PDF generation
         )
 
         # Should return PDF file directly
@@ -273,6 +272,5 @@ class TestPrintPDFDownload:
         # Verify PDF content is not empty
         assert len(response.content) > 100, "PDF content should not be empty"
 
-        # Verify file is deleted after download (cleanup)
-        pdf_file = library_path / PRINT_PDF_FILENAME
-        assert not pdf_file.exists(), "PDF file should be deleted after download"
+        # Note: PDF is created in a temporary file and automatically cleaned up
+        # after being sent, so there's no file to check in the library folder

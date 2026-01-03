@@ -1,15 +1,17 @@
 """Print handling module for ttmp32gme - creates print layouts."""
 
 import logging
+import os
 import platform
 import subprocess
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from flask import render_template
 
-from ttmp32gme.build.file_handler import get_default_library_path, get_executable_path
+from ttmp32gme.build.file_handler import get_executable_path
 from ttmp32gme.db_handler import DBHandler
 from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 
@@ -255,10 +257,10 @@ def create_pdf(
 
     Args:
         port: Server port number for accessing the print page via HTTP
-        library_path: Path to library directory where PDF will be saved (defaults to system library path)
+        library_path: Not used anymore, kept for backward compatibility
 
     Returns:
-        Path to created PDF file, or None if PDF creation failed
+        Path to created temporary PDF file, or None if PDF creation failed
     """
     # Try multiple possible chromium binary names
     fallback_options = ("google-chrome", "chrome")
@@ -275,10 +277,11 @@ def create_pdf(
         logger.error("Could not create pdf, chromium not found.")
         return None
 
-    if library_path is None:
-        library_path = get_default_library_path()
-
-    pdf_file = library_path / PRINT_PDF_FILENAME
+    # Create PDF in a temporary file
+    temp_fd, temp_path = tempfile.mkstemp(suffix=".pdf", prefix="ttmp32gme_print_")
+    pdf_file = Path(temp_path)
+    # Close the file descriptor as chromium will write to the file
+    os.close(temp_fd)
 
     args = [
         chromium_path,

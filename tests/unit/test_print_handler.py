@@ -323,7 +323,11 @@ class TestCreatePdf:
     @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_success(self, mock_popen, mock_get_exec, mock_sleep):
+    @patch("ttmp32gme.print_handler.tempfile.mkstemp")
+    @patch("ttmp32gme.print_handler.os.close")
+    def test_create_pdf_success(
+        self, mock_os_close, mock_mkstemp, mock_popen, mock_get_exec, mock_sleep
+    ):
         """Test PDF creation with chromium available."""
         mock_get_exec.return_value = "/usr/bin/chromium"
 
@@ -334,16 +338,19 @@ class TestCreatePdf:
         mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            library_path = Path(tmpdir)
+            # Mock tempfile.mkstemp to return a path in our temp directory
+            pdf_file = Path(tmpdir) / "ttmp32gme_print_test.pdf"
+            mock_mkstemp.return_value = (999, str(pdf_file))
+
             # Create the PDF file so the function succeeds
-            pdf_file = library_path / "print.pdf"
             pdf_file.write_text("fake pdf content")
 
-            result = create_pdf(10020, library_path)
+            result = create_pdf(10020)
 
             assert result is not None
-            assert result == library_path / "print.pdf"
+            assert result == pdf_file
             assert mock_popen.called
+            assert mock_os_close.called
             # Verify chromium headless arguments
             call_args = mock_popen.call_args[0][0]
             assert "--headless" in call_args
@@ -372,8 +379,10 @@ class TestCreatePdf:
     @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
+    @patch("ttmp32gme.print_handler.tempfile.mkstemp")
+    @patch("ttmp32gme.print_handler.os.close")
     def test_create_pdf_tries_multiple_names(
-        self, mock_popen, mock_get_exec, mock_sleep
+        self, mock_os_close, mock_mkstemp, mock_popen, mock_get_exec, mock_sleep
     ):
         """Test PDF creation tries multiple chromium binary names."""
         # First call returns None (chromium), second returns path (chromium-browser)
@@ -386,15 +395,17 @@ class TestCreatePdf:
         mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            library_path = Path(tmpdir)
+            # Mock tempfile.mkstemp to return a path in our temp directory
+            pdf_file = Path(tmpdir) / "ttmp32gme_print_test.pdf"
+            mock_mkstemp.return_value = (999, str(pdf_file))
+
             # Create the PDF file so the function succeeds
-            pdf_file = library_path / "print.pdf"
             pdf_file.write_text("fake pdf content")
 
-            result = create_pdf(10020, library_path)
+            result = create_pdf(10020)
 
             assert result is not None
-            assert result == library_path / "print.pdf"
+            assert result == pdf_file
             assert mock_popen.called
 
 
