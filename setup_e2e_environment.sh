@@ -138,7 +138,23 @@ print_success "tttool installed successfully"
 print_step "Step 4: Installing ffmpeg"
 if ! command -v ffmpeg &> /dev/null; then
     echo "=> Installing ffmpeg..." >> "$INSTALL_LOG"
-    sudo apt-get install -y ffmpeg >> "$INSTALL_LOG" 2>&1
+    # Try with 60 second timeout
+    if timeout 60 sudo apt-get install -y ffmpeg >> "$INSTALL_LOG" 2>&1; then
+        print_success "ffmpeg installed on first attempt"
+    else
+        echo "=> First attempt failed or timed out, retrying..." >> "$INSTALL_LOG"
+        print_error "First ffmpeg installation attempt failed or timed out, retrying..."
+        # Retry with 60 second timeout
+        if timeout 60 sudo apt-get install -y ffmpeg >> "$INSTALL_LOG" 2>&1; then
+            print_success "ffmpeg installed on second attempt"
+        else
+            print_error "ffmpeg installation failed after 2 attempts"
+            echo "ffmpeg installation failed after 2 attempts" >> "$INSTALL_LOG"
+            exit 1
+        fi
+    fi
+else
+    print_success "ffmpeg already installed"
 fi
 ffmpeg -version | head -n1
 print_success "ffmpeg installed"

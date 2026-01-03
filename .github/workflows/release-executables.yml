@@ -67,21 +67,75 @@ jobs:
         run: |
           Write-Host "Downloading ffmpeg for Windows"
 
-          # Download ffmpeg to temp directory
-          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "ffmpeg-temp-$(Get-Random)")
-          $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-          $zipPath = Join-Path $tempDir "ffmpeg.zip"
-          Invoke-WebRequest -Uri $url -OutFile $zipPath
+          # Function to download and extract ffmpeg with timeout
+          function Install-Ffmpeg {
+            param([int]$TimeoutSeconds = 60)
 
-          # Extract to temp directory
-          Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+            $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "ffmpeg-temp-$(Get-Random)")
+            $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+            $zipPath = Join-Path $tempDir "ffmpeg.zip"
 
-          # Find and move ffmpeg.exe
-          $ffmpegDir = Get-ChildItem -Path $tempDir -Directory -Filter "ffmpeg-*" | Select-Object -First 1
-          Move-Item -Path (Join-Path $ffmpegDir.FullName "bin/ffmpeg.exe") -Destination lib/win/ffmpeg.exe -Force
+            try {
+              # Download with timeout
+              $job = Start-Job -ScriptBlock {
+                param($url, $zipPath)
+                Invoke-WebRequest -Uri $url -OutFile $zipPath
+              } -ArgumentList $url, $zipPath
 
-          # Cleanup temp directory
-          Remove-Item -Recurse -Force $tempDir
+              if (Wait-Job -Job $job -Timeout $TimeoutSeconds) {
+                Receive-Job -Job $job
+                Remove-Job -Job $job -Force
+
+                # Extract with timeout
+                $extractJob = Start-Job -ScriptBlock {
+                  param($zipPath, $tempDir)
+                  Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+                } -ArgumentList $zipPath, $tempDir
+
+                if (Wait-Job -Job $extractJob -Timeout $TimeoutSeconds) {
+                  Receive-Job -Job $extractJob
+                  Remove-Job -Job $extractJob -Force
+
+                  # Find and move ffmpeg.exe
+                  $ffmpegDir = Get-ChildItem -Path $tempDir -Directory -Filter "ffmpeg-*" | Select-Object -First 1
+                  Move-Item -Path (Join-Path $ffmpegDir.FullName "bin/ffmpeg.exe") -Destination lib/win/ffmpeg.exe -Force
+                  return $true
+                } else {
+                  Stop-Job -Job $extractJob
+                  Remove-Job -Job $extractJob -Force
+                  return $false
+                }
+              } else {
+                Stop-Job -Job $job
+                Remove-Job -Job $job -Force
+                return $false
+              }
+            } finally {
+              # Cleanup temp directory
+              if (Test-Path $tempDir) {
+                Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue
+              }
+            }
+          }
+
+          # Try first attempt
+          Write-Host "Attempting to download ffmpeg (attempt 1)..."
+          if (Install-Ffmpeg -TimeoutSeconds 60) {
+            Write-Host "ffmpeg installed successfully on first attempt"
+          } else {
+            Write-Host "First attempt failed or timed out, retrying..."
+            # Clean up any partial downloads
+            Remove-Item -Path lib/win/ffmpeg.exe -Force -ErrorAction SilentlyContinue
+
+            # Retry
+            Write-Host "Attempting to download ffmpeg (attempt 2)..."
+            if (Install-Ffmpeg -TimeoutSeconds 60) {
+              Write-Host "ffmpeg installed successfully on second attempt"
+            } else {
+              Write-Error "Error: ffmpeg installation failed after 2 attempts"
+              exit 1
+            }
+          }
 
           # Verify
           lib/win/ffmpeg.exe -version
@@ -178,13 +232,34 @@ jobs:
           TEMP_DIR=$(mktemp -d)
           cd "$TEMP_DIR"
 
-          # Download ffmpeg static build for macOS
-          wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip
-          unzip -q ffmpeg.zip
-
-          # Move binary to lib/mac
-          chmod +x ffmpeg
-          mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
+          # Try to download and extract ffmpeg with 60 second timeout
+          if timeout 60 wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip && \
+             timeout 60 unzip -q ffmpeg.zip; then
+            # Move binary to lib/mac
+            chmod +x ffmpeg
+            mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
+            echo "ffmpeg downloaded successfully on first attempt"
+          else
+            echo "First attempt failed or timed out, retrying..."
+            # Clean up any partial downloads
+            cd "$GITHUB_WORKSPACE"
+            chmod -R u+w "$TEMP_DIR" || true
+            rm -rf "$TEMP_DIR"
+            # Create new temp directory
+            TEMP_DIR=$(mktemp -d)
+            cd "$TEMP_DIR"
+            # Retry with 60 second timeout
+            if timeout 60 wget -q "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -O ffmpeg.zip && \
+               timeout 60 unzip -q ffmpeg.zip; then
+              # Move binary to lib/mac
+              chmod +x ffmpeg
+              mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
+              echo "ffmpeg downloaded successfully on second attempt"
+            else
+              echo "Error: ffmpeg installation failed after 2 attempts"
+              exit 1
+            fi
+          fi
 
           # Cleanup temp directory - change permissions first to ensure deletion succeeds
           cd "$GITHUB_WORKSPACE"
