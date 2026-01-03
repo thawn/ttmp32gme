@@ -255,13 +255,16 @@ class TestPrintPDFDownload:
         ), "Should indicate PDF not available"
 
     def test_download_print_pdf_with_file(self, clean_server_http):
-        """Test that print PDF download works when file exists"""
+        """Test that print PDF download works when file exists and cleans up afterwards"""
         server_info = clean_server_http
         library_path = server_info["library_path"]
 
         # Create a test PDF file
         pdf_file = library_path / PRINT_PDF_FILENAME
         pdf_file.write_text("%PDF-1.4\nTest PDF\n%%EOF")
+
+        # Verify file exists before download
+        assert pdf_file.exists(), "PDF file should exist before download"
 
         # Now test download
         response = requests.get(f"{server_info['url']}/download/print.pdf", timeout=5)
@@ -275,3 +278,6 @@ class TestPrintPDFDownload:
         assert PRINT_PDF_FILENAME in response.headers.get(
             "Content-Disposition", ""
         ), f"Filename should be {PRINT_PDF_FILENAME}"
+
+        # Verify file is deleted after download (cleanup)
+        assert not pdf_file.exists(), "PDF file should be deleted after download"

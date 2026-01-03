@@ -666,7 +666,7 @@ def download_oid_images():
 
 @app.route("/download/print.pdf")
 def download_print_pdf():
-    """Download the generated print PDF file."""
+    """Download the generated print PDF file and clean it up afterwards."""
     try:
         library_path = Path(config["library_path"])
         pdf_file = library_path / PRINT_PDF_FILENAME
@@ -679,12 +679,22 @@ def download_print_pdf():
             )
 
         logger.info(f"Serving PDF file: {pdf_file}")
-        return send_file(
+        response = send_file(
             pdf_file,
             mimetype="application/pdf",
             as_attachment=True,
             download_name=PRINT_PDF_FILENAME,
         )
+
+        # Clean up the PDF file after sending it
+        # This ensures the next print request generates a fresh PDF
+        try:
+            pdf_file.unlink()
+            logger.info(f"Cleaned up PDF file: {pdf_file}")
+        except Exception as cleanup_error:
+            logger.warning(f"Failed to clean up PDF file: {cleanup_error}")
+
+        return response
     except Exception as e:
         logger.error(f"Error downloading PDF file: {e}")
         return "Error downloading PDF file", 500
