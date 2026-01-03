@@ -243,6 +243,47 @@ def create_print_layout(
     return content
 
 
+def _try_chrome_fallback(pdf_file: Path, port: int, found_name: str) -> Optional[Path]:
+    """Try to use google-chrome as fallback when chromium fails.
+
+    Args:
+        pdf_file: Path where PDF should be created
+        port: Port number where server is running
+        found_name: Name of the browser that failed
+
+    Returns:
+        Path to PDF file if fallback was attempted, None otherwise
+    """
+    # Only try fallback if we haven't already tried chrome
+    if found_name in ["google-chrome", "chrome"]:
+        return None
+
+    for fallback_name in ["google-chrome", "chrome"]:
+        fallback_path = get_executable_path(fallback_name)
+        if fallback_path:
+            logger.info(f"Retrying with {fallback_name}")
+            fallback_args = [
+                fallback_path,
+                "--headless",
+                "--disable-gpu",
+                "--no-pdf-header-footer",
+                f"--print-to-pdf={pdf_file}",
+                f"http://localhost:{port}/pdf",
+            ]
+            try:
+                subprocess.Popen(
+                    fallback_args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                return pdf_file
+            except Exception as e:
+                logger.warning(f"Failed to start {fallback_name}: {e}")
+                continue
+    return None
+
+
 def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]:
     """Create PDF from print layout using Chromium headless.
 
@@ -314,52 +355,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
                 logger.info(
                     "Critical error detected (sandbox/fatal), trying google-chrome fallback"
                 )
-                # Try google-chrome as fallback if we haven't already
-                if found_name not in ["google-chrome", "chrome"]:
-                    for fallback_name in ["google-chrome", "chrome"]:
-                        fallback_path = get_executable_path(fallback_name)
-                        if fallback_path:
-                            logger.info(f"Retrying with {fallback_name}")
-                            fallback_args = [
-                                fallback_path,
-                                "--headless",
-                                "--disable-gpu",
-                                "--no-pdf-header-footer",
-                                f"--print-to-pdf={pdf_file}",
-                                f"http://localhost:{port}/pdf",
-                            ]
-                            # Try fallback without sandbox first
-                            fallback_proc = subprocess.Popen(
-                                fallback_args,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                text=True,
-                            )
-                            time.sleep(2)
-                            fallback_ret = fallback_proc.poll()
-                            if fallback_ret is not None:
-                                # Fallback also failed, try with --no-sandbox as last resort
-                                try:
-                                    _, fallback_stderr = fallback_proc.communicate(
-                                        timeout=1
-                                    )
-                                except subprocess.TimeoutExpired:
-                                    # Still running, let it continue
-                                    return pdf_file
-
-                                if fallback_stderr and (
-                                    "sandbox" in fallback_stderr.lower()
-                                    or "fatal" in fallback_stderr.lower()
-                                ):
-                                    logger.warning(
-                                        f"{fallback_name} also has sandbox issues, using --no-sandbox as last resort"
-                                    )
-                                    fallback_args_nosandbox = fallback_args.copy()
-                                    fallback_args_nosandbox.append("--no-sandbox")
-                                    subprocess.Popen(fallback_args_nosandbox)
-                                    return pdf_file
-                            # Fallback is running or succeeded
-                            return pdf_file
+                return _try_chrome_fallback(pdf_file, port, found_name)
             return None
         else:
             # Process is still running - check stderr for errors anyway
@@ -377,54 +373,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
                     )
                     # Kill the failing process
                     process.kill()
-
-                    # Try google-chrome as fallback if we haven't already
-                    if found_name not in ["google-chrome", "chrome"]:
-                        for fallback_name in ["google-chrome", "chrome"]:
-                            fallback_path = get_executable_path(fallback_name)
-                            if fallback_path:
-                                logger.info(f"Retrying with {fallback_name}")
-                                fallback_args = [
-                                    fallback_path,
-                                    "--headless",
-                                    "--disable-gpu",
-                                    "--no-pdf-header-footer",
-                                    f"--print-to-pdf={pdf_file}",
-                                    f"http://localhost:{port}/pdf",
-                                ]
-                                # Try fallback without sandbox first
-                                fallback_proc = subprocess.Popen(
-                                    fallback_args,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    text=True,
-                                )
-                                time.sleep(2)
-                                fallback_ret = fallback_proc.poll()
-                                if fallback_ret is not None:
-                                    # Fallback also failed, try with --no-sandbox as last resort
-                                    try:
-                                        _, fallback_stderr = fallback_proc.communicate(
-                                            timeout=1
-                                        )
-                                    except subprocess.TimeoutExpired:
-                                        # Still running, let it continue
-                                        return pdf_file
-
-                                    if fallback_stderr and (
-                                        "sandbox" in fallback_stderr.lower()
-                                        or "fatal" in fallback_stderr.lower()
-                                    ):
-                                        logger.warning(
-                                            f"{fallback_name} also has sandbox issues, using --no-sandbox as last resort"
-                                        )
-                                        fallback_args_nosandbox = fallback_args.copy()
-                                        fallback_args_nosandbox.append("--no-sandbox")
-                                        subprocess.Popen(fallback_args_nosandbox)
-                                        return pdf_file
-                                # Fallback is running or succeeded
-                                return pdf_file
-                    return None
+                    return _try_chrome_fallback(pdf_file, port, found_name)
             except OSError:
                 # Could not read stderr non-blocking, assume it's working
                 pass
