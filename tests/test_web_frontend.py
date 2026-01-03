@@ -10,6 +10,8 @@ import time
 import pytest
 import requests
 
+from ttmp32gme.print_handler import PRINT_PDF_FILENAME
+
 logger = logging.getLogger(__name__)
 
 
@@ -256,7 +258,7 @@ class TestPrintPDFDownload:
         library_path = server_info["library_path"]
 
         # Create a test PDF file
-        pdf_file = library_path / "print.pdf"
+        pdf_file = library_path / PRINT_PDF_FILENAME
         pdf_file.write_text("%PDF-1.4\nTest PDF\n%%EOF")
 
         # Now test download
@@ -268,6 +270,6 @@ class TestPrintPDFDownload:
         assert "attachment" in response.headers.get(
             "Content-Disposition", ""
         ), "Should be an attachment"
-        assert "print.pdf" in response.headers.get(
+        assert PRINT_PDF_FILENAME in response.headers.get(
             "Content-Disposition", ""
-        ), "Filename should be print.pdf"
+        ), f"Filename should be {PRINT_PDF_FILENAME}"
