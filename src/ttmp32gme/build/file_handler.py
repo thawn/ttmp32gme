@@ -22,46 +22,53 @@ def get_resource_path(relative_path: str) -> Path:
     development mode accesses files directly from the source tree.
 
     HOW IT WORKS:
-    -------------
+
     1. Development mode (sys.frozen == False):
+
        - Base path: Path(__file__).parent.parent.parent
        - This resolves to: src/ttmp32gme/build/file_handler.py -> src/
        - Example: get_resource_path("upload.html") -> /path/to/src/upload.html
 
     2. PyInstaller mode (sys.frozen == True):
+
        - Base path: sys._MEIPASS (PyInstaller's temporary extraction directory)
        - Files are in: _internal/ subdirectory of the bundle
        - Example: get_resource_path("upload.html") -> /tmp/_MEIPASS/upload.html
 
     WHEN TO USE:
-    ------------
+
     Use this function whenever you need to load any resource file that's
     bundled with the application:
+
     - HTML files (upload.html, library.html, etc.)
     - Configuration files (config.sqlite)
     - Static assets (images, CSS, JS) - though Flask handles these automatically
     - Any other data files included in the PyInstaller spec
 
     DO NOT USE for:
+
     - User data directories (use get_local_storage() instead)
     - Temporary files (use system temp directories)
     - Executables (use get_executable_path() instead)
 
     ADDING NEW RESOURCES:
-    ---------------------
+
     When adding a new resource file to the project:
 
-    1. Add it to the PyInstaller spec file's datas list:
-       datas = [
-           (str(source_path / "myfile.ext"), "destination_dir"),
-       ]
+    1. Add it to the PyInstaller spec file's datas list::
 
-    2. Load it in code using this function:
-       my_file = get_resource_path("destination_dir/myfile.ext")
-       with open(my_file) as f:
-           content = f.read()
+           datas = [
+               (str(source_path / "myfile.ext"), "destination_dir"),
+           ]
+
+    2. Load it in code using this function::
+
+           my_file = get_resource_path("destination_dir/myfile.ext")
+           with open(my_file) as f:
+               content = f.read()
 
     3. Test both modes:
+
        - Development: python -m ttmp32gme.ttmp32gme
        - PyInstaller: pyinstaller spec_file.spec && ./dist/ttmp32gme/ttmp32gme
 
