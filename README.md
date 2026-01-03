@@ -49,7 +49,8 @@ See [Usage Guide](https://thawn.github.io/ttmp32gme/usage.html) for detailed ins
 ttmp32gme --port 8080              # Custom port
 ttmp32gme --host 0.0.0.0           # Network access
 ttmp32gme --library /path/to/lib   # Custom library
-ttmp32gme --verbose                # Verbose output
+ttmp32gme -v                       # Info level output
+ttmp32gme -vv                      # Debug level output
 ttmp32gme --help                   # Show all options
 ```
 

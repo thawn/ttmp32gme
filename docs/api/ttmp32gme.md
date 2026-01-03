@@ -39,7 +39,7 @@ Options:
   --host HOST            Server host (default: 127.0.0.1)
   --database DATABASE    Custom database path
   --library LIBRARY      Custom library path
-  --verbose, -v          Verbose output
+  --verbose, -v          Increase verbosity (-v for INFO, -vv for DEBUG)
   --version              Show version
 ```
 

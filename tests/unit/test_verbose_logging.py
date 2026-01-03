@@ -8,23 +8,79 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 
-def test_verbose_flag_enables_debug_logging(caplog):
-    """Test that --verbose flag enables DEBUG level logging."""
+def test_no_verbose_flag_uses_warning_logging():
+    """Test that without -v flags, WARNING level is used."""
     from ttmp32gme.ttmp32gme import main
 
-    # Test with --verbose flag
+    root_logger = logging.getLogger()
+    original_level = root_logger.level
+
+    try:
+        # Reset to WARNING level
+        root_logger.setLevel(logging.WARNING)
+
+        # Test without -v flag
+        original_argv = sys.argv
+        sys.argv = ["ttmp32gme", "--version"]
+
+        main()
+
+        # Logger should be at WARNING level
+        assert root_logger.level == logging.WARNING
+
+    finally:
+        # Restore original state
+        sys.argv = original_argv
+        root_logger.setLevel(original_level)
+
+
+def test_single_verbose_flag_enables_info_logging(caplog):
+    """Test that -v flag enables INFO level logging."""
+    from ttmp32gme.ttmp32gme import main
+
+    # Test with single -v flag
     original_argv = sys.argv
 
     try:
-        sys.argv = ["ttmp32gme", "--verbose", "--version"]
+        sys.argv = ["ttmp32gme", "-v", "--version"]
+
+        with caplog.at_level(logging.INFO):
+            main()
+
+        # Should see info message in logs
+        assert any(
+            "Verbose mode enabled (INFO level)" in record.message
+            for record in caplog.records
+        ), f"Expected 'Verbose mode enabled (INFO level)' in logs, got: {[r.message for r in caplog.records]}"
+
+        # Should have INFO level records
+        assert any(
+            record.levelno == logging.INFO for record in caplog.records
+        ), "Expected INFO level records in logs"
+
+    finally:
+        # Restore original state
+        sys.argv = original_argv
+
+
+def test_double_verbose_flag_enables_debug_logging(caplog):
+    """Test that -vv flag enables DEBUG level logging."""
+    from ttmp32gme.ttmp32gme import main
+
+    # Test with double -v flag
+    original_argv = sys.argv
+
+    try:
+        sys.argv = ["ttmp32gme", "-vv", "--version"]
 
         with caplog.at_level(logging.DEBUG):
             main()
 
-        # Should see verbose message in logs
+        # Should see debug message in logs
         assert any(
-            "Verbose mode enabled" in record.message for record in caplog.records
-        ), f"Expected 'Verbose mode enabled' in logs, got: {[r.message for r in caplog.records]}"
+            "Verbose mode enabled (DEBUG level)" in record.message
+            for record in caplog.records
+        ), f"Expected 'Verbose mode enabled (DEBUG level)' in logs, got: {[r.message for r in caplog.records]}"
 
         # Should have DEBUG level records
         assert any(
@@ -36,34 +92,32 @@ def test_verbose_flag_enables_debug_logging(caplog):
         sys.argv = original_argv
 
 
-def test_without_verbose_flag_uses_info_logging():
-    """Test that without --verbose flag, INFO level is used."""
+def test_multiple_v_flags_work(caplog):
+    """Test that multiple -v flags work correctly."""
     from ttmp32gme.ttmp32gme import main
 
-    root_logger = logging.getLogger()
-    original_level = root_logger.level
+    # Test with two separate -v flags
+    original_argv = sys.argv
 
     try:
-        # Reset to INFO level
-        root_logger.setLevel(logging.INFO)
+        sys.argv = ["ttmp32gme", "-v", "-v", "--version"]
 
-        # Test without --verbose flag
-        original_argv = sys.argv
-        sys.argv = ["ttmp32gme", "--version"]
+        with caplog.at_level(logging.DEBUG):
+            main()
 
-        main()
-
-        # Logger should remain at INFO or above (not DEBUG)
-        assert root_logger.level >= logging.INFO
+        # Should see debug message in logs
+        assert any(
+            "Verbose mode enabled (DEBUG level)" in record.message
+            for record in caplog.records
+        ), "Expected 'Verbose mode enabled (DEBUG level)' in logs"
 
     finally:
         # Restore original state
         sys.argv = original_argv
-        root_logger.setLevel(original_level)
 
 
 def test_logger_used_in_fetch_config(caplog):
-    """Test that logger.debug is called in fetch_config when verbose mode is enabled."""
+    """Test that logger.debug is called in fetch_config when debug mode is enabled."""
     import tempfile
 
     from ttmp32gme import ttmp32gme
