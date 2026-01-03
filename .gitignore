@@ -59,8 +59,5 @@ google-chrome-stable_current_amd64.deb
 # PyInstaller build artifacts
 *.spec.bak
 build/
-!build/docker/
-!build/mac/
-!build/win/
 dist/
 *.pyc

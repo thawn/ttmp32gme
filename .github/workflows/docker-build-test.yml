@@ -64,7 +64,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./build/docker/Dockerfile
+        file: ./resources/build_assets/docker/Dockerfile
         target: test
         push: false
         platforms: linux/amd64
@@ -75,7 +75,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./build/docker/Dockerfile
+        file: ./resources/build_assets/docker/Dockerfile
         target: production
         push: false
         load: true
@@ -162,7 +162,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./build/docker/Dockerfile
+        file: ./resources/build_assets/docker/Dockerfile
         target: production
         push: true
         platforms: linux/amd64,linux/arm64

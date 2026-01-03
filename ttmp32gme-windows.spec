@@ -109,7 +109,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='build/win/ttmp32gme.ico',
+    icon='resources/build_assets/win/ttmp32gme.ico',
 )
 
 coll = COLLECT(

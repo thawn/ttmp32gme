@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict
 
@@ -24,6 +25,7 @@ from ttmp32gme.build.file_handler import (
     check_config_file,
     get_default_library_path,
     get_executable_path,
+    get_resource_path,
     get_tiptoi_dir,
     make_temp_album_dir,
     open_browser,
@@ -44,11 +46,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Create Flask app
+# Configure paths for both development and PyInstaller
+if getattr(sys, "frozen", False):
+    # Running in PyInstaller bundle
+    base_path = Path(getattr(sys, "_MEIPASS", "."))
+    template_folder = str(base_path / "templates")
+    static_folder = str(base_path / "assets")
+else:
+    # Running in development
+    template_folder = "../templates"
+    static_folder = "../assets"
+
 app = Flask(
     __name__,
-    static_folder="../assets",
+    static_folder=static_folder,
     static_url_path="/assets/",
-    template_folder="../templates",
+    template_folder=template_folder,
 )
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB max upload
 
@@ -79,7 +92,7 @@ def get_db():
             config_file.parent.mkdir(parents=True, exist_ok=True)
             # If custom path doesn't exist, copy default config
             if not config_file.exists():
-                default_config = Path(__file__).parent / "config.sqlite"
+                default_config = get_resource_path("ttmp32gme/config.sqlite")
                 if default_config.exists():
                     import shutil
 
@@ -207,7 +220,7 @@ def index():
     current_album = make_temp_album_dir(album_count, Path(config["library_path"]))
 
     # Load static HTML content
-    upload_html = Path(__file__).parent.parent / "upload.html"
+    upload_html = get_resource_path("upload.html")
     with open(upload_html, "r") as f:
         content = f.read()
 
@@ -281,7 +294,7 @@ def upload_post():
 @app.route("/library")
 def library():
     """Library page."""
-    library_html = Path(__file__).parent.parent / "library.html"
+    library_html = get_resource_path("library.html")
     with open(library_html, "r") as f:
         content = f.read()
 
@@ -478,7 +491,7 @@ def pdf_page():
 @app.route("/config")
 def config_page():
     """Configuration page."""
-    config_html = Path(__file__).parent.parent / "config.html"
+    config_html = get_resource_path("config.html")
     with open(config_html, "r") as f:
         content = f.read()
 
@@ -547,7 +560,7 @@ def config_post():
 @app.route("/help")
 def help_page():
     """Help page."""
-    help_html = Path(__file__).parent.parent / "help.html"
+    help_html = get_resource_path("help.html")
     with open(help_html, "r") as f:
         content = f.read()
 

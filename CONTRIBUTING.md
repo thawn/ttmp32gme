@@ -77,6 +77,30 @@ This project follows these coding conventions:
 - **Type Hints**: Encouraged, especially with Pydantic models
 - **Indentation**: 4 spaces (no tabs)
 
+### PyInstaller Resource Paths
+
+When adding new resource files (HTML, images, config files) that need to work in both development and PyInstaller builds:
+
+1. **Add to PyInstaller spec file** (`ttmp32gme-{platform}.spec`):
+   ```python
+   datas = [
+       (str(source_path / "myfile.ext"), "destination_dir"),
+   ]
+   ```
+
+2. **Load using `get_resource_path()`** from `ttmp32gme.build.file_handler`:
+   ```python
+   from ttmp32gme.build.file_handler import get_resource_path
+
+   my_file = get_resource_path("destination_dir/myfile.ext")
+   with open(my_file) as f:
+       content = f.read()
+   ```
+
+3. **DO NOT use** `Path(__file__).parent` or similar - these break in PyInstaller builds.
+
+See the comprehensive documentation in `get_resource_path()` docstring for details.
+
 ## Testing
 
 Before submitting a pull request, ensure all tests pass:

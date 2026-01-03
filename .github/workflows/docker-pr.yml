@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, master, develop ]
     paths:
-      - 'build/docker/**'
+      - 'resources/build_assets/docker/**'
       - 'docker-compose.yml'
       - 'build-docker.sh'
       - 'docker-push.sh'
