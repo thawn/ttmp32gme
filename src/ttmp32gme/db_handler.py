@@ -987,31 +987,24 @@ class DBHandler:
         Returns:
             True if successful
         """
-        # Get complete track data from database
-        complete_track_data = self.get_tracks({"oid": parent_oid})
-
         for track in tracks:
-            # Get the original track number to find the complete data
-            old_track_num = int(track.pop("old_track"))
-            track_data = complete_track_data.get(old_track_num, {})
+            # Remove old_track as it's no longer needed
+            track.pop("old_track", None)
 
-            # Get the track id from frontend or database
-            track_id = track.get("id") or track_data.get("id")
+            # Get the track id from frontend
+            track_id = track.get("id")
 
             if not track_id:
                 raise ValueError(
-                    f"Track {old_track_num} has no id. "
+                    "Track has no id. "
                     "Database migration to v2.0.1 may not have completed successfully."
                 )
 
-            # Merge frontend data with complete track data
+            # Update only the fields sent from frontend: title, track, and parent_oid
             track["parent_oid"] = new_parent_oid
-            track_data.update(track)
 
-            # Use UPDATE instead of DELETE + INSERT
-            update_fields = {
-                k: v for k, v in track_data.items() if k != "id"
-            }  # Don't update id
+            # Build UPDATE query with only the fields we have
+            update_fields = {k: v for k, v in track.items() if k != "id"}
 
             if update_fields:
                 set_clause = ", ".join(f"{field}=?" for field in update_fields.keys())
