@@ -140,7 +140,8 @@
 				if (classList[i].startsWith('track_')) {
 					filterVars[classList[i]]= {
 							'track': index+1,
-							'title': $(this).find('input[name="title"]').val()
+							'title': $(this).find('input[name="title"]').val(),
+							'id': $(this).find('input[name="id"]').val()
 					};
 				}
 			}
@@ -170,6 +171,7 @@
 				'<span class="input-group-addon duration"></span>'+
 				'<input type="text" name="title" class="form-control">'+
 				'<input type="hidden" name="filename">'+
+				'<input type="hidden" name="id">'+
 				'<span class="input-group-addon"><span class="glyphicon glyphicon-resize-vertical"></span></span>'+
 				'</div></li>';
 			$id.find('ol.track-list').append(track);
@@ -199,6 +201,7 @@
 				$track.find('span.duration').text(pad(min,2)+':'+pad(sec,2));
 				$track.find('input[name=title]').val(data[i].title)
 				$track.find('input[name=filename]').val(data[i].filename)
+				$track.find('input[name=id]').val(data[i].id)
 			} else if (i === 'picture_filename') {
 				if (data[i] !== null) {
 					$id.find('img.cover').prop('src', '/images/'+data['oid']+'/'+data[i]);

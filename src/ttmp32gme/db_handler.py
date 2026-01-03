@@ -977,25 +977,55 @@ class DBHandler:
     def update_tracks(
         self, tracks: List[Dict[str, Any]], parent_oid: int, new_parent_oid: int
     ) -> bool:
-        """Update tracks in the database.
+        """Update tracks in the database using UPDATE statements.
 
         Args:
-            tracks: List of track dictionaries
+            tracks: List of track dictionaries from frontend (with id, track, title)
             parent_oid: Original parent OID
             new_parent_oid: New parent OID
 
         Returns:
             True if successful
         """
-
+        # Get complete track data from database
         complete_track_data = self.get_tracks({"oid": parent_oid})
-        self.delete_album_tracks(parent_oid)  # Clear existing tracks to avoid conflicts
+
         for track in tracks:
-            track_data = complete_track_data.get(int(track.pop("old_track")), {})
+            # Get the original track number to find the complete data
+            old_track_num = int(track.pop("old_track"))
+            track_data = complete_track_data.get(old_track_num, {})
+
+            # Get the track id (should be present from frontend now)
+            track_id = track.get("id") or track_data.get("id")
+
+            if not track_id:
+                # If no id exists (shouldn't happen with new schema), fall back to old logic
+                logger.warning(
+                    f"Track {old_track_num} has no id, using INSERT fallback"
+                )
+                track["parent_oid"] = new_parent_oid
+                track_data.update(track)
+                track_data.pop("id", None)
+                self.write_to_database("tracks", track_data)
+                continue
+
+            # Merge frontend data with complete track data
             track["parent_oid"] = new_parent_oid
             track_data.update(track)
-            self.write_to_database("tracks", track_data)
 
+            # Use UPDATE instead of DELETE + INSERT
+            update_fields = {
+                k: v for k, v in track_data.items() if k != "id"
+            }  # Don't update id
+
+            if update_fields:
+                set_clause = ", ".join(f"{field}=?" for field in update_fields.keys())
+                values = list(update_fields.values()) + [track_id]
+                query = f"UPDATE tracks SET {set_clause} WHERE id=?"
+
+                self.execute(query, tuple(values))
+
+        self.commit()
         return True
 
     def update_album(self, album_data: Dict[str, Any]) -> int:
