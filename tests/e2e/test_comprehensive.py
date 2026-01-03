@@ -1113,11 +1113,25 @@ class TestWebInterface:
                     break
                 time.sleep(1)
 
-            # log the server output for debugging
-            if server_info["stdout"]:
-                logger.debug(f"SERVER STDOUT: {server_info['stdout'].read()}")
-            if server_info["stderr"]:
-                logger.debug(f"SERVER STDERR: {server_info['stderr'].read()}")
+            # Read and log the server output for debugging
+            if not pdf_created:
+                logger.error("=" * 80)
+                logger.error("PDF WAS NOT CREATED - DUMPING SERVER LOGS")
+                logger.error("=" * 80)
+
+                if server_info.get("log_file") and server_info["log_file"].exists():
+                    stdout_content = server_info["log_file"].read_text()
+                    logger.error(f"SERVER STDOUT:\n{stdout_content}")
+                else:
+                    logger.error("No server stdout log file found")
+
+                if server_info.get("err_file") and server_info["err_file"].exists():
+                    stderr_content = server_info["err_file"].read_text()
+                    logger.error(f"SERVER STDERR:\n{stderr_content}")
+                else:
+                    logger.error("No server stderr log file found")
+
+                logger.error("=" * 80)
 
             assert (
                 pdf_created

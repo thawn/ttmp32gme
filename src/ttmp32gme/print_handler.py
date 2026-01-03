@@ -305,6 +305,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
         if returncode is not None:
             # Process has exited - it failed
             _, stderr = process.communicate()
+            stderr = stderr or ""  # Handle None case
             logger.warning(
                 f"{found_name} exited with code {returncode}: {stderr[:500]}"
             )
@@ -366,7 +367,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
             try:
                 fl = fcntl.fcntl(process.stderr, fcntl.F_GETFL)
                 fcntl.fcntl(process.stderr, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-                stderr = process.stderr.read()
+                stderr = process.stderr.read() or ""  # Handle None case
 
                 stderr_lower = stderr.lower()
                 if stderr and ("sandbox" in stderr_lower or "fatal" in stderr_lower):

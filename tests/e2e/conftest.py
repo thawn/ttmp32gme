@@ -261,14 +261,19 @@ def clean_server(tmp_path, driver):
 
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
 
-    # Start the server process in the background
-    server_process = subprocess.Popen(
-        server_cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,  # Ensure it runs in background
-    )
+    # Create log files for server output
+    server_log_file = tmp_path / "server.log"
+    server_err_file = tmp_path / "server_err.log"
+
+    # Start the server process in the background with output redirected to files
+    with open(server_log_file, "w") as stdout_f, open(server_err_file, "w") as stderr_f:
+        server_process = subprocess.Popen(
+            server_cmd,
+            stdout=stdout_f,
+            stderr=stderr_f,
+            text=True,
+            start_new_session=True,  # Ensure it runs in background
+        )
 
     # Wait for server to start using Selenium WebDriverWait
     server_url = f"http://{test_host}:{test_port}"
@@ -288,11 +293,23 @@ def clean_server(tmp_path, driver):
         logger.info(f"Test server is ready at {server_url}")
     except Exception as e:
         server_process.terminate()
-        stdout, stderr = server_process.communicate(timeout=5)
+        server_process.wait(timeout=5)
+
+        # Read log files for error reporting
+        stdout_content = ""
+        stderr_content = ""
+        try:
+            if server_log_file.exists():
+                stdout_content = server_log_file.read_text()
+            if server_err_file.exists():
+                stderr_content = server_err_file.read_text()
+        except Exception:
+            pass
+
         raise RuntimeError(
             f"Server failed to start within timeout.\n"
             f"Error: {e}\n"
-            f"Stdout: {stdout}\nStderr: {stderr}"
+            f"Stdout: {stdout_content}\nStderr: {stderr_content}"
         )
 
     # Yield fixture data
@@ -302,8 +319,9 @@ def clean_server(tmp_path, driver):
         "library_path": test_library,
         "port": test_port,
         "host": test_host,
-        "stdout": server_process.stdout,
-        "stderr": server_process.stderr,
+        "log_file": server_log_file,
+        "err_file": server_err_file,
+        "process": server_process,
     }
 
     # Cleanup: stop server
