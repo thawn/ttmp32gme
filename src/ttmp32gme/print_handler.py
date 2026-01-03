@@ -14,6 +14,9 @@ from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 
 logger = logging.getLogger(__name__)
 
+# Constants
+PRINT_PDF_FILENAME = "print.pdf"
+
 
 def format_tracks(
     album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
@@ -263,7 +266,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     if library_path is None:
         library_path = get_default_library_path()
 
-    pdf_file = library_path / "print.pdf"
+    pdf_file = library_path / PRINT_PDF_FILENAME
 
     # Chromium headless PDF printing arguments
     # --headless: Run in headless mode

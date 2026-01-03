@@ -36,7 +36,12 @@ from ttmp32gme.db_handler import (
     DBHandler,
     LibraryActionModel,
 )
-from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
+from ttmp32gme.print_handler import (
+    PRINT_PDF_FILENAME,
+    create_pdf,
+    create_print_layout,
+    format_print_button,
+)
 from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
 # Configure logging (default to WARNING, can be overridden by -v flags)
@@ -664,7 +669,7 @@ def download_print_pdf():
     """Download the generated print PDF file."""
     try:
         library_path = Path(config["library_path"])
-        pdf_file = library_path / "print.pdf"
+        pdf_file = library_path / PRINT_PDF_FILENAME
 
         if not pdf_file.exists():
             logger.error(f"PDF file not found at {pdf_file}")
@@ -675,7 +680,7 @@ def download_print_pdf():
             pdf_file,
             mimetype="application/pdf",
             as_attachment=True,
-            download_name="print.pdf",
+            download_name=PRINT_PDF_FILENAME,
         )
     except Exception as e:
         logger.error(f"Error downloading PDF file: {e}")
