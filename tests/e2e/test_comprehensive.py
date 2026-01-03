@@ -1056,7 +1056,8 @@ class TestWebInterface:
 
     def test_pdf_generation_workflow(self, driver, base_config_with_album, caplog):
         """Test the complete workflow of generating and downloading a PDF."""
-        caplog.set_level(logging.INFO)
+        caplog.set_level(logging.DEBUG)
+        caplog.set_level(logging.DEBUG, logger="ttmp32gme")
         server_info = base_config_with_album
 
         # Step 1: Navigate to library page
@@ -1111,6 +1112,10 @@ class TestWebInterface:
                     logger.info(f"PDF file created at {pdf_file}")
                     break
                 time.sleep(1)
+
+            # log the server logs for debugging
+            for record in caplog.records:
+                logger.debug(f"LOG: {record.levelname} - {record.message}")
 
             assert (
                 pdf_created
