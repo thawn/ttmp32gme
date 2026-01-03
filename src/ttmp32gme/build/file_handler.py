@@ -13,6 +13,26 @@ from typing import List, Optional
 logger = logging.getLogger(__name__)
 
 
+def get_resource_path(relative_path: str) -> Path:
+    """Get absolute path to resource, works for dev and PyInstaller.
+
+    Args:
+        relative_path: Path relative to the application root (e.g., "upload.html")
+
+    Returns:
+        Absolute path to the resource
+    """
+    if getattr(sys, "frozen", False):
+        # Running in a PyInstaller bundle
+        base_path = Path(getattr(sys, "_MEIPASS", "."))
+    else:
+        # Running in development mode
+        # Get to src/ directory from src/ttmp32gme/build/file_handler.py
+        base_path = Path(__file__).parent.parent.parent
+
+    return base_path / relative_path
+
+
 def get_local_storage() -> Path:
     """Get the local storage directory for configuration and library.
 
@@ -57,8 +77,14 @@ def check_config_file() -> Path:
 
     if not config_file.exists():
         # Copy default config from package
-        src_dir = Path(__file__).parent.parent
-        default_config = src_dir / "config.sqlite"
+        if getattr(sys, "frozen", False):
+            # Running in PyInstaller bundle
+            base_path = Path(getattr(sys, "_MEIPASS", "."))
+            default_config = base_path / "ttmp32gme" / "config.sqlite"
+        else:
+            # Running in development
+            src_dir = Path(__file__).parent.parent
+            default_config = src_dir / "config.sqlite"
         if default_config.exists():
             shutil.copy(default_config, config_file)
         else:
