@@ -335,6 +335,9 @@ class TestCreatePdf:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             library_path = Path(tmpdir)
+            # Create the PDF file so the function succeeds
+            pdf_file = library_path / "print.pdf"
+            pdf_file.write_text("fake pdf content")
 
             result = create_pdf(10020, library_path)
 
@@ -384,6 +387,9 @@ class TestCreatePdf:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             library_path = Path(tmpdir)
+            # Create the PDF file so the function succeeds
+            pdf_file = library_path / "print.pdf"
+            pdf_file.write_text("fake pdf content")
 
             result = create_pdf(10020, library_path)
 
