@@ -295,16 +295,19 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
         )
         # Wait a short time to catch immediate failures (like sandbox errors)
         try:
-            # Check if process fails immediately (within 2 seconds)
-            stdout, stderr = process.communicate(timeout=2)
+            # Check if process fails immediately (within 1 second for faster detection)
+            stdout, stderr = process.communicate(timeout=1)
             # If we get here, process exited quickly - check for errors
             if process.returncode != 0:
                 logger.warning(
-                    f"{found_name} exited with code {process.returncode}: {stderr}"
+                    f"{found_name} exited with code {process.returncode}: {stderr[:500]}"
                 )
-                # Check if it's a sandbox error
-                if "sandbox" in stderr.lower():
-                    logger.info("Sandbox error detected, trying google-chrome fallback")
+                # Check if it's a sandbox error or other critical failure
+                stderr_lower = stderr.lower()
+                if "sandbox" in stderr_lower or "fatal" in stderr_lower:
+                    logger.info(
+                        "Critical error detected (sandbox/fatal), trying google-chrome fallback"
+                    )
                     # Try google-chrome as fallback if we haven't already
                     if found_name not in ["google-chrome", "chrome"]:
                         for fallback_name in ["google-chrome", "chrome"]:
@@ -323,7 +326,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
                                 return pdf_file
                 return None
         except subprocess.TimeoutExpired:
-            # Process is still running after 2 seconds - this is good, it's working
+            # Process is still running after 1 second - this is good, it's working
             # Let it continue in background
             pass
 

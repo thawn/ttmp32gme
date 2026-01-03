@@ -330,7 +330,7 @@ class TestCreatePdf:
         # Mock the process to raise TimeoutExpired (normal case - process runs in background)
         mock_process = MagicMock()
         mock_process.communicate.side_effect = subprocess.TimeoutExpired(
-            cmd="chromium", timeout=2
+            cmd="chromium", timeout=1
         )
         mock_popen.return_value = mock_process
 
@@ -377,7 +377,7 @@ class TestCreatePdf:
         # Mock the process to raise TimeoutExpired (normal case - process runs in background)
         mock_process = MagicMock()
         mock_process.communicate.side_effect = subprocess.TimeoutExpired(
-            cmd="chromium", timeout=2
+            cmd="chromium", timeout=1
         )
         mock_popen.return_value = mock_process
 
