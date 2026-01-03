@@ -245,7 +245,6 @@ def create_print_layout(
 
 def create_pdf(
     port: int,
-    library_path: Optional[Path] = None,
     chromium_names: Optional[Tuple[str]] = (
         "chromium",
         "chromium-browser",
@@ -257,7 +256,6 @@ def create_pdf(
 
     Args:
         port: Server port number for accessing the print page via HTTP
-        library_path: Not used anymore, kept for backward compatibility
 
     Returns:
         Path to created temporary PDF file, or None if PDF creation failed
@@ -303,7 +301,8 @@ def create_pdf(
         # Wait for the pdf to be created or process to exit
         timeout = 10  # seconds
         for _ in range(timeout):
-            if pdf_file.exists():
+            # Check if file exists and has content (size > 0)
+            if pdf_file.exists() and pdf_file.stat().st_size > 0:
                 break
             # check if process has exited
             returncode = process.poll()
@@ -311,8 +310,8 @@ def create_pdf(
                 break
             time.sleep(1)
 
-        # Final check if PDF was created
-        if pdf_file.exists():
+        # Final check if PDF was created with content
+        if pdf_file.exists() and pdf_file.stat().st_size > 0:
             return pdf_file
         else:
             logger.warning(
@@ -326,7 +325,7 @@ def create_pdf(
                 return None
             else:
                 logger.info("Trying google-chrome fallback for PDF creation.")
-                return create_pdf(port, library_path, chromium_names=fallback_options)
+                return create_pdf(port, chromium_names=fallback_options)
 
     except Exception as e:
         logger.error(f"Could not create PDF: {e}")

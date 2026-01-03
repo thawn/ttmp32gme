@@ -469,7 +469,7 @@ def print_post():
         elif action == "save_pdf":
             global print_content
             print_content = data.get("content", "")
-            pdf_file = create_pdf(config["port"], Path(config["library_path"]))
+            pdf_file = create_pdf(config["port"])
             if pdf_file:
                 try:
                     logger.info(f"Serving PDF file: {pdf_file}")

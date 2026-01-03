@@ -1096,15 +1096,53 @@ class TestWebInterface:
             logger.info("Clicked PDF save button")
 
             # Step 7: Wait for PDF generation
-            # The PDF is now created in a temporary file and returned directly
-            # We can't check for the file in the library anymore
-            # Just wait for a reasonable time for PDF generation to complete
-            logger.info("Waiting for PDF generation to complete...")
-            time.sleep(15)  # Give chromium time to generate the PDF
+            # The PDF is now created in a temporary file, but we mock tempfile.mkstemp
+            # to create it in the library folder so we can check for it
+            library_path = server_info["library_path"]
+            pdf_file = library_path / "print.pdf"
+
+            pdf_created = False
+            max_wait = 30  # seconds
+            start_time = time.time()
+
+            while time.time() - start_time < max_wait:
+                if pdf_file.exists():
+                    pdf_created = True
+                    logger.info(f"PDF file created at {pdf_file}")
+                    break
+                time.sleep(1)
+
+            # Read and log the server output for debugging
+            if not pdf_created:
+                logger.error("=" * 80)
+                logger.error("PDF WAS NOT CREATED - DUMPING SERVER LOGS")
+                logger.error("=" * 80)
+
+                if server_info.get("log_file") and server_info["log_file"].exists():
+                    stdout_content = server_info["log_file"].read_text()
+                    logger.error(f"SERVER STDOUT:\n{stdout_content}")
+                else:
+                    logger.error("No server stdout log file found")
+
+                if server_info.get("err_file") and server_info["err_file"].exists():
+                    stderr_content = server_info["err_file"].read_text()
+                    logger.error(f"SERVER STDERR:\n{stderr_content}")
+                else:
+                    logger.error("No server stderr log file found")
+
+                logger.error("=" * 80)
+
+            assert (
+                pdf_created
+            ), f"PDF file not created within {max_wait} seconds at {pdf_file}"
+
+            # Verify PDF file size is reasonable (at least 1KB)
+            assert pdf_file.stat().st_size > 1024, "PDF file is too small"
+            logger.info(f"PDF file size: {pdf_file.stat().st_size} bytes")
 
             # The PDF should have been downloaded to the browser's download location
             # In a real test, we'd check the browser's download directory
-            # For CI, we just verify the button was clicked and no errors occurred
+            # For CI, we just verify the file was created and is valid
             logger.info("PDF generation workflow completed successfully")
 
         except NoSuchElementException:

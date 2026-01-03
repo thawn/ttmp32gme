@@ -224,12 +224,16 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
 
 
 @pytest.fixture(scope="function")
-def clean_server(tmp_path, driver):
+def clean_server(tmp_path, driver, monkeypatch):
     """Start a new server with clean database and library in temporary directories.
 
     This fixture creates temporary database and library paths, starts a server with
     those paths, and cleans up everything after the test completes.
+
+    Also mocks tempfile.mkstemp to create PDF files in the test library folder
+    so E2E tests can verify PDF creation.
     """
+    import os
     import subprocess
 
     from selenium.common.exceptions import WebDriverException
@@ -242,6 +246,23 @@ def clean_server(tmp_path, driver):
     # Find an available port (use a different port from default to avoid conflicts)
     test_port = 10021
     test_host = "127.0.0.1"
+
+    # Mock tempfile.mkstemp to create files in the test library folder
+    # This allows E2E tests to verify PDF creation
+    original_mkstemp = tempfile.mkstemp
+
+    def mock_mkstemp(suffix="", prefix="tmp", dir=None, text=False):
+        """Mock mkstemp that creates files in test library if suffix is .pdf"""
+        if suffix == ".pdf":
+            # Create the PDF file in the test library folder
+            pdf_path = test_library / "print.pdf"
+            fd = os.open(str(pdf_path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            return fd, str(pdf_path)
+        else:
+            # Use original mkstemp for other files
+            return original_mkstemp(suffix, prefix, dir, text)
+
+    monkeypatch.setattr("tempfile.mkstemp", mock_mkstemp)
 
     # Start server with custom paths in background
     server_cmd = [
