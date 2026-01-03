@@ -102,7 +102,7 @@ jobs:
             rm -rf ffmpeg-*-amd64-static*
             echo "ffmpeg installed successfully on second attempt"
           else
-            echo "Error: ffmpeg installation failed after 2 attempts"
+            echo "ffmpeg installation failed after 2 attempts"
             exit 1
           fi
         fi

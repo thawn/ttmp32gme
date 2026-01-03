@@ -134,7 +134,7 @@ jobs:
             if (Install-Ffmpeg -TimeoutSeconds 60) {
               Write-Host "ffmpeg installed successfully on second attempt"
             } else {
-              Write-Error "Error: ffmpeg installation failed after 2 attempts"
+              Write-Error "ffmpeg installation failed after 2 attempts"
               exit 1
             }
           }
@@ -258,7 +258,7 @@ jobs:
               mv ffmpeg "$GITHUB_WORKSPACE/lib/mac/ffmpeg"
               echo "ffmpeg downloaded successfully on second attempt"
             else
-              echo "Error: ffmpeg installation failed after 2 attempts"
+              echo "ffmpeg installation failed after 2 attempts"
               exit 1
             fi
           fi
