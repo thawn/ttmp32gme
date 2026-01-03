@@ -1,9 +1,10 @@
 """Unit tests for print_handler module."""
 
 import sqlite3
+import subprocess
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -326,6 +327,13 @@ class TestCreatePdf:
         """Test PDF creation with chromium available."""
         mock_get_exec.return_value = "/usr/bin/chromium"
 
+        # Mock the process to raise TimeoutExpired (normal case - process runs in background)
+        mock_process = MagicMock()
+        mock_process.communicate.side_effect = subprocess.TimeoutExpired(
+            cmd="chromium", timeout=2
+        )
+        mock_popen.return_value = mock_process
+
         with tempfile.TemporaryDirectory() as tmpdir:
             library_path = Path(tmpdir)
 
@@ -365,6 +373,13 @@ class TestCreatePdf:
         """Test PDF creation tries multiple chromium binary names."""
         # First call returns None (chromium), second returns path (chromium-browser)
         mock_get_exec.side_effect = [None, "/usr/bin/chromium-browser"]
+
+        # Mock the process to raise TimeoutExpired (normal case - process runs in background)
+        mock_process = MagicMock()
+        mock_process.communicate.side_effect = subprocess.TimeoutExpired(
+            cmd="chromium", timeout=2
+        )
+        mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as tmpdir:
             library_path = Path(tmpdir)

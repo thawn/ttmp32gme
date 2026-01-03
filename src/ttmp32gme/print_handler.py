@@ -253,10 +253,12 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     # Try multiple possible chromium binary names
     chromium_names = ["chromium", "chromium-browser", "google-chrome", "chrome"]
     chromium_path = None
+    found_name = None
 
     for name in chromium_names:
         chromium_path = get_executable_path(name)
         if chromium_path:
+            found_name = name
             break
 
     if not chromium_path:
@@ -271,7 +273,6 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     # Chromium headless PDF printing arguments
     # --headless: Run in headless mode
     # --disable-gpu: Disable GPU hardware acceleration
-    # --no-sandbox: Disable sandbox (required in Docker and CI environments)
     # --no-pdf-header-footer: Disable headers and footers in PDF
     # --print-to-pdf=<path>: Output to PDF file at specified path
     # Note: Margins are controlled via CSS @page rules in pdf.html (0.5in all sides)
@@ -280,17 +281,52 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
         chromium_path,
         "--headless",
         "--disable-gpu",
-        "--no-sandbox",
         "--no-pdf-header-footer",
         f"--print-to-pdf={pdf_file}",
         f"http://localhost:{port}/pdf",
     ]
 
-    logger.info(f"Creating PDF: {' '.join(args)}")
+    logger.info(f"Creating PDF with {found_name}: {' '.join(args)}")
 
     try:
-        # Run in background
-        subprocess.Popen(args)
+        # Run chromium and wait briefly to see if it starts successfully
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        # Wait a short time to catch immediate failures (like sandbox errors)
+        try:
+            # Check if process fails immediately (within 2 seconds)
+            stdout, stderr = process.communicate(timeout=2)
+            # If we get here, process exited quickly - check for errors
+            if process.returncode != 0:
+                logger.warning(
+                    f"{found_name} exited with code {process.returncode}: {stderr}"
+                )
+                # Check if it's a sandbox error
+                if "sandbox" in stderr.lower():
+                    logger.info("Sandbox error detected, trying google-chrome fallback")
+                    # Try google-chrome as fallback if we haven't already
+                    if found_name not in ["google-chrome", "chrome"]:
+                        for fallback_name in ["google-chrome", "chrome"]:
+                            fallback_path = get_executable_path(fallback_name)
+                            if fallback_path:
+                                logger.info(f"Retrying with {fallback_name}")
+                                fallback_args = [
+                                    fallback_path,
+                                    "--headless",
+                                    "--disable-gpu",
+                                    "--no-pdf-header-footer",
+                                    f"--print-to-pdf={pdf_file}",
+                                    f"http://localhost:{port}/pdf",
+                                ]
+                                subprocess.Popen(fallback_args)
+                                return pdf_file
+                return None
+        except subprocess.TimeoutExpired:
+            # Process is still running after 2 seconds - this is good, it's working
+            # Let it continue in background
+            pass
+
         return pdf_file
     except Exception as e:
         logger.error(f"Could not create PDF: {e}")
