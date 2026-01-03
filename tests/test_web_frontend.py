@@ -11,8 +11,6 @@ import time
 import pytest
 import requests
 
-from ttmp32gme.print_handler import PRINT_PDF_FILENAME
-
 logger = logging.getLogger(__name__)
 
 
@@ -265,9 +263,9 @@ class TestPrintPDFDownload:
         assert "attachment" in response.headers.get(
             "Content-Disposition", ""
         ), "Should be an attachment"
-        assert PRINT_PDF_FILENAME in response.headers.get(
+        assert "print.pdf" in response.headers.get(
             "Content-Disposition", ""
-        ), f"Filename should be {PRINT_PDF_FILENAME}"
+        ), "Filename should be print.pdf"
 
         # Verify PDF content is not empty
         assert len(response.content) > 100, "PDF content should not be empty"

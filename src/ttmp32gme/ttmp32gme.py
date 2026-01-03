@@ -36,12 +36,7 @@ from ttmp32gme.db_handler import (
     DBHandler,
     LibraryActionModel,
 )
-from ttmp32gme.print_handler import (
-    PRINT_PDF_FILENAME,
-    create_pdf,
-    create_print_layout,
-    format_print_button,
-)
+from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
 from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
 # Configure logging (default to WARNING, can be overridden by -v flags)
@@ -477,7 +472,7 @@ def print_post():
                         pdf_file,
                         mimetype="application/pdf",
                         as_attachment=True,
-                        download_name=PRINT_PDF_FILENAME,
+                        download_name="print.pdf",
                     )
 
                     # Clean up the PDF file after sending it

@@ -17,9 +17,6 @@ from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 
 logger = logging.getLogger(__name__)
 
-# Constants
-PRINT_PDF_FILENAME = "print.pdf"
-
 
 def format_tracks(
     album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
