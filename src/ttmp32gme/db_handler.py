@@ -277,6 +277,7 @@ class DBHandler:
         cursor.execute(
             """
         CREATE TABLE IF NOT EXISTS tracks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             parent_oid	INTEGER NOT NULL,
             album	TEXT,
             artist	TEXT,
@@ -976,25 +977,40 @@ class DBHandler:
     def update_tracks(
         self, tracks: List[Dict[str, Any]], parent_oid: int, new_parent_oid: int
     ) -> bool:
-        """Update tracks in the database.
+        """Update tracks in the database using UPDATE statements.
 
         Args:
-            tracks: List of track dictionaries
+            tracks: List of track dictionaries from frontend (with id, track, title)
             parent_oid: Original parent OID
             new_parent_oid: New parent OID
 
         Returns:
             True if successful
         """
-
-        complete_track_data = self.get_tracks({"oid": parent_oid})
-        self.delete_album_tracks(parent_oid)  # Clear existing tracks to avoid conflicts
         for track in tracks:
-            track_data = complete_track_data.get(int(track.pop("old_track")), {})
-            track["parent_oid"] = new_parent_oid
-            track_data.update(track)
-            self.write_to_database("tracks", track_data)
+            # Get the track id from frontend
+            track_id = track.get("id")
 
+            if not track_id:
+                raise ValueError(
+                    "Track has no id. "
+                    "Database migration to v2.0.1 may not have completed successfully."
+                )
+
+            # Update only the fields sent from frontend: title, track, and parent_oid
+            track["parent_oid"] = new_parent_oid
+
+            # Build UPDATE query with only the fields we have
+            update_fields = {k: v for k, v in track.items() if k != "id"}
+
+            if update_fields:
+                set_clause = ", ".join(f"{field}=?" for field in update_fields.keys())
+                values = list(update_fields.values()) + [track_id]
+                query = f"UPDATE tracks SET {set_clause} WHERE id=?"
+
+                self.execute(query, tuple(values))
+
+        self.commit()
         return True
 
     def update_album(self, album_data: Dict[str, Any]) -> int:
@@ -1168,6 +1184,101 @@ class DBHandler:
         Returns:
             True if update successful
         """
+
+        def _fix_text_encoding(
+            table: str, rowid_col: str, text_columns: List[str]
+        ) -> int:
+            """Fix text encoding issues in a database table.
+
+            This method fixes text data that was stored with incorrect encoding (e.g., from legacy Perl code)
+            by reading it as raw bytes and re-encoding as UTF-8.
+
+            Args:
+                table: Table name to fix
+                rowid_col: Name of the row identifier column (e.g., 'oid', 'rowid')
+                text_columns: List of text column names to fix
+
+            Returns:
+                Number of rows fixed
+            """
+            # Temporarily disable text_factory to read raw bytes
+            old_text_factory = self.conn.text_factory
+            self.conn.text_factory = bytes
+
+            fixed_count = 0
+            fixes_to_apply = []
+
+            try:
+                # Get all rows with their identifiers
+                cursor = self.conn.cursor()
+
+                # Build query to select rowid and text columns
+                select_cols = f"{rowid_col}, {', '.join(text_columns)}"
+
+                cursor.execute(f"SELECT {select_cols} FROM {table}")
+                rows = cursor.fetchall()
+
+                for row in rows:
+                    row_id = row[0]
+                    fixed_values = {}
+
+                    # Check each text column
+                    for i, col_name in enumerate(text_columns, start=1):
+                        value = row[i]
+
+                        if value is None:
+                            continue
+
+                        # Try to decode as UTF-8
+                        try:
+                            if isinstance(value, bytes):
+                                # Try UTF-8 first
+                                text = value.decode("utf-8")
+                            else:
+                                # Already text, no fix needed
+                                continue
+                        except UnicodeDecodeError:
+                            # Failed UTF-8, try Latin-1 (which accepts all bytes)
+                            try:
+                                if isinstance(value, bytes):
+                                    text = value.decode("latin-1")
+                                    fixed_values[col_name] = text
+                                    if logger.isEnabledFor(logging.INFO):
+                                        logger.info(
+                                            f"Fixed encoding for {table}.{col_name} "
+                                            f"(row {row_id}): {value[:50]}... -> {text[:50]}..."
+                                        )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Could not fix encoding for {table}.{col_name} "
+                                    f"(row {row_id}): {e}"
+                                )
+
+                    # Collect fixes to apply later
+                    if fixed_values:
+                        fixes_to_apply.append((row_id, fixed_values))
+
+                cursor.close()
+
+                # Now apply all fixes with normal text_factory
+                self.conn.text_factory = str
+
+                for row_id, fixed_values in fixes_to_apply:
+                    set_clause = ", ".join(f"{col}=?" for col in fixed_values.keys())
+                    values = list(fixed_values.values()) + [row_id]
+
+                    update_sql = f"UPDATE {table} SET {set_clause} WHERE {rowid_col}=?"
+                    cursor = self.conn.cursor()
+                    cursor.execute(update_sql, values)
+                    cursor.close()
+                    fixed_count += 1
+
+            finally:
+                # Restore original text_factory
+                self.conn.text_factory = old_text_factory
+
+            return fixed_count
+
         updates = {
             "0.1.0": ["UPDATE config SET value='0.1.0' WHERE param='version';"],
             "0.2.0": ["UPDATE config SET value='0.2.0' WHERE param='version';"],
@@ -1191,6 +1302,62 @@ class DBHandler:
                 "UPDATE config SET value='2.0.0' WHERE param='version';",
                 "INSERT OR IGNORE INTO config (param, value) VALUES ('print_page_margin', '0.5in');",
             ],
+            "2.0.1": [
+                # Add id column to tracks table for stable row identification
+                # Recreate the tracks table with an explicit id column
+                """
+                CREATE TABLE tracks_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parent_oid INTEGER NOT NULL,
+                    album TEXT,
+                    artist TEXT,
+                    disc INTEGER,
+                    duration INTEGER,
+                    genre TEXT,
+                    lyrics TEXT,
+                    title TEXT,
+                    track INTEGER,
+                    filename TEXT,
+                    tt_script TEXT
+                )
+                """,
+                # Copy data from old table to new table
+                """
+                INSERT INTO tracks_new (parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script)
+                SELECT parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script
+                FROM tracks
+                """,
+                # Drop old table
+                "DROP TABLE tracks",
+                # Rename new table to tracks
+                "ALTER TABLE tracks_new RENAME TO tracks",
+                # Fix encoding issues from legacy Perl databases
+                lambda: _fix_text_encoding(
+                    "gme_library",
+                    "oid",
+                    [
+                        "album_title",
+                        "album_artist",
+                        "picture_filename",
+                        "gme_file",
+                        "path",
+                    ],
+                ),
+                lambda: _fix_text_encoding(
+                    "tracks",
+                    "id",
+                    [
+                        "album",
+                        "artist",
+                        "genre",
+                        "lyrics",
+                        "title",
+                        "filename",
+                        "tt_script",
+                    ],
+                ),
+                "UPDATE config SET value='2.0.1' WHERE param='version';",
+            ],
         }
         current_version = Version(self.get_config_value("version"))
 
@@ -1198,8 +1365,14 @@ class DBHandler:
             update_version = Version(version_str)
             if update_version > current_version:
                 try:
-                    for sql in updates[version_str]:
-                        self.execute(sql)
+                    for sql_or_func in updates[version_str]:
+                        if callable(sql_or_func):
+                            # Execute function (e.g., for encoding fixes)
+                            result = sql_or_func()
+                            logger.info(f"Executed update function, result: {result}")
+                        else:
+                            # Execute SQL
+                            self.execute(sql_or_func)
                     self.commit()
                 except Exception as e:
                     self.conn.rollback()
@@ -1269,7 +1442,6 @@ def extract_tracks_from_album(album: Dict[str, Any]) -> List[Dict[str, Any]]:
     for key in sorted(album.keys(), reverse=True):
         if key.startswith("track_"):
             track = album.pop(key)
-            track["old_track"] = key.removeprefix("track_")
             tracks.append(track)
     return tracks, album
 

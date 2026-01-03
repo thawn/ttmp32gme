@@ -97,6 +97,20 @@ After migration:
 3. Check Config page - settings should match your old setup
 4. Test printing a control sheet to verify OID codes are preserved
 
+## Migrating from Perl Version
+
+If you're migrating from the older Perl version of ttmp32gme (pre-v2.0), the Python version will automatically fix encoding issues when you first open the database.
+
+**What happens automatically**:
+- When you start ttmp32gme v2.0.1 or later with an old database, it detects the version
+- Database is automatically upgraded to v2.0.1
+- Text encoding is fixed for all album titles, artist names, and track information
+- Non-UTF-8 characters (like German umlauts: ä, ö, ü) are converted to proper UTF-8
+
+**Example**: If your Perl database had an album titled "Albert E erklärt den menschlichen Körper" that appeared as "Albert E erkl�rt den menschlichen K�rper" due to encoding issues, it will be automatically corrected.
+
+**No action required** - the fix happens transparently when you first load your library.
+
 ## Troubleshooting
 
 **Albums missing after migration**:
@@ -108,6 +122,11 @@ After migration:
 - Ensure copied files have proper read/write permissions
 - On Linux: `chmod -R u+rw ~/.ttmp32gme/`
 - On macOS: `chmod -R u+rw ~/Library/Application\ Support/ttmp32gme/`
+
+**Text encoding errors (garbled characters)**:
+- This should be automatically fixed when upgrading from Perl to Python version
+- Check that you're running v2.0.1 or later
+- If issues persist, check the application logs for details
 
 ## Backup Recommendations
 
