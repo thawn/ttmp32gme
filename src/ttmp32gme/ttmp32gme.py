@@ -673,7 +673,10 @@ def download_print_pdf():
 
         if not pdf_file.exists():
             logger.error(f"PDF file not found at {pdf_file}")
-            return "PDF file not found. Please create the PDF first.", 404
+            return (
+                "PDF file not available. Please generate a new PDF from the Print page.",
+                404,
+            )
 
         logger.info(f"Serving PDF file: {pdf_file}")
         return send_file(

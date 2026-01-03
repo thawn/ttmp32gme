@@ -250,7 +250,9 @@ class TestPrintPDFDownload:
         assert (
             response.status_code == 404
         ), f"Expected 404 (no PDF), got {response.status_code}"
-        assert "PDF file not found" in response.text, "Should indicate PDF not found"
+        assert (
+            "PDF file not available" in response.text
+        ), "Should indicate PDF not available"
 
     def test_download_print_pdf_with_file(self, clean_server_http):
         """Test that print PDF download works when file exists"""
