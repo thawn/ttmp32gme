@@ -1115,9 +1115,9 @@ class TestWebInterface:
 
             # log the server output for debugging
             if server_info["stdout"]:
-                logger.debug(f"SERVER STDOUT: {server_info['stdout'].readlines()}")
+                logger.debug(f"SERVER STDOUT: {server_info['stdout'].read()}")
             if server_info["stderr"]:
-                logger.debug(f"SERVER STDERR: {server_info['stderr'].readlines()}")
+                logger.debug(f"SERVER STDERR: {server_info['stderr'].read()}")
 
             assert (
                 pdf_created
