@@ -247,22 +247,10 @@ def clean_server(tmp_path, driver, monkeypatch):
     test_port = 10021
     test_host = "127.0.0.1"
 
-    # Mock tempfile.mkstemp to create files in the test library folder
+    # Set environment variable to tell the server to create PDFs in the test library
     # This allows E2E tests to verify PDF creation
-    original_mkstemp = tempfile.mkstemp
-
-    def mock_mkstemp(suffix="", prefix="tmp", dir=None, text=False):
-        """Mock mkstemp that creates files in test library if suffix is .pdf"""
-        if suffix == ".pdf":
-            # Create the PDF file in the test library folder
-            pdf_path = test_library / "print.pdf"
-            fd = os.open(str(pdf_path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            return fd, str(pdf_path)
-        else:
-            # Use original mkstemp for other files
-            return original_mkstemp(suffix, prefix, dir, text)
-
-    monkeypatch.setattr("tempfile.mkstemp", mock_mkstemp)
+    # (Monkeypatch doesn't work because server runs in a separate process)
+    os.environ["TTMP32GME_TEST_TEMP_DIR"] = str(test_library)
 
     # Start server with custom paths in background
     server_cmd = [
@@ -355,6 +343,9 @@ def clean_server(tmp_path, driver, monkeypatch):
         logger.warning("Server did not stop gracefully, killing it")
         server_process.kill()
         server_process.wait()
+
+    # Clean up environment variable
+    os.environ.pop("TTMP32GME_TEST_TEMP_DIR", None)
 
     # Clean up temporary files (tmp_path is automatically cleaned up by pytest)
     logger.info("Test server cleanup complete")
