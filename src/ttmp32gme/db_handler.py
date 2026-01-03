@@ -12,7 +12,11 @@ from packaging.version import Version
 from PIL import Image
 from pydantic import BaseModel, Field, field_validator
 
-from .build.file_handler import cleanup_filename, make_new_album_dir, remove_album
+from ttmp32gme.build.file_handler import (
+    cleanup_filename,
+    make_new_album_dir,
+    remove_album,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1216,7 +1220,7 @@ class DBHandler:
             library_path = Path(library_path_str)
         else:
             # Fallback to default if not set
-            from .build.file_handler import get_default_library_path
+            from ttmp32gme.build.file_handler import get_default_library_path
 
             library_path = get_default_library_path()
 
