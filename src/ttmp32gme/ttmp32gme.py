@@ -659,6 +659,29 @@ def download_oid_images():
         return "Error creating OID images ZIP file", 500
 
 
+@app.route("/download/print.pdf")
+def download_print_pdf():
+    """Download the generated print PDF file."""
+    try:
+        library_path = Path(config["library_path"])
+        pdf_file = library_path / "print.pdf"
+
+        if not pdf_file.exists():
+            logger.error(f"PDF file not found at {pdf_file}")
+            return "PDF file not found. Please create the PDF first.", 404
+
+        logger.info(f"Serving PDF file: {pdf_file}")
+        return send_file(
+            pdf_file,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name="print.pdf",
+        )
+    except Exception as e:
+        logger.error(f"Error downloading PDF file: {e}")
+        return "Error downloading PDF file", 500
+
+
 def main():
     """Main entry point."""
     global config, custom_db_path, custom_library_path
