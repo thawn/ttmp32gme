@@ -320,13 +320,10 @@ class TestCreatePrintLayout:
 class TestCreatePdf:
     """Test create_pdf function."""
 
-    @patch("ttmp32gme.print_handler.fcntl.fcntl")
     @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_success(
-        self, mock_popen, mock_get_exec, mock_sleep, mock_fcntl
-    ):
+    def test_create_pdf_success(self, mock_popen, mock_get_exec, mock_sleep):
         """Test PDF creation with chromium available."""
         mock_get_exec.return_value = "/usr/bin/chromium"
 
@@ -369,12 +366,11 @@ class TestCreatePdf:
 
         assert result is None
 
-    @patch("ttmp32gme.print_handler.fcntl.fcntl")
     @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
     def test_create_pdf_tries_multiple_names(
-        self, mock_popen, mock_get_exec, mock_sleep, mock_fcntl
+        self, mock_popen, mock_get_exec, mock_sleep
     ):
         """Test PDF creation tries multiple chromium binary names."""
         # First call returns None (chromium), second returns path (chromium-browser)

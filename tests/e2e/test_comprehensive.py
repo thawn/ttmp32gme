@@ -1081,8 +1081,8 @@ class TestWebInterface:
         print_button.click()
 
         # Step 4: Wait for redirect to /print page
-        WebDriverWait(driver, 30).until(lambda d: "/print" in d.current_url)
-        WebDriverWait(driver, 30).until(
+        WebDriverWait(driver, 20).until(lambda d: "/print" in d.current_url)
+        WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         time.sleep(2)  # Wait for page to fully render
