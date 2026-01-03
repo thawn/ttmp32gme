@@ -50,8 +50,8 @@ ttmp32gme --port 8080              # Custom port
 ttmp32gme --host 0.0.0.0           # Network access
 ttmp32gme --library /path/to/lib   # Custom library
 ttmp32gme -v                       # Increase verbosity (-v for INFO, -vv for DEBUG)
-ttmp32gme -vv                      # Debug level output
-ttmp32gme --version                # Show all options
+ttmp32gme --version                # Show version
+ttmp32gme --help                   # Show all options
 ```
 
 ## Print Troubleshooting
