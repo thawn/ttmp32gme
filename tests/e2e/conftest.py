@@ -302,6 +302,8 @@ def clean_server(tmp_path, driver):
         "library_path": test_library,
         "port": test_port,
         "host": test_host,
+        "stdout": server_process.stdout,
+        "stderr": server_process.stderr,
     }
 
     # Cleanup: stop server

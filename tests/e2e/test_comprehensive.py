@@ -1113,9 +1113,11 @@ class TestWebInterface:
                     break
                 time.sleep(1)
 
-            # log the server logs for debugging
-            for record in caplog.records:
-                logger.debug(f"LOG: {record.levelname} - {record.message}")
+            # log the server output for debugging
+            if server_info["stdout"]:
+                logger.debug(f"SERVER STDOUT: {server_info['stdout']}")
+            if server_info["stderr"]:
+                logger.debug(f"SERVER STDERR: {server_info['stderr']}")
 
             assert (
                 pdf_created
