@@ -235,3 +235,39 @@ class TestOIDImagesDownload:
         assert (
             "downloadOidImages" in response.text
         ), "Config page should have JavaScript function"
+
+
+class TestPrintPDFDownload:
+    """Test print PDF download functionality via HTTP"""
+
+    def test_download_print_pdf_endpoint_exists(self, clean_server_http):
+        """Test that print PDF download endpoint exists"""
+        server_info = clean_server_http
+        response = requests.get(f"{server_info['url']}/download/print.pdf", timeout=5)
+        # Should return 404 if no PDF exists yet
+        assert (
+            response.status_code == 404
+        ), f"Expected 404 (no PDF), got {response.status_code}"
+        assert "PDF file not found" in response.text, "Should indicate PDF not found"
+
+    def test_download_print_pdf_with_file(self, clean_server_http):
+        """Test that print PDF download works when file exists"""
+        server_info = clean_server_http
+        library_path = server_info["library_path"]
+
+        # Create a test PDF file
+        pdf_file = library_path / "print.pdf"
+        pdf_file.write_text("%PDF-1.4\nTest PDF\n%%EOF")
+
+        # Now test download
+        response = requests.get(f"{server_info['url']}/download/print.pdf", timeout=5)
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        assert (
+            response.headers.get("Content-Type") == "application/pdf"
+        ), "Should return PDF file"
+        assert "attachment" in response.headers.get(
+            "Content-Disposition", ""
+        ), "Should be an attachment"
+        assert "print.pdf" in response.headers.get(
+            "Content-Disposition", ""
+        ), "Filename should be print.pdf"
