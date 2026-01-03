@@ -1,4 +1,4 @@
-"""Unit tests for debug logging functionality."""
+"""Unit tests for verbose logging functionality."""
 
 import logging
 import sys
@@ -8,23 +8,23 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 
-def test_debug_flag_enables_debug_logging(caplog):
-    """Test that --debug flag enables DEBUG level logging."""
+def test_verbose_flag_enables_debug_logging(caplog):
+    """Test that --verbose flag enables DEBUG level logging."""
     from ttmp32gme.ttmp32gme import main
 
-    # Test with --debug flag
+    # Test with --verbose flag
     original_argv = sys.argv
 
     try:
-        sys.argv = ["ttmp32gme", "--debug", "--version"]
+        sys.argv = ["ttmp32gme", "--verbose", "--version"]
 
         with caplog.at_level(logging.DEBUG):
             main()
 
-        # Should see debug message in logs
+        # Should see verbose message in logs
         assert any(
-            "Debug mode enabled" in record.message for record in caplog.records
-        ), f"Expected 'Debug mode enabled' in logs, got: {[r.message for r in caplog.records]}"
+            "Verbose mode enabled" in record.message for record in caplog.records
+        ), f"Expected 'Verbose mode enabled' in logs, got: {[r.message for r in caplog.records]}"
 
         # Should have DEBUG level records
         assert any(
@@ -36,8 +36,8 @@ def test_debug_flag_enables_debug_logging(caplog):
         sys.argv = original_argv
 
 
-def test_without_debug_flag_uses_info_logging():
-    """Test that without --debug flag, INFO level is used."""
+def test_without_verbose_flag_uses_info_logging():
+    """Test that without --verbose flag, INFO level is used."""
     from ttmp32gme.ttmp32gme import main
 
     root_logger = logging.getLogger()
@@ -47,7 +47,7 @@ def test_without_debug_flag_uses_info_logging():
         # Reset to INFO level
         root_logger.setLevel(logging.INFO)
 
-        # Test without --debug flag
+        # Test without --verbose flag
         original_argv = sys.argv
         sys.argv = ["ttmp32gme", "--version"]
 
@@ -63,7 +63,7 @@ def test_without_debug_flag_uses_info_logging():
 
 
 def test_logger_used_in_fetch_config(caplog):
-    """Test that logger.debug is called in fetch_config when debug mode is enabled."""
+    """Test that logger.debug is called in fetch_config when verbose mode is enabled."""
     import tempfile
 
     from ttmp32gme import ttmp32gme

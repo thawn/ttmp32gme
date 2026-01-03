@@ -20,7 +20,7 @@ uv pip install -e ".[test,dev]"  # or pip
 pre-commit install
 ```
 
-Run: `ttmp32gme --debug`
+Run: `ttmp32gme --verbose`
 
 ## Testing
 

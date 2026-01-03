@@ -39,8 +39,8 @@ Options:
   --host HOST            Server host (default: 127.0.0.1)
   --database DATABASE    Custom database path
   --library LIBRARY      Custom library path
-  --debug, -d            Debug mode
-  --version, -v          Show version
+  --verbose, -v          Verbose output
+  --version              Show version
 ```
 
 ## Configuration

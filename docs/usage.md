@@ -59,7 +59,7 @@ On Library page:
 ttmp32gme --port 8080              # Custom port
 ttmp32gme --host 0.0.0.0           # Network access
 ttmp32gme --library /path/to/lib   # Custom library
-ttmp32gme --debug                  # Debug mode
+ttmp32gme --verbose                # Verbose output
 ```
 
 ## Tips

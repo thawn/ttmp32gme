@@ -668,8 +668,10 @@ def main():
     )
     parser.add_argument("--port", "-p", type=int, help="Server port")
     parser.add_argument("--host", default="127.0.0.1", help="Server host")
-    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug mode")
-    parser.add_argument("--version", "-v", action="store_true", help="Show version")
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
+    )
+    parser.add_argument("--version", action="store_true", help="Show version")
     parser.add_argument("--database", type=str, help="Path to database file")
     parser.add_argument("--library", type=str, help="Path to library directory")
     parser.add_argument(
@@ -678,10 +680,10 @@ def main():
 
     args = parser.parse_args()
 
-    # Set logging level based on debug flag (do this early)
-    if args.debug:
+    # Set logging level based on verbose flag (do this early)
+    if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Debug mode enabled")
+        logger.debug("Verbose mode enabled")
 
     if args.version:
         print(f"ttmp32gme version {__version__}")
@@ -735,7 +737,7 @@ def main():
     logger.info("Open this URL in your web browser to continue.")
 
     # Run Flask app
-    app.run(host=host, port=port, debug=args.debug)
+    app.run(host=host, port=port, debug=args.verbose)
 
 
 if __name__ == "__main__":

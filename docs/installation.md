@@ -54,7 +54,7 @@ ttmp32gme --port 8080                      # Custom port
 ttmp32gme --host 0.0.0.0                   # Network access
 ttmp32gme --database /path/to/db.sqlite    # Custom database
 ttmp32gme --library /path/to/library       # Custom library
-ttmp32gme --debug                          # Debug mode
+ttmp32gme --verbose                        # Verbose output
 ```
 
 ## Verification
