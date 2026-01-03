@@ -995,19 +995,14 @@ class DBHandler:
             old_track_num = int(track.pop("old_track"))
             track_data = complete_track_data.get(old_track_num, {})
 
-            # Get the track id (should be present from frontend now)
+            # Get the track id from frontend or database
             track_id = track.get("id") or track_data.get("id")
 
             if not track_id:
-                # If no id exists (shouldn't happen with new schema), fall back to old logic
-                logger.warning(
-                    f"Track {old_track_num} has no id, using INSERT fallback"
+                raise ValueError(
+                    f"Track {old_track_num} has no id. "
+                    "Database migration to v2.0.1 may not have completed successfully."
                 )
-                track["parent_oid"] = new_parent_oid
-                track_data.update(track)
-                track_data.pop("id", None)
-                self.write_to_database("tracks", track_data)
-                continue
 
             # Merge frontend data with complete track data
             track["parent_oid"] = new_parent_oid
