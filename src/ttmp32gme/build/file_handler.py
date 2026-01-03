@@ -16,11 +16,70 @@ logger = logging.getLogger(__name__)
 def get_resource_path(relative_path: str) -> Path:
     """Get absolute path to resource, works for dev and PyInstaller.
 
+    This function provides consistent resource path resolution across both
+    development and PyInstaller bundle environments. PyInstaller extracts
+    bundled files to a temporary directory (sys._MEIPASS) at runtime, while
+    development mode accesses files directly from the source tree.
+
+    HOW IT WORKS:
+    -------------
+    1. Development mode (sys.frozen == False):
+       - Base path: Path(__file__).parent.parent.parent
+       - This resolves to: src/ttmp32gme/build/file_handler.py -> src/
+       - Example: get_resource_path("upload.html") -> /path/to/src/upload.html
+
+    2. PyInstaller mode (sys.frozen == True):
+       - Base path: sys._MEIPASS (PyInstaller's temporary extraction directory)
+       - Files are in: _internal/ subdirectory of the bundle
+       - Example: get_resource_path("upload.html") -> /tmp/_MEIPASS/upload.html
+
+    WHEN TO USE:
+    ------------
+    Use this function whenever you need to load any resource file that's
+    bundled with the application:
+    - HTML files (upload.html, library.html, etc.)
+    - Configuration files (config.sqlite)
+    - Static assets (images, CSS, JS) - though Flask handles these automatically
+    - Any other data files included in the PyInstaller spec
+
+    DO NOT USE for:
+    - User data directories (use get_local_storage() instead)
+    - Temporary files (use system temp directories)
+    - Executables (use get_executable_path() instead)
+
+    ADDING NEW RESOURCES:
+    ---------------------
+    When adding a new resource file to the project:
+
+    1. Add it to the PyInstaller spec file's datas list:
+       datas = [
+           (str(source_path / "myfile.ext"), "destination_dir"),
+       ]
+
+    2. Load it in code using this function:
+       my_file = get_resource_path("destination_dir/myfile.ext")
+       with open(my_file) as f:
+           content = f.read()
+
+    3. Test both modes:
+       - Development: python -m ttmp32gme.ttmp32gme
+       - PyInstaller: pyinstaller spec_file.spec && ./dist/ttmp32gme/ttmp32gme
+
     Args:
-        relative_path: Path relative to the application root (e.g., "upload.html")
+        relative_path: Path relative to the application root directory.
+                      Examples: "upload.html", "ttmp32gme/config.sqlite"
 
     Returns:
-        Absolute path to the resource
+        Absolute Path object to the resource file.
+
+    Example:
+        >>> # In development mode
+        >>> get_resource_path("upload.html")
+        PosixPath('/home/user/ttmp32gme/src/upload.html')
+
+        >>> # In PyInstaller bundle
+        >>> get_resource_path("upload.html")
+        PosixPath('/tmp/_MEIxxxxxx/upload.html')
     """
     if getattr(sys, "frozen", False):
         # Running in a PyInstaller bundle
