@@ -988,9 +988,6 @@ class DBHandler:
             True if successful
         """
         for track in tracks:
-            # Remove old_track as it's no longer needed
-            track.pop("old_track", None)
-
             # Get the track id from frontend
             track_id = track.get("id")
 
@@ -1179,16 +1176,17 @@ class DBHandler:
             raise RuntimeError(f"Error updating library paths: {e}")
         return True
 
-    def _add_tracks_id_column(self) -> bool:
-        """Add an id column to the tracks table for stable row identification.
+    def update_db(self) -> bool:
+        """Update database schema to latest version.
 
-        SQLite's implicit rowid can be unstable (reassigned after deletions).
-        This method adds an explicit id column as INTEGER PRIMARY KEY AUTOINCREMENT.
+        Args:
 
         Returns:
-            True if column added or already exists
+            True if update successful
         """
-        try:
+
+        def _add_tracks_id_column() -> bool:
+            """Add an id column to the tracks table for stable row identification."""
             cursor = self.conn.cursor()
 
             # Check if id column already exists
@@ -1221,7 +1219,7 @@ class DBHandler:
                     filename TEXT,
                     tt_script TEXT
                 )
-            """
+                """
             )
 
             # Copy data from old table to new table
@@ -1230,7 +1228,7 @@ class DBHandler:
                 INSERT INTO tracks_new (parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script)
                 SELECT parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script
                 FROM tracks
-            """
+                """
             )
 
             # Drop old table
@@ -1240,117 +1238,103 @@ class DBHandler:
             cursor.execute("ALTER TABLE tracks_new RENAME TO tracks")
 
             cursor.close()
-            self.commit()
             logger.info("Successfully added id column to tracks table")
             return True
 
-        except Exception as e:
-            logger.error(f"Error adding id column to tracks table: {e}")
-            self.conn.rollback()
-            raise
+        def _fix_text_encoding(
+            table: str, rowid_col: str, text_columns: List[str]
+        ) -> int:
+            """Fix text encoding issues in a database table.
 
-    def _fix_text_encoding(
-        self, table: str, rowid_col: str, text_columns: List[str]
-    ) -> int:
-        """Fix text encoding issues in a database table.
+            This method fixes text data that was stored with incorrect encoding (e.g., from legacy Perl code)
+            by reading it as raw bytes and re-encoding as UTF-8.
 
-        This method fixes text data that was stored with incorrect encoding (e.g., from legacy Perl code)
-        by reading it as raw bytes and re-encoding as UTF-8.
+            Args:
+                table: Table name to fix
+                rowid_col: Name of the row identifier column (e.g., 'oid', 'rowid')
+                text_columns: List of text column names to fix
 
-        Args:
-            table: Table name to fix
-            rowid_col: Name of the row identifier column (e.g., 'oid', 'rowid')
-            text_columns: List of text column names to fix
+            Returns:
+                Number of rows fixed
+            """
+            # Temporarily disable text_factory to read raw bytes
+            old_text_factory = self.conn.text_factory
+            self.conn.text_factory = bytes
 
-        Returns:
-            Number of rows fixed
-        """
-        # Temporarily disable text_factory to read raw bytes
-        old_text_factory = self.conn.text_factory
-        self.conn.text_factory = bytes
+            fixed_count = 0
+            fixes_to_apply = []
 
-        fixed_count = 0
-        fixes_to_apply = []
+            try:
+                # Get all rows with their identifiers
+                cursor = self.conn.cursor()
 
-        try:
-            # Get all rows with their identifiers
-            cursor = self.conn.cursor()
+                # Build query to select rowid and text columns
+                select_cols = f"{rowid_col}, {', '.join(text_columns)}"
 
-            # Build query to select rowid and text columns
-            select_cols = f"{rowid_col}, {', '.join(text_columns)}"
+                cursor.execute(f"SELECT {select_cols} FROM {table}")
+                rows = cursor.fetchall()
 
-            cursor.execute(f"SELECT {select_cols} FROM {table}")
-            rows = cursor.fetchall()
+                for row in rows:
+                    row_id = row[0]
+                    fixed_values = {}
 
-            for row in rows:
-                row_id = row[0]
-                fixed_values = {}
+                    # Check each text column
+                    for i, col_name in enumerate(text_columns, start=1):
+                        value = row[i]
 
-                # Check each text column
-                for i, col_name in enumerate(text_columns, start=1):
-                    value = row[i]
-
-                    if value is None:
-                        continue
-
-                    # Try to decode as UTF-8
-                    try:
-                        if isinstance(value, bytes):
-                            # Try UTF-8 first
-                            text = value.decode("utf-8")
-                        else:
-                            # Already text, no fix needed
+                        if value is None:
                             continue
-                    except UnicodeDecodeError:
-                        # Failed UTF-8, try Latin-1 (which accepts all bytes)
+
+                        # Try to decode as UTF-8
                         try:
                             if isinstance(value, bytes):
-                                text = value.decode("latin-1")
-                                fixed_values[col_name] = text
-                                if logger.isEnabledFor(logging.INFO):
-                                    logger.info(
-                                        f"Fixed encoding for {table}.{col_name} "
-                                        f"(row {row_id}): {value[:50]}... -> {text[:50]}..."
-                                    )
-                        except Exception as e:
-                            logger.warning(
-                                f"Could not fix encoding for {table}.{col_name} "
-                                f"(row {row_id}): {e}"
-                            )
+                                # Try UTF-8 first
+                                text = value.decode("utf-8")
+                            else:
+                                # Already text, no fix needed
+                                continue
+                        except UnicodeDecodeError:
+                            # Failed UTF-8, try Latin-1 (which accepts all bytes)
+                            try:
+                                if isinstance(value, bytes):
+                                    text = value.decode("latin-1")
+                                    fixed_values[col_name] = text
+                                    if logger.isEnabledFor(logging.INFO):
+                                        logger.info(
+                                            f"Fixed encoding for {table}.{col_name} "
+                                            f"(row {row_id}): {value[:50]}... -> {text[:50]}..."
+                                        )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Could not fix encoding for {table}.{col_name} "
+                                    f"(row {row_id}): {e}"
+                                )
 
-                # Collect fixes to apply later
-                if fixed_values:
-                    fixes_to_apply.append((row_id, fixed_values))
+                    # Collect fixes to apply later
+                    if fixed_values:
+                        fixes_to_apply.append((row_id, fixed_values))
 
-            cursor.close()
-
-            # Now apply all fixes with normal text_factory
-            self.conn.text_factory = str
-
-            for row_id, fixed_values in fixes_to_apply:
-                set_clause = ", ".join(f"{col}=?" for col in fixed_values.keys())
-                values = list(fixed_values.values()) + [row_id]
-
-                update_sql = f"UPDATE {table} SET {set_clause} WHERE {rowid_col}=?"
-                cursor = self.conn.cursor()
-                cursor.execute(update_sql, values)
                 cursor.close()
-                fixed_count += 1
 
-        finally:
-            # Restore original text_factory
-            self.conn.text_factory = old_text_factory
+                # Now apply all fixes with normal text_factory
+                self.conn.text_factory = str
 
-        return fixed_count
+                for row_id, fixed_values in fixes_to_apply:
+                    set_clause = ", ".join(f"{col}=?" for col in fixed_values.keys())
+                    values = list(fixed_values.values()) + [row_id]
 
-    def update_db(self) -> bool:
-        """Update database schema to latest version.
+                    update_sql = f"UPDATE {table} SET {set_clause} WHERE {rowid_col}=?"
+                    cursor = self.conn.cursor()
+                    cursor.execute(update_sql, values)
+                    cursor.close()
+                    fixed_count += 1
 
-        Args:
+            finally:
+                # Restore original text_factory
+                self.conn.text_factory = old_text_factory
 
-        Returns:
-            True if update successful
-        """
+            return fixed_count
+
         updates = {
             "0.1.0": ["UPDATE config SET value='0.1.0' WHERE param='version';"],
             "0.2.0": ["UPDATE config SET value='0.2.0' WHERE param='version';"],
@@ -1376,9 +1360,9 @@ class DBHandler:
             ],
             "2.0.1": [
                 # Add id column to tracks table for stable row identification
-                lambda: self._add_tracks_id_column(),
+                _add_tracks_id_column,
                 # Fix encoding issues from legacy Perl databases
-                lambda: self._fix_text_encoding(
+                lambda: _fix_text_encoding(
                     "gme_library",
                     "oid",
                     [
@@ -1389,7 +1373,7 @@ class DBHandler:
                         "path",
                     ],
                 ),
-                lambda: self._fix_text_encoding(
+                lambda: _fix_text_encoding(
                     "tracks",
                     "id",
                     [
@@ -1488,7 +1472,6 @@ def extract_tracks_from_album(album: Dict[str, Any]) -> List[Dict[str, Any]]:
     for key in sorted(album.keys(), reverse=True):
         if key.startswith("track_"):
             track = album.pop(key)
-            track["old_track"] = key.removeprefix("track_")
             tracks.append(track)
     return tracks, album
 

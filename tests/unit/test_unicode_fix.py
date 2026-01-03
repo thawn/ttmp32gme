@@ -83,20 +83,26 @@ class TestUnicodeFix:
         db.close()
 
     def test_fix_text_encoding_fixes_gme_library(self, legacy_db):
-        """Test that _fix_text_encoding fixes gme_library table."""
+        """Test that update_db fixes gme_library table encoding."""
         db = DBHandler(legacy_db)
         db.connect()
 
-        # Fix the encoding
-        fixed_count = db._fix_text_encoding(
-            "gme_library",
-            "oid",
-            ["album_title", "album_artist", "picture_filename", "gme_file", "path"],
-        )
+        # Set version to 2.0.0 to trigger 2.0.1 migration
+        db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
         db.commit()
 
-        # Should have fixed 1 row
-        assert fixed_count == 1
+        # Run update_db which includes encoding fixes
+        result = db.update_db()
+        assert result is True
+
+        # Verify the encoding was fixed
+        album = db.get_album(920)
+        assert album is not None
+        # Check that the title is now correctly decoded
+        assert "Albert E erklärt den menschlichen Körper" in album["album_title"]
+        assert "ümlaut" in album["album_artist"]
+
+        db.close()
 
         # Now reading should work
         album = db.get_album(920)
@@ -107,29 +113,19 @@ class TestUnicodeFix:
         db.close()
 
     def test_fix_text_encoding_fixes_tracks(self, legacy_db):
-        """Test that _fix_text_encoding fixes tracks table."""
+        """Test that update_db fixes tracks table encoding."""
         db = DBHandler(legacy_db)
         db.connect()
 
-        # First fix gme_library so we can read albums
-        db._fix_text_encoding(
-            "gme_library",
-            "oid",
-            ["album_title", "album_artist", "picture_filename", "gme_file", "path"],
-        )
-
-        # Fix tracks
-        fixed_count = db._fix_text_encoding(
-            "tracks",
-            "rowid",
-            ["album", "artist", "genre", "lyrics", "title", "filename", "tt_script"],
-        )
+        # Set version to 2.0.0 to trigger 2.0.1 migration
+        db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
         db.commit()
 
-        # Should have fixed 1 row
-        assert fixed_count == 1
+        # Run update_db which includes encoding fixes
+        result = db.update_db()
+        assert result is True
 
-        # Now reading should work
+        # Verify tracks encoding was fixed
         album = db.get_album(920)
         assert album is not None
         track = album.get("track_1")
@@ -168,7 +164,7 @@ class TestUnicodeFix:
         db.close()
 
     def test_fix_text_encoding_handles_null_values(self):
-        """Test that _fix_text_encoding handles NULL values correctly."""
+        """Test that encoding fix handles NULL values correctly."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = str(Path(tmpdir) / "test.db")
 
@@ -182,14 +178,13 @@ class TestUnicodeFix:
             )
             db.commit()
 
-            # Fix encoding - should not crash on NULL
-            fixed_count = db._fix_text_encoding(
-                "gme_library", "oid", ["album_title", "album_artist"]
-            )
+            # Set version to 2.0.0 to trigger 2.0.1 migration
+            db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
             db.commit()
 
-            # Should have fixed 0 rows (no encoding issues)
-            assert fixed_count == 0
+            # Run update_db - should not crash on NULL
+            result = db.update_db()
+            assert result is True
 
             # Verify data is still readable
             album = db.get_album(920)
@@ -200,7 +195,7 @@ class TestUnicodeFix:
             db.close()
 
     def test_fix_text_encoding_handles_already_valid_utf8(self):
-        """Test that _fix_text_encoding doesn't break valid UTF-8 data."""
+        """Test that encoding fix doesn't break valid UTF-8 data."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = str(Path(tmpdir) / "test.db")
 
@@ -215,14 +210,13 @@ class TestUnicodeFix:
             )
             db.commit()
 
-            # Fix encoding - should detect no issues
-            fixed_count = db._fix_text_encoding(
-                "gme_library", "oid", ["album_title", "album_artist"]
-            )
+            # Set version to 2.0.0 to trigger 2.0.1 migration
+            db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
             db.commit()
 
-            # Should have fixed 0 rows (already valid UTF-8)
-            assert fixed_count == 0
+            # Run update_db - should detect no issues and not change valid UTF-8
+            result = db.update_db()
+            assert result is True
 
             # Verify data is unchanged
             album = db.get_album(920)

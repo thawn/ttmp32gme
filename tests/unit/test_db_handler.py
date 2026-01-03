@@ -863,13 +863,11 @@ class TestDBHandlerCoreMethods:
             current_tracks = db.get_tracks({"oid": 920})
             tracks_to_update = [
                 {
-                    "old_track": "1",
                     "id": current_tracks[1]["id"],
                     "track": 2,
                     "title": "Updated Track 1",
                 },
                 {
-                    "old_track": "2",
                     "id": current_tracks[2]["id"],
                     "track": 1,
                     "title": "Updated Track 2",
@@ -924,7 +922,6 @@ class TestDBHandlerCoreMethods:
                 "album_title": "Updated Album",
                 "album_artist": "Updated Artist",
                 "track_1": {
-                    "old_track": "1",
                     "id": current_tracks[1]["id"],
                     "track": 1,
                     "title": "Updated Track 1",
