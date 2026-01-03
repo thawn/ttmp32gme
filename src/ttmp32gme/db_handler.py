@@ -1185,62 +1185,6 @@ class DBHandler:
             True if update successful
         """
 
-        def _add_tracks_id_column() -> bool:
-            """Add an id column to the tracks table for stable row identification."""
-            cursor = self.conn.cursor()
-
-            # Check if id column already exists
-            cursor.execute("PRAGMA table_info(tracks)")
-            columns = [row[1] for row in cursor.fetchall()]
-
-            if "id" in columns:
-                logger.info("tracks table already has id column")
-                cursor.close()
-                return True
-
-            # SQLite doesn't support adding PRIMARY KEY to existing table
-            # We need to recreate the table
-            logger.info("Adding id column to tracks table")
-
-            # Create new table with id column
-            cursor.execute(
-                """
-                CREATE TABLE tracks_new (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    parent_oid INTEGER NOT NULL,
-                    album TEXT,
-                    artist TEXT,
-                    disc INTEGER,
-                    duration INTEGER,
-                    genre TEXT,
-                    lyrics TEXT,
-                    title TEXT,
-                    track INTEGER,
-                    filename TEXT,
-                    tt_script TEXT
-                )
-                """
-            )
-
-            # Copy data from old table to new table
-            cursor.execute(
-                """
-                INSERT INTO tracks_new (parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script)
-                SELECT parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script
-                FROM tracks
-                """
-            )
-
-            # Drop old table
-            cursor.execute("DROP TABLE tracks")
-
-            # Rename new table to tracks
-            cursor.execute("ALTER TABLE tracks_new RENAME TO tracks")
-
-            cursor.close()
-            logger.info("Successfully added id column to tracks table")
-            return True
-
         def _fix_text_encoding(
             table: str, rowid_col: str, text_columns: List[str]
         ) -> int:
@@ -1360,7 +1304,33 @@ class DBHandler:
             ],
             "2.0.1": [
                 # Add id column to tracks table for stable row identification
-                _add_tracks_id_column,
+                # Recreate the tracks table with an explicit id column
+                """
+                CREATE TABLE tracks_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parent_oid INTEGER NOT NULL,
+                    album TEXT,
+                    artist TEXT,
+                    disc INTEGER,
+                    duration INTEGER,
+                    genre TEXT,
+                    lyrics TEXT,
+                    title TEXT,
+                    track INTEGER,
+                    filename TEXT,
+                    tt_script TEXT
+                )
+                """,
+                # Copy data from old table to new table
+                """
+                INSERT INTO tracks_new (parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script)
+                SELECT parent_oid, album, artist, disc, duration, genre, lyrics, title, track, filename, tt_script
+                FROM tracks
+                """,
+                # Drop old table
+                "DROP TABLE tracks",
+                # Rename new table to tracks
+                "ALTER TABLE tracks_new RENAME TO tracks",
                 # Fix encoding issues from legacy Perl databases
                 lambda: _fix_text_encoding(
                     "gme_library",
