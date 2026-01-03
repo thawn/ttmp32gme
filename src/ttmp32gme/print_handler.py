@@ -308,9 +308,6 @@ def create_pdf(
         # Wait for the pdf to be created or process to exit
         timeout = 10  # seconds
         for _ in range(timeout):
-            # Check if file exists and has content (size > 0)
-            if pdf_file.exists() and pdf_file.stat().st_size > 0:
-                break
             # check if process has exited
             returncode = process.poll()
             if returncode is not None:
