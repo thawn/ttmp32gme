@@ -136,6 +136,30 @@ Whenever you make changes to any file in the docs/ directory, verify that the do
 ### Database Access (CRITICAL)
 All database operations MUST go through DBHandler methods (except in unit tests).
 
+### PyInstaller Resource Paths (CRITICAL)
+When adding resource files (HTML, images, config) that need to work in both development and PyInstaller builds:
+
+**DO**: Use `get_resource_path()` from `ttmp32gme.build.file_handler`
+```python
+from ttmp32gme.build.file_handler import get_resource_path
+
+# Load a resource file
+resource = get_resource_path("upload.html")
+with open(resource) as f:
+    content = f.read()
+```
+
+**DON'T**: Use `Path(__file__).parent` or similar - breaks in PyInstaller
+```python
+# ❌ WRONG - breaks in PyInstaller
+resource = Path(__file__).parent / "upload.html"
+```
+
+**Adding new resources**:
+1. Add to PyInstaller spec file's `datas` list
+2. Load with `get_resource_path("relative/path")`
+3. See `get_resource_path()` docstring for comprehensive guide
+
 ### Input Validation
 All frontend input MUST be validated with Pydantic models in `db_handler.py`:
 ```python
