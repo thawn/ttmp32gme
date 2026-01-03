@@ -321,17 +321,18 @@ class TestCreatePrintLayout:
 class TestCreatePdf:
     """Test create_pdf function."""
 
+    @patch("ttmp32gme.print_handler.fcntl.fcntl")
+    @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_success(self, mock_popen, mock_get_exec):
+    def test_create_pdf_success(self, mock_popen, mock_get_exec, mock_sleep, mock_fcntl):
         """Test PDF creation with chromium available."""
         mock_get_exec.return_value = "/usr/bin/chromium"
 
-        # Mock the process to raise TimeoutExpired (normal case - process runs in background)
+        # Mock the process - poll() returns None (still running)
         mock_process = MagicMock()
-        mock_process.communicate.side_effect = subprocess.TimeoutExpired(
-            cmd="chromium", timeout=1
-        )
+        mock_process.poll.return_value = None
+        mock_process.stderr.read.return_value = ""  # No errors in stderr
         mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -367,18 +368,21 @@ class TestCreatePdf:
 
         assert result is None
 
+    @patch("ttmp32gme.print_handler.fcntl.fcntl")
+    @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_tries_multiple_names(self, mock_popen, mock_get_exec):
+    def test_create_pdf_tries_multiple_names(
+        self, mock_popen, mock_get_exec, mock_sleep, mock_fcntl
+    ):
         """Test PDF creation tries multiple chromium binary names."""
         # First call returns None (chromium), second returns path (chromium-browser)
         mock_get_exec.side_effect = [None, "/usr/bin/chromium-browser"]
 
-        # Mock the process to raise TimeoutExpired (normal case - process runs in background)
+        # Mock the process - poll() returns None (still running)
         mock_process = MagicMock()
-        mock_process.communicate.side_effect = subprocess.TimeoutExpired(
-            cmd="chromium", timeout=1
-        )
+        mock_process.poll.return_value = None
+        mock_process.stderr.read.return_value = ""  # No errors in stderr
         mock_popen.return_value = mock_process
 
         with tempfile.TemporaryDirectory() as tmpdir:

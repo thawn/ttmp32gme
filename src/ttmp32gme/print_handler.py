@@ -1,8 +1,11 @@
 """Print handling module for ttmp32gme - creates print layouts."""
 
+import fcntl
 import logging
+import os
 import platform
 import subprocess
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -289,25 +292,63 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
     logger.info(f"Creating PDF with {found_name}: {' '.join(args)}")
 
     try:
-        # Run chromium and wait briefly to see if it starts successfully
+        # Run chromium and check if it starts successfully
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        # Wait a short time to catch immediate failures (like sandbox errors)
-        try:
-            # Check if process fails immediately (within 1 second for faster detection)
-            stdout, stderr = process.communicate(timeout=1)
-            # If we get here, process exited quickly - check for errors
-            if process.returncode != 0:
-                logger.warning(
-                    f"{found_name} exited with code {process.returncode}: {stderr[:500]}"
+        
+        # Wait a short time for chromium to start and potentially fail
+        time.sleep(2)
+        
+        # Check if process has exited (failed immediately)
+        returncode = process.poll()
+        if returncode is not None:
+            # Process has exited - it failed
+            _, stderr = process.communicate()
+            logger.warning(
+                f"{found_name} exited with code {returncode}: {stderr[:500]}"
+            )
+            stderr_lower = stderr.lower()
+            if "sandbox" in stderr_lower or "fatal" in stderr_lower:
+                logger.info(
+                    "Critical error detected (sandbox/fatal), trying google-chrome fallback"
                 )
-                # Check if it's a sandbox error or other critical failure
+                # Try google-chrome as fallback if we haven't already
+                if found_name not in ["google-chrome", "chrome"]:
+                    for fallback_name in ["google-chrome", "chrome"]:
+                        fallback_path = get_executable_path(fallback_name)
+                        if fallback_path:
+                            logger.info(f"Retrying with {fallback_name}")
+                            fallback_args = [
+                                fallback_path,
+                                "--headless",
+                                "--disable-gpu",
+                                "--no-pdf-header-footer",
+                                f"--print-to-pdf={pdf_file}",
+                                f"http://localhost:{port}/pdf",
+                            ]
+                            subprocess.Popen(fallback_args)
+                            return pdf_file
+            return None
+        else:
+            # Process is still running - check stderr for errors anyway
+            # Make stderr non-blocking to read what's available
+            try:
+                fl = fcntl.fcntl(process.stderr, fcntl.F_GETFL)
+                fcntl.fcntl(process.stderr, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+                stderr = process.stderr.read()
+
                 stderr_lower = stderr.lower()
-                if "sandbox" in stderr_lower or "fatal" in stderr_lower:
-                    logger.info(
-                        "Critical error detected (sandbox/fatal), trying google-chrome fallback"
+                if stderr and ("sandbox" in stderr_lower or "fatal" in stderr_lower):
+                    logger.warning(
+                        f"{found_name} has errors in stderr: {stderr[:500]}"
                     )
+                    logger.info(
+                        "Critical error detected in running process, trying google-chrome fallback"
+                    )
+                    # Kill the failing process
+                    process.kill()
+
                     # Try google-chrome as fallback if we haven't already
                     if found_name not in ["google-chrome", "chrome"]:
                         for fallback_name in ["google-chrome", "chrome"]:
@@ -324,11 +365,10 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
                                 ]
                                 subprocess.Popen(fallback_args)
                                 return pdf_file
-                return None
-        except subprocess.TimeoutExpired:
-            # Process is still running after 1 second - this is good, it's working
-            # Let it continue in background
-            pass
+                    return None
+            except (IOError, OSError):
+                # Could not read stderr non-blocking, assume it's working
+                pass
 
         return pdf_file
     except Exception as e:
