@@ -224,12 +224,16 @@ def ogg_audio_files_context(album_name="Test OGG Album"):
 
 
 @pytest.fixture(scope="function")
-def clean_server(tmp_path, driver):
+def clean_server(tmp_path, driver, monkeypatch):
     """Start a new server with clean database and library in temporary directories.
 
     This fixture creates temporary database and library paths, starts a server with
     those paths, and cleans up everything after the test completes.
+
+    Also mocks tempfile.mkstemp to create PDF files in the test library folder
+    so E2E tests can verify PDF creation.
     """
+    import os
     import subprocess
 
     from selenium.common.exceptions import WebDriverException
@@ -242,6 +246,11 @@ def clean_server(tmp_path, driver):
     # Find an available port (use a different port from default to avoid conflicts)
     test_port = 10021
     test_host = "127.0.0.1"
+
+    # Set environment variable to tell the server to create PDFs in the test library
+    # This allows E2E tests to verify PDF creation
+    # (Monkeypatch doesn't work because server runs in a separate process)
+    os.environ["TTMP32GME_TEST_TEMP_DIR"] = str(test_library)
 
     # Start server with custom paths in background
     server_cmd = [
@@ -257,18 +266,24 @@ def clean_server(tmp_path, driver):
         "--port",
         str(test_port),
         "--no-browser",
+        "-vv",
     ]
 
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
 
-    # Start the server process in the background
-    server_process = subprocess.Popen(
-        server_cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,  # Ensure it runs in background
-    )
+    # Create log files for server output
+    server_log_file = tmp_path / "server.log"
+    server_err_file = tmp_path / "server_err.log"
+
+    # Start the server process in the background with output redirected to files
+    with open(server_log_file, "w") as stdout_f, open(server_err_file, "w") as stderr_f:
+        server_process = subprocess.Popen(
+            server_cmd,
+            stdout=stdout_f,
+            stderr=stderr_f,
+            text=True,
+            start_new_session=True,  # Ensure it runs in background
+        )
 
     # Wait for server to start using Selenium WebDriverWait
     server_url = f"http://{test_host}:{test_port}"
@@ -288,11 +303,23 @@ def clean_server(tmp_path, driver):
         logger.info(f"Test server is ready at {server_url}")
     except Exception as e:
         server_process.terminate()
-        stdout, stderr = server_process.communicate(timeout=5)
+        server_process.wait(timeout=5)
+
+        # Read log files for error reporting
+        stdout_content = ""
+        stderr_content = ""
+        try:
+            if server_log_file.exists():
+                stdout_content = server_log_file.read_text()
+            if server_err_file.exists():
+                stderr_content = server_err_file.read_text()
+        except Exception:
+            pass
+
         raise RuntimeError(
             f"Server failed to start within timeout.\n"
             f"Error: {e}\n"
-            f"Stdout: {stdout}\nStderr: {stderr}"
+            f"Stdout: {stdout_content}\nStderr: {stderr_content}"
         )
 
     # Yield fixture data
@@ -302,6 +329,9 @@ def clean_server(tmp_path, driver):
         "library_path": test_library,
         "port": test_port,
         "host": test_host,
+        "log_file": server_log_file,
+        "err_file": server_err_file,
+        "process": server_process,
     }
 
     # Cleanup: stop server
@@ -313,6 +343,9 @@ def clean_server(tmp_path, driver):
         logger.warning("Server did not stop gracefully, killing it")
         server_process.kill()
         server_process.wait()
+
+    # Clean up environment variable
+    os.environ.pop("TTMP32GME_TEST_TEMP_DIR", None)
 
     # Clean up temporary files (tmp_path is automatically cleaned up by pytest)
     logger.info("Test server cleanup complete")

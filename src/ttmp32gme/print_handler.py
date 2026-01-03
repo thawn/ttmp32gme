@@ -1,14 +1,17 @@
 """Print handling module for ttmp32gme - creates print layouts."""
 
 import logging
+import os
 import platform
 import subprocess
+import tempfile
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import render_template
 
-from ttmp32gme.build.file_handler import get_default_library_path, get_executable_path
+from ttmp32gme.build.file_handler import get_executable_path
 from ttmp32gme.db_handler import DBHandler
 from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 
@@ -237,41 +240,54 @@ def create_print_layout(
     return content
 
 
-def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]:
+def create_pdf(
+    port: int,
+    chromium_names: Optional[Tuple[str]] = (
+        "chromium",
+        "chromium-browser",
+        "google-chrome",
+        "chrome",
+    ),
+) -> Optional[Path]:
     """Create PDF from print layout using Chromium headless.
 
     Args:
         port: Server port number for accessing the print page via HTTP
-        library_path: Path to library directory where PDF will be saved (defaults to system library path)
 
     Returns:
-        Path to created PDF file, or None if PDF creation failed
+        Path to created temporary PDF file, or None if PDF creation failed
     """
     # Try multiple possible chromium binary names
-    chromium_names = ["chromium", "chromium-browser", "google-chrome", "chrome"]
+    fallback_options = ("google-chrome", "chrome")
     chromium_path = None
+    found_name = None
 
     for name in chromium_names:
         chromium_path = get_executable_path(name)
         if chromium_path:
+            found_name = name
             break
 
     if not chromium_path:
         logger.error("Could not create pdf, chromium not found.")
         return None
 
-    if library_path is None:
-        library_path = get_default_library_path()
+    # Create PDF in a temporary file
+    # Check if E2E test wants to override the temp directory
+    test_temp_dir = os.environ.get("TTMP32GME_TEST_TEMP_DIR")
+    if test_temp_dir:
+        # For E2E testing: create PDF in specified directory
+        pdf_file = Path(test_temp_dir) / "print.pdf"
+        # Create empty file for chromium to write to
+        pdf_file.touch()
+        temp_fd = None
+    else:
+        # Normal operation: create PDF in system temp directory
+        temp_fd, temp_path = tempfile.mkstemp(suffix=".pdf", prefix="ttmp32gme_print_")
+        pdf_file = Path(temp_path)
+        # Close the file descriptor as chromium will write to the file
+        os.close(temp_fd)
 
-    pdf_file = library_path / "print.pdf"
-
-    # Chromium headless PDF printing arguments
-    # --headless: Run in headless mode
-    # --disable-gpu: Disable GPU hardware acceleration
-    # --no-pdf-header-footer: Disable headers and footers in PDF
-    # --print-to-pdf=<path>: Output to PDF file at specified path
-    # Note: Margins are controlled via CSS @page rules in pdf.html (0.5in all sides)
-    # Chromium doesn't support command-line margin parameters like wkhtmltopdf
     args = [
         chromium_path,
         "--headless",
@@ -281,12 +297,40 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
         f"http://localhost:{port}/pdf",
     ]
 
-    logger.info(f"Creating PDF: {' '.join(args)}")
+    logger.info(f"Creating PDF with {found_name}: {' '.join(args)}")
 
     try:
-        # Run in background
-        subprocess.Popen(args)
-        return pdf_file
+        # Run chromium and check if it starts successfully
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+
+        # Wait for the pdf to be created or process to exit
+        timeout = 10  # seconds
+        for _ in range(timeout):
+            # check if process has exited
+            returncode = process.poll()
+            if returncode is not None:
+                break
+            time.sleep(1)
+
+        # Final check if PDF was created with content
+        if pdf_file.exists() and pdf_file.stat().st_size > 0:
+            return pdf_file
+        else:
+            logger.warning(
+                f"PDF file was not created within the timeout period of {timeout} seconds. Checking fallback options..."
+            )
+            stdout, stderr = process.communicate()
+            logger.debug(f"{found_name} stdout: {stdout}")
+            logger.debug(f"{found_name} stderr: {stderr}")
+            if chromium_path in fallback_options:
+                logger.error("PDF creation failed. Exhausted fallback options.")
+                return None
+            else:
+                logger.info("Trying google-chrome fallback for PDF creation.")
+                return create_pdf(port, chromium_names=fallback_options)
+
     except Exception as e:
         logger.error(f"Could not create PDF: {e}")
         return None

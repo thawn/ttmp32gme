@@ -13,7 +13,8 @@ RUN apt-get update && \
         ca-certificates \
         ffmpeg \
         git \
-        chromium && \
+        chromium \
+        chromium-sandbox && \
     rm -rf /var/lib/apt/lists/*
 
 # Install tttool (from releases)

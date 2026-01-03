@@ -3,6 +3,7 @@ Integration tests for ttmp32gme web frontend
 These tests verify that the web pages load correctly
 """
 
+import json
 import logging
 import subprocess
 import time
@@ -235,3 +236,39 @@ class TestOIDImagesDownload:
         assert (
             "downloadOidImages" in response.text
         ), "Config page should have JavaScript function"
+
+
+class TestPrintPDFDownload:
+    """Test print PDF download functionality via HTTP"""
+
+    def test_print_pdf_generation_and_download(self, clean_server_http):
+        """Test that save_pdf action generates and returns PDF directly"""
+        server_info = clean_server_http
+
+        # Test data for PDF generation
+        test_content = "<div>Test PDF Content</div>"
+
+        # Post to /print with save_pdf action
+        response = requests.post(
+            f"{server_info['url']}/print",
+            data={"action": "save_pdf", "data": json.dumps({"content": test_content})},
+            timeout=30,  # Increased timeout for PDF generation
+        )
+
+        # Should return PDF file directly
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+        assert (
+            response.headers.get("Content-Type") == "application/pdf"
+        ), "Should return PDF file"
+        assert "attachment" in response.headers.get(
+            "Content-Disposition", ""
+        ), "Should be an attachment"
+        assert "print.pdf" in response.headers.get(
+            "Content-Disposition", ""
+        ), "Filename should be print.pdf"
+
+        # Verify PDF content is not empty
+        assert len(response.content) > 100, "PDF content should not be empty"
+
+        # Note: PDF is created in a temporary file and automatically cleaned up
+        # after being sent, so there's no file to check in the library folder

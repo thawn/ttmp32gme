@@ -464,9 +464,34 @@ def print_post():
         elif action == "save_pdf":
             global print_content
             print_content = data.get("content", "")
-            pdf_file = create_pdf(config["port"], Path(config["library_path"]))
+            pdf_file = create_pdf(config["port"])
             if pdf_file:
-                return jsonify({"success": True})
+                try:
+                    logger.info(f"Serving PDF file: {pdf_file}")
+                    response = send_file(
+                        pdf_file,
+                        mimetype="application/pdf",
+                        as_attachment=True,
+                        download_name="print.pdf",
+                    )
+
+                    # Clean up the PDF file after sending it
+                    # This ensures the next print request generates a fresh PDF
+                    try:
+                        pdf_file.unlink()
+                        logger.info(f"Cleaned up PDF file: {pdf_file}")
+                    except Exception as cleanup_error:
+                        logger.warning(f"Failed to clean up PDF file: {cleanup_error}")
+
+                    return response
+                except Exception as e:
+                    logger.error(f"Failed to serve PDF: {e}")
+                    return (
+                        jsonify(
+                            {"success": False, "error": f"Failed to serve PDF: {e}"}
+                        ),
+                        500,
+                    )
             else:
                 return (
                     jsonify({"success": False, "error": "PDF generation failed"}),

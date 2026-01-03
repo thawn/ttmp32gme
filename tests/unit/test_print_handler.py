@@ -3,7 +3,7 @@
 import sqlite3
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -320,20 +320,37 @@ class TestCreatePrintLayout:
 class TestCreatePdf:
     """Test create_pdf function."""
 
+    @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_success(self, mock_popen, mock_get_exec):
+    @patch("ttmp32gme.print_handler.tempfile.mkstemp")
+    @patch("ttmp32gme.print_handler.os.close")
+    def test_create_pdf_success(
+        self, mock_os_close, mock_mkstemp, mock_popen, mock_get_exec, mock_sleep
+    ):
         """Test PDF creation with chromium available."""
         mock_get_exec.return_value = "/usr/bin/chromium"
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            library_path = Path(tmpdir)
+        # Mock the process - poll() returns None (still running)
+        mock_process = MagicMock()
+        mock_process.poll.return_value = None
+        mock_process.stderr.read.return_value = ""  # No errors in stderr
+        mock_popen.return_value = mock_process
 
-            result = create_pdf(10020, library_path)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Mock tempfile.mkstemp to return a path in our temp directory
+            pdf_file = Path(tmpdir) / "ttmp32gme_print_test.pdf"
+            mock_mkstemp.return_value = (999, str(pdf_file))
+
+            # Create the PDF file so the function succeeds
+            pdf_file.write_text("fake pdf content")
+
+            result = create_pdf(10020)
 
             assert result is not None
-            assert result == library_path / "print.pdf"
+            assert result == pdf_file
             assert mock_popen.called
+            assert mock_os_close.called
             # Verify chromium headless arguments
             call_args = mock_popen.call_args[0][0]
             assert "--headless" in call_args
@@ -359,20 +376,36 @@ class TestCreatePdf:
 
         assert result is None
 
+    @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_tries_multiple_names(self, mock_popen, mock_get_exec):
+    @patch("ttmp32gme.print_handler.tempfile.mkstemp")
+    @patch("ttmp32gme.print_handler.os.close")
+    def test_create_pdf_tries_multiple_names(
+        self, mock_os_close, mock_mkstemp, mock_popen, mock_get_exec, mock_sleep
+    ):
         """Test PDF creation tries multiple chromium binary names."""
         # First call returns None (chromium), second returns path (chromium-browser)
         mock_get_exec.side_effect = [None, "/usr/bin/chromium-browser"]
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            library_path = Path(tmpdir)
+        # Mock the process - poll() returns None (still running)
+        mock_process = MagicMock()
+        mock_process.poll.return_value = None
+        mock_process.stderr.read.return_value = ""  # No errors in stderr
+        mock_popen.return_value = mock_process
 
-            result = create_pdf(10020, library_path)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Mock tempfile.mkstemp to return a path in our temp directory
+            pdf_file = Path(tmpdir) / "ttmp32gme_print_test.pdf"
+            mock_mkstemp.return_value = (999, str(pdf_file))
+
+            # Create the PDF file so the function succeeds
+            pdf_file.write_text("fake pdf content")
+
+            result = create_pdf(10020)
 
             assert result is not None
-            assert result == library_path / "print.pdf"
+            assert result == pdf_file
             assert mock_popen.called
 
 

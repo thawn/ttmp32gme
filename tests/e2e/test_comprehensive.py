@@ -1053,6 +1053,102 @@ class TestWebInterface:
         body = driver.find_element(By.TAG_NAME, "body")
         assert body is not None
 
+    def test_pdf_generation_workflow(self, driver, base_config_with_album, caplog):
+        """Test the complete workflow of generating and downloading a PDF."""
+        caplog.set_level(logging.DEBUG)
+        caplog.set_level(logging.DEBUG, logger="ttmp32gme")
+        server_info = base_config_with_album
+
+        # Step 1: Navigate to library page
+        driver.get(f"{server_info['url']}/library")
+        WebDriverWait(driver, 5).until(
+            lambda d: "Test Album" in d.find_element(By.TAG_NAME, "body").text
+        )
+
+        # Step 2: Select all albums
+        select_menu = driver.find_element(By.ID, "dropdownMenu1")
+        select_menu.click()
+        time.sleep(0.1)
+        select_all_option = driver.find_element(By.ID, "select-all")
+        select_all_option.click()
+        time.sleep(0.5)
+
+        # Step 3: Click print button
+        print_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.ID, "print-selected"))
+        )
+        print_button.click()
+
+        # Step 4: Wait for redirect to /print page
+        WebDriverWait(driver, 20).until(lambda d: "/print" in d.current_url)
+        WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        time.sleep(2)  # Wait for page to fully render
+
+        # Step 5: Check if PDF save button exists (requires chromium)
+        try:
+            pdf_save_button = driver.find_element(By.ID, "pdf-save")
+            logger.info("PDF save button found - chromium is available")
+
+            # Step 6: Click the PDF save button
+            pdf_save_button.click()
+            logger.info("Clicked PDF save button")
+
+            # Step 7: Wait for PDF generation
+            # The PDF is now created in a temporary file, but we mock tempfile.mkstemp
+            # to create it in the library folder so we can check for it
+            library_path = server_info["library_path"]
+            pdf_file = library_path / "print.pdf"
+
+            pdf_created = False
+            max_wait = 30  # seconds
+            start_time = time.time()
+
+            while time.time() - start_time < max_wait:
+                if pdf_file.exists() and pdf_file.stat().st_size > 0:
+                    pdf_created = True
+                    logger.info(f"PDF file created at {pdf_file}")
+                    break
+                time.sleep(1)
+
+            # Read and log the server output for debugging
+            if not pdf_created:
+                logger.error("=" * 80)
+                logger.error("PDF WAS NOT CREATED - DUMPING SERVER LOGS")
+                logger.error("=" * 80)
+
+                if server_info.get("log_file") and server_info["log_file"].exists():
+                    stdout_content = server_info["log_file"].read_text()
+                    logger.error(f"SERVER STDOUT:\n{stdout_content}")
+                else:
+                    logger.error("No server stdout log file found")
+
+                if server_info.get("err_file") and server_info["err_file"].exists():
+                    stderr_content = server_info["err_file"].read_text()
+                    logger.error(f"SERVER STDERR:\n{stderr_content}")
+                else:
+                    logger.error("No server stderr log file found")
+
+                logger.error("=" * 80)
+
+            assert (
+                pdf_created
+            ), f"PDF file not created within {max_wait} seconds at {pdf_file}"
+
+            # The PDF should have been downloaded to the browser's download location
+            # In a real test, we'd check the browser's download directory
+            # For CI, we just verify the file was created and is valid
+            logger.info("PDF generation workflow completed successfully")
+
+        except NoSuchElementException:
+            # If chromium is not available, the PDF save button won't be present
+            logger.warning(
+                "PDF save button not found - chromium may not be available. "
+                "Skipping PDF generation test."
+            )
+            pytest.skip("Chromium not available for PDF generation")
+
 
 @pytest.mark.e2e
 class TestCleanServerFixture:
