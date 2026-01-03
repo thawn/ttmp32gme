@@ -1,13 +1,11 @@
 """Print handling module for ttmp32gme - creates print layouts."""
 
-import fcntl
 import logging
-import os
 import platform
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import render_template
 
@@ -243,48 +241,16 @@ def create_print_layout(
     return content
 
 
-def _try_chrome_fallback(pdf_file: Path, port: int, found_name: str) -> Optional[Path]:
-    """Try to use google-chrome as fallback when chromium fails.
-
-    Args:
-        pdf_file: Path where PDF should be created
-        port: Port number where server is running
-        found_name: Name of the browser that failed
-
-    Returns:
-        Path to PDF file if fallback was attempted, None otherwise
-    """
-    # Only try fallback if we haven't already tried chrome
-    if found_name in ["google-chrome", "chrome"]:
-        return None
-
-    for fallback_name in ["google-chrome", "chrome"]:
-        fallback_path = get_executable_path(fallback_name)
-        if fallback_path:
-            logger.info(f"Retrying with {fallback_name}")
-            fallback_args = [
-                fallback_path,
-                "--headless",
-                "--disable-gpu",
-                "--no-pdf-header-footer",
-                f"--print-to-pdf={pdf_file}",
-                f"http://localhost:{port}/pdf",
-            ]
-            try:
-                subprocess.Popen(
-                    fallback_args,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                )
-                return pdf_file
-            except Exception as e:
-                logger.warning(f"Failed to start {fallback_name}: {e}")
-                continue
-    return None
-
-
-def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]:
+def create_pdf(
+    port: int,
+    library_path: Optional[Path] = None,
+    chromium_names: Optional[Tuple[str]] = (
+        "chromium",
+        "chromium-browser",
+        "google-chrome",
+        "chrome",
+    ),
+) -> Optional[Path]:
     """Create PDF from print layout using Chromium headless.
 
     Args:
@@ -295,7 +261,7 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
         Path to created PDF file, or None if PDF creation failed
     """
     # Try multiple possible chromium binary names
-    chromium_names = ["chromium", "chromium-browser", "google-chrome", "chrome"]
+    fallback_options = ("google-chrome", "chrome")
     chromium_path = None
     found_name = None
 
@@ -314,13 +280,6 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
 
     pdf_file = library_path / PRINT_PDF_FILENAME
 
-    # Chromium headless PDF printing arguments
-    # --headless: Run in headless mode
-    # --disable-gpu: Disable GPU hardware acceleration
-    # --no-pdf-header-footer: Disable headers and footers in PDF
-    # --print-to-pdf=<path>: Output to PDF file at specified path
-    # Note: Margins are controlled via CSS @page rules in pdf.html (0.5in all sides)
-    # Chromium doesn't support command-line margin parameters like wkhtmltopdf
     args = [
         chromium_path,
         "--headless",
@@ -338,47 +297,34 @@ def create_pdf(port: int, library_path: Optional[Path] = None) -> Optional[Path]
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
 
-        # Wait a short time for chromium to start and potentially fail
-        time.sleep(2)
+        # Wait for the pdf to be created or process to exit
+        timeout = 10  # seconds
+        for _ in range(timeout):
+            if pdf_file.exists():
+                break
+            # check if process has exited
+            returncode = process.poll()
+            if returncode is not None:
+                break
+            time.sleep(1)
 
-        # Check if process has exited (failed immediately)
-        returncode = process.poll()
-        if returncode is not None:
-            # Process has exited - it failed
-            _, stderr = process.communicate()
-            stderr = stderr or ""  # Handle None case
-            logger.warning(
-                f"{found_name} exited with code {returncode}: {stderr[:500]}"
-            )
-            stderr_lower = stderr.lower()
-            if "sandbox" in stderr_lower or "fatal" in stderr_lower:
-                logger.info(
-                    "Critical error detected (sandbox/fatal), trying google-chrome fallback"
-                )
-                return _try_chrome_fallback(pdf_file, port, found_name)
-            return None
+        # Final check if PDF was created
+        if pdf_file.exists():
+            return pdf_file
         else:
-            # Process is still running - check stderr for errors anyway
-            # Make stderr non-blocking to read what's available
-            try:
-                fl = fcntl.fcntl(process.stderr, fcntl.F_GETFL)
-                fcntl.fcntl(process.stderr, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-                stderr = process.stderr.read() or ""  # Handle None case
+            logger.warning(
+                f"PDF file was not created within the timeout period of {timeout} seconds. Checking fallback options..."
+            )
+            stdout, stderr = process.communicate()
+            logger.debug(f"{found_name} stdout: {stdout}")
+            logger.debug(f"{found_name} stderr: {stderr}")
+            if chromium_path in fallback_options:
+                logger.error("PDF creation failed. Exhausted fallback options.")
+                return None
+            else:
+                logger.info("Trying google-chrome fallback for PDF creation.")
+                return create_pdf(port, library_path, chromium_names=fallback_options)
 
-                stderr_lower = stderr.lower()
-                if stderr and ("sandbox" in stderr_lower or "fatal" in stderr_lower):
-                    logger.warning(f"{found_name} has errors in stderr: {stderr[:500]}")
-                    logger.info(
-                        "Critical error detected in running process, trying google-chrome fallback"
-                    )
-                    # Kill the failing process
-                    process.kill()
-                    return _try_chrome_fallback(pdf_file, port, found_name)
-            except OSError:
-                # Could not read stderr non-blocking, assume it's working
-                pass
-
-        return pdf_file
     except Exception as e:
         logger.error(f"Could not create PDF: {e}")
         return None
