@@ -1,7 +1,6 @@
 """Unit tests for print_handler module."""
 
 import sqlite3
-import subprocess
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
@@ -325,7 +324,9 @@ class TestCreatePdf:
     @patch("ttmp32gme.print_handler.time.sleep")
     @patch("ttmp32gme.print_handler.get_executable_path")
     @patch("ttmp32gme.print_handler.subprocess.Popen")
-    def test_create_pdf_success(self, mock_popen, mock_get_exec, mock_sleep, mock_fcntl):
+    def test_create_pdf_success(
+        self, mock_popen, mock_get_exec, mock_sleep, mock_fcntl
+    ):
         """Test PDF creation with chromium available."""
         mock_get_exec.return_value = "/usr/bin/chromium"
 
