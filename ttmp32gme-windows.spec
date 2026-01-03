@@ -109,7 +109,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # TODO: Add Windows icon file
+    icon='resources/build/win/ttmp32gme.ico',
 )
 
 coll = COLLECT(

@@ -1,2 +1,2 @@
 #!/bin/bash
-docker image build -t ttmp32gme -f build/docker/Dockerfile .
+docker image build -t ttmp32gme -f resources/build/docker/Dockerfile .
