@@ -23,7 +23,6 @@ def temp_db():
     with tempfile.TemporaryDirectory() as tmpdir:
         db_path = Path(tmpdir) / "test.db"
         db = DBHandler(str(db_path))
-        db.connect()
         db.initialize()
         yield db
         db.close()
@@ -54,7 +53,9 @@ scripts:
 class TestGenerateCodesYaml:
     """Test YAML code generation."""
 
-    def test_generates_codes_for_new_scripts(self, temp_db, temp_files):
+    def test_generates_codes_for_new_scripts(
+        self, temp_db: DBHandler, temp_files: Path
+    ):
         """Test that codes are generated for new scripts."""
         yaml_file = temp_files / "test.yaml"
 
@@ -73,13 +74,12 @@ class TestGenerateCodesYaml:
         query = "SELECT code FROM script_codes WHERE script = 'script1'"
         assert temp_db.fetchone(query)[0] == 3948
 
-    def test_reuses_existing_codes(self, temp_db, temp_files):
+    def test_reuses_existing_codes(self, temp_db: DBHandler, temp_files: Path):
         """Test that existing codes are reused."""
         yaml_file = temp_files / "test.yaml"
 
         # Insert some existing codes
-        temp_db.execute("INSERT INTO script_codes VALUES ('script1', 1001)")
-        temp_db.commit()
+        temp_db.execute_and_commit("INSERT INTO script_codes VALUES ('script1', 1001)")
 
         # Generate codes
         codes_file = generate_codes_yaml(yaml_file, temp_db)
@@ -93,7 +93,7 @@ class TestGenerateCodesYaml:
 class TestTttoolParameters:
     """Test tttool parameter retrieval."""
 
-    def test_gets_parameters_from_database(self, temp_db):
+    def test_gets_parameters_from_database(self, temp_db: DBHandler):
         """Test getting tttool parameters from config."""
 
         # Get parameters

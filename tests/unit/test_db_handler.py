@@ -336,7 +336,7 @@ class TestDBHandlerHelperMethods:
         db_handler.close()
         Path(db_path).unlink(missing_ok=True)
 
-    def test_finalize_album_data_with_title(self, db):
+    def test_finalize_album_data_with_title(self, db: DBHandler):
         """Test _finalize_album_data with valid title."""
         album_data = {
             "album_title": "Test Album",
@@ -350,7 +350,7 @@ class TestDBHandlerHelperMethods:
         assert result["album_title"] == "Test Album"
         assert result["path"] == "Test_Album"
 
-    def test_finalize_album_data_without_title(self, db):
+    def test_finalize_album_data_without_title(self, db: DBHandler):
         """Test _finalize_album_data defaults to 'unknown' when no title."""
         album_data = {}
         result = db._finalize_album_data(album_data, 920, 5)
@@ -360,7 +360,7 @@ class TestDBHandlerHelperMethods:
         assert result["album_title"] == "unknown"
         assert result["path"] == "unknown"
 
-    def test_finalize_album_data_validation_error(self, db):
+    def test_finalize_album_data_validation_error(self, db: DBHandler):
         """Test _finalize_album_data raises error for invalid OID."""
         album_data = {
             "album_title": "Test Album",
@@ -370,7 +370,7 @@ class TestDBHandlerHelperMethods:
             # OID out of range
             db._finalize_album_data(album_data, 9999, 5)
 
-    def test_sort_and_renumber_tracks(self, db):
+    def test_sort_and_renumber_tracks(self, db: DBHandler):
         """Test _sort_and_renumber_tracks."""
         track_data = [
             {"track": 3, "disc": 1, "filename": "track3.mp3"},
@@ -385,12 +385,12 @@ class TestDBHandlerHelperMethods:
         assert result[1]["track"] == 2  # disc 1, originally track 3
         assert result[2]["track"] == 3  # disc 2, originally track 2
 
-    def test_sort_and_renumber_tracks_empty(self, db):
+    def test_sort_and_renumber_tracks_empty(self, db: DBHandler):
         """Test _sort_and_renumber_tracks with empty list."""
         result = db._sort_and_renumber_tracks([])
         assert result == []
 
-    def test_process_cover_image_success(self, db):
+    def test_process_cover_image_success(self, db: DBHandler):
         """Test _process_cover_image with valid image."""
         # Create a temporary image file
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
@@ -405,13 +405,13 @@ class TestDBHandlerHelperMethods:
         finally:
             image_path.unlink(missing_ok=True)
 
-    def test_process_cover_image_nonexistent(self, db):
+    def test_process_cover_image_nonexistent(self, db: DBHandler):
         """Test _process_cover_image with nonexistent file."""
         filename, data = db._process_cover_image(Path("/nonexistent/image.jpg"))
         assert filename is None
         assert data is None
 
-    def test_extract_audio_metadata_with_real_file(self, db):
+    def test_extract_audio_metadata_with_real_file(self, db: DBHandler):
         """Test _extract_audio_metadata with real test file."""
         # Use the actual test file from fixtures
         test_file = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"
@@ -429,7 +429,7 @@ class TestDBHandlerHelperMethods:
         assert track_info["duration"] >= 0
 
     @patch("ttmp32gme.db_handler.MutagenFile")
-    def test_extract_audio_metadata_none_audio(self, mock_mutagen, db):
+    def test_extract_audio_metadata_none_audio(self, mock_mutagen, db: DBHandler):
         """Test _extract_audio_metadata when audio is None."""
         mock_mutagen.return_value = None
 
@@ -443,7 +443,7 @@ class TestDBHandlerHelperMethods:
         assert picture_data is None
 
     @patch("ttmp32gme.db_handler.MP3")
-    def test_extract_audio_metadata_exception(self, mock_mp3, db):
+    def test_extract_audio_metadata_exception(self, mock_mp3, db: DBHandler):
         """Test _extract_audio_metadata handles exceptions."""
         mock_mp3.side_effect = Exception("Test error")
 
@@ -480,54 +480,53 @@ class TestDBHandlerCoreMethods:
 
         try:
             db = DBHandler(db_path)
-            assert db.conn is None
+            assert db._conn is None
 
-            db.connect()
+            # The db should connect on first use of db.conn
             assert db.conn is not None
 
             db.close()
-            assert db.conn is None
+            assert db._conn is None
         finally:
             Path(db_path).unlink(missing_ok=True)
 
-    def test_execute(self, db):
+    def test_execute_context(self, db: DBHandler):
         """Test execute method."""
-        cursor = db.execute("SELECT * FROM config WHERE param=?", ("version",))
-        assert cursor is not None
-        result = cursor.fetchone()
-        assert result is not None
-        cursor.close()
+        with db.execute_context(
+            "SELECT * FROM config WHERE param=?", ("version",)
+        ) as cursor:
+            assert cursor is not None
+            result = cursor.fetchone()
+            assert result is not None
 
-    def test_fetchall(self, db):
+    def test_fetchall(self, db: DBHandler):
         """Test fetchall method."""
         results = db.fetchall("SELECT * FROM config")
         assert len(results) > 0
         assert "param" in results[0].keys()
 
-    def test_fetchone(self, db):
+    def test_fetchone(self, db: DBHandler):
         """Test fetchone method."""
         result = db.fetchone("SELECT * FROM config WHERE param=?", ("version",))
         assert result is not None
         assert result["param"] == "version"
 
-    def test_fetchone_not_found(self, db):
+    def test_fetchone_not_found(self, db: DBHandler):
         """Test fetchone when no result found."""
         result = db.fetchone("SELECT * FROM config WHERE param=?", ("nonexistent",))
         assert result is None
 
-    def test_commit(self, db):
+    def test_commit(self, db: DBHandler):
         """Test commit method."""
-        db.execute(
+        db.execute_and_commit(
             "INSERT INTO config (param, value) VALUES (?, ?)",
             ("test_param", "test_value"),
         )
-        db.commit()
-
         result = db.fetchone("SELECT * FROM config WHERE param=?", ("test_param",))
         assert result is not None
         assert result["value"] == "test_value"
 
-    def test_write_to_database(self, db):
+    def test_write_to_database(self, db: DBHandler):
         """Test write_to_database method."""
         data = {"param": "test_write", "value": "test_value_123"}
         db.write_to_database("config", data)
@@ -536,7 +535,7 @@ class TestDBHandlerCoreMethods:
         assert result is not None
         assert result["value"] == "test_value_123"
 
-    def test_get_config(self, db):
+    def test_get_config(self, db: DBHandler):
         """Test get_config method."""
         config = db.get_config()
         assert isinstance(config, dict)
@@ -544,18 +543,18 @@ class TestDBHandlerCoreMethods:
         assert "host" in config
         assert "port" in config
 
-    def test_get_config_value(self, db):
+    def test_get_config_value(self, db: DBHandler):
         """Test get_config_value method."""
         version = db.get_config_value("version")
         assert version is not None
         assert version == "2.0.0"
 
-    def test_get_config_value_not_found(self, db):
+    def test_get_config_value_not_found(self, db: DBHandler):
         """Test get_config_value for non-existent parameter."""
         value = db.get_config_value("nonexistent_param")
         assert value is None
 
-    def test_oid_exist(self, db):
+    def test_oid_exist(self, db: DBHandler):
         """Test oid_exist method."""
         # Initially no albums
         assert db.oid_exist(920) is False
@@ -575,12 +574,12 @@ class TestDBHandlerCoreMethods:
         assert db.oid_exist(920) is True
         assert db.oid_exist(921) is False
 
-    def test_new_oid_empty_database(self, db):
+    def test_new_oid_empty_database(self, db: DBHandler):
         """Test new_oid with empty database."""
         oid = db.new_oid()
         assert oid == 920  # Default starting OID
 
-    def test_new_oid_with_existing_albums(self, db):
+    def test_new_oid_with_existing_albums(self, db: DBHandler):
         """Test new_oid with existing albums."""
         # Add some albums
         db.write_to_database(
@@ -605,7 +604,7 @@ class TestDBHandlerCoreMethods:
         oid = db.new_oid()
         assert oid == 922  # Next available OID
 
-    def test_get_tracks(self, db):
+    def test_get_tracks(self, db: DBHandler):
         """Test get_tracks method."""
         # Add an album and tracks
         db.write_to_database(
@@ -647,7 +646,7 @@ class TestDBHandlerCoreMethods:
         assert tracks[1]["title"] == "Track 1"
         assert tracks[2]["title"] == "Track 2"
 
-    def test_update_table_entry(self, db):
+    def test_update_table_entry(self, db: DBHandler):
         """Test update_table_entry method."""
         # Add a config entry
         db.write_to_database(
@@ -662,7 +661,7 @@ class TestDBHandlerCoreMethods:
         result = db.fetchone("SELECT * FROM config WHERE param=?", ("test_update",))
         assert result["value"] == "updated_value"
 
-    def test_db_row_to_album(self, db):
+    def test_db_row_to_album(self, db: DBHandler):
         """Test db_row_to_album method."""
         # Add album and tracks
         db.write_to_database(
@@ -694,7 +693,7 @@ class TestDBHandlerCoreMethods:
         assert "track_1" in album
         assert album["track_1"]["title"] == "Track 1"
 
-    def test_get_album(self, db):
+    def test_get_album(self, db: DBHandler):
         """Test get_album method."""
         # Add album and track
         db.write_to_database(
@@ -723,12 +722,12 @@ class TestDBHandlerCoreMethods:
         assert album["album_title"] == "Test Album"
         assert "track_1" in album
 
-    def test_get_album_not_found(self, db):
+    def test_get_album_not_found(self, db: DBHandler):
         """Test get_album when album doesn't exist."""
         album = db.get_album(999)
         assert album is None
 
-    def test_get_album_list(self, db):
+    def test_get_album_list(self, db: DBHandler):
         """Test get_album_list method."""
         # Add multiple albums
         db.write_to_database(
@@ -745,7 +744,7 @@ class TestDBHandlerCoreMethods:
         assert albums[0]["oid"] == 920
         assert albums[1]["oid"] == 921
 
-    def test_delete_album_tracks(self, db):
+    def test_delete_album_tracks(self, db: DBHandler):
         """Test delete_album_tracks method."""
         # Add album and tracks
         db.write_to_database(
@@ -808,7 +807,7 @@ class TestDBHandlerCoreMethods:
         finally:
             Path(db_path).unlink(missing_ok=True)
 
-    def test_gme_library_columns(self, db):
+    def test_gme_library_columns(self, db: DBHandler):
         """Test gme_library_columns property."""
         columns = db.gme_library_columns
         assert isinstance(columns, list)
@@ -817,7 +816,7 @@ class TestDBHandlerCoreMethods:
         assert "num_tracks" in columns
         assert "path" in columns
 
-    def test_update_tracks(self, db):
+    def test_update_tracks(self, db: DBHandler):
         """Test update_tracks method."""
 
         # Create a temporary directory for album
@@ -885,7 +884,7 @@ class TestDBHandlerCoreMethods:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def test_update_album(self, db):
+    def test_update_album(self, db: DBHandler):
         """Test update_album method."""
 
         temp_dir = Path(tempfile.mkdtemp())
@@ -939,7 +938,7 @@ class TestDBHandlerCoreMethods:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def test_delete_album(self, db):
+    def test_delete_album(self, db: DBHandler):
         """Test delete_album method."""
 
         temp_dir = Path(tempfile.mkdtemp())
@@ -981,7 +980,7 @@ class TestDBHandlerCoreMethods:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def test_replace_cover(self, db):
+    def test_replace_cover(self, db: DBHandler):
         """Test replace_cover method."""
 
         temp_dir = Path(tempfile.mkdtemp())
@@ -1021,7 +1020,7 @@ class TestDBHandlerCoreMethods:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def test_cleanup_album(self, db):
+    def test_cleanup_album(self, db: DBHandler):
         """Test cleanup_album method."""
 
         temp_dir = Path(tempfile.mkdtemp())
@@ -1071,7 +1070,7 @@ class TestDBHandlerCoreMethods:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def test_extract_ogg_metadata(self, db):
+    def test_extract_ogg_metadata(self, db: DBHandler):
         """Test extracting metadata from OGG Vorbis files."""
         # Get path to test MP3 file
         test_mp3 = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"
@@ -1134,7 +1133,7 @@ class TestDBHandlerCoreMethods:
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def test_extract_ogg_metadata_no_tags(self, db):
+    def test_extract_ogg_metadata_no_tags(self, db: DBHandler):
         """Test extracting metadata from OGG file without tags."""
         # Get path to test MP3 file
         test_mp3 = Path(__file__).parent.parent / "fixtures" / "test_audio.mp3"

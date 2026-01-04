@@ -18,11 +18,12 @@
 - **Database Layer**: Unified DBHandler class (`src/ttmp32gme/db_handler.py`)
   - All database operations go through DBHandler singleton
   - Thread-safe SQLite with `check_same_thread=False`
-  - Never use raw cursors outside DBHandler - always use `db.execute()`, `db.fetchone()`, etc.
+  - Never use raw cursors outside DBHandler - always use `with db.execute_context()as cursor:`, `db.fetchone()`, etc.
 - **Validation**: Pydantic models in `db_handler.py` validate all frontend input
 - **Dependencies**: tttool (external binary), ffmpeg (optional for OGG)
 
 ## Development Workflow
+Write clean, maintainable code with short, atomic functions and clear variable names. Avoid duplicate code.
 
 ### Bootstrap & Setup
 The setup is performed for you by `.github/workflows/copilot-setup-steps.yml`
@@ -181,7 +182,7 @@ except ValidationError as e:
 
 ### Adding a New Database Operation
 1. Add method to `DBHandler` class in `src/ttmp32gme/db_handler.py`
-2. Use `self.execute()`, `self.fetchone()`, `self.commit()` internally
+2. Use `with self.execute_context() as cursor:`, `self.fetchone()`, `self.commit()` internally
 3. Call from Flask route: `db.new_method()`
 
 ### Adding a New Route

@@ -10,10 +10,10 @@ Use SQLite parameterized queries with `?` placeholders for all data values.
 
 ```python
 # ✅ Correct
-db.execute("SELECT * FROM tracks WHERE parent_oid=?", (oid,))
+db.fetchone("SELECT * FROM tracks WHERE parent_oid=?", (oid,))
 
 # ❌ Wrong
-db.execute(f"SELECT * FROM tracks WHERE parent_oid={oid}")
+db.fetchone(f"SELECT * FROM tracks WHERE parent_oid={oid}")
 ```
 
 ### 2. Validate Table Names (Required)
@@ -60,12 +60,12 @@ All inputs protected:
 |----------------|----------|
 | Table validation | `DBHandler._validate_table_name()` |
 | Field validation | `DBHandler._validate_field_names()` |
-| Value parameterization | `db.execute(query, params)` |
+| Value parameterization | `with db.execute_context(query, params) as cursor:` |
 | Security tests | `tests/test_sql_injection.py` |
 
 ## Checklist for New Database Operations
 
-1. ✅ Use `db.execute(query, params)` with parameterized queries
+1. ✅ Use `with db.execute_context(query, params):` with parameterized queries
 2. ✅ Use tables from `VALID_TABLES` (or update whitelist)
 3. ✅ Use `write_to_database()` or `update_table_entry()` for dynamic fields
 4. ✅ Add security tests

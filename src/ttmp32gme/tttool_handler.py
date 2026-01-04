@@ -87,12 +87,10 @@ scriptcodes:
                         )
 
                 codes[script] = last_code
-                db_handler.execute(
+                db_handler.execute_and_commit(
                     "INSERT INTO script_codes VALUES (?, ?)", (script, last_code)
                 )
                 f.write(f"  {script}: {last_code}\n")
-
-        db_handler.commit()
 
     return codes_file
 
@@ -202,7 +200,7 @@ def convert_tracks(
 
         # Update track script in database
         # Using db_handler methods
-        db_handler.execute(
+        db_handler.execute_context(
             "UPDATE tracks SET tt_script=? WHERE parent_oid=? AND track=?",
             (f"t{i}", album["oid"], track["track"]),
         )

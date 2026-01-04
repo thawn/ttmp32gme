@@ -70,14 +70,11 @@ class TestGetTttoolParameters:
         db_handler.close()
         Path(db_path).unlink(missing_ok=True)
 
-    def test_get_tttool_parameters_basic(self, db):
+    def test_get_tttool_parameters_basic(self, db: DBHandler):
         """Test retrieving tttool parameters."""
         # Add some tt_ parameters
-        db.execute("UPDATE config SET value='1200' WHERE param='tt_dpi'")
-        # Use UPDATE OR INSERT pattern
-        db.execute("DELETE FROM config WHERE param='tt_pixel-size'")
-        db.execute("INSERT INTO config (param, value) VALUES ('tt_pixel-size', '2')")
-        db.commit()
+        db.set_config_value("tt_dpi", "1200")
+        db.set_config_value("tt_pixel-size", "2")
 
         result = get_tttool_parameters(db)
 
@@ -86,11 +83,9 @@ class TestGetTttoolParameters:
         assert "pixel-size" in result
         assert result["pixel-size"] == "2"
 
-    def test_get_tttool_parameters_empty(self, db):
+    def test_get_tttool_parameters_empty(self, db: DBHandler):
         """Test with no tt_ parameters."""
-        # Remove any tt_ parameters
-        db.execute("DELETE FROM config WHERE param LIKE 'tt_%'")
-        db.commit()
+        db.execute_and_commit("DELETE FROM config WHERE param LIKE 'tt_%'")
 
         result = get_tttool_parameters(db)
 
@@ -119,8 +114,7 @@ class TestGetTttoolCommand:
         mock_get_exec.return_value = "/usr/bin/tttool"
 
         # Add some parameters
-        db.execute("UPDATE config SET value='1200' WHERE param='tt_dpi'")
-        db.commit()
+        db.execute_and_commit("UPDATE config SET value='1200' WHERE param='tt_dpi'")
 
         result = get_tttool_command(db)
 
@@ -184,9 +178,10 @@ scripts:
     def test_generate_codes_yaml_reuses_existing(self, db):
         """Test that existing codes are reused."""
         # Add existing code - delete first in case it exists
-        db.execute("DELETE FROM script_codes WHERE script='play'")
-        db.execute("INSERT INTO script_codes (script, code) VALUES ('play', 2000)")
-        db.commit()
+        db.execute_and_commit("DELETE FROM script_codes WHERE script='play'")
+        db.execute_and_commit(
+            "INSERT INTO script_codes (script, code) VALUES ('play', 2000)"
+        )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             yaml_file = Path(tmpdir) / "album.yaml"

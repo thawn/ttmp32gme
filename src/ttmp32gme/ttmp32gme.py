@@ -100,7 +100,6 @@ def get_db():
         else:
             config_file = check_config_file()
         db_handler = DBHandler(str(config_file))
-        db_handler.connect()
     return db_handler
 
 
@@ -119,11 +118,7 @@ def fetch_config() -> Dict[str, Any]:
             default_path = str(get_default_library_path())
 
         # Save to database
-        db.execute(
-            "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)",
-            ("library_path", default_path),
-        )
-        db.commit()
+        db.insert_or_replace_config("library_path", default_path)
         logger.info(f"Initialized library_path in database: {default_path}")
         temp_config["library_path"] = default_path
 
@@ -183,9 +178,8 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
 
     # Update database
     for param, value in config_params.items():
-        db.execute("UPDATE config SET value=? WHERE param=?", (value, param))
+        db.set_config_value(param, value)
 
-    db.commit()
     config = fetch_config()
     return config, answer
 

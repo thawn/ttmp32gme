@@ -285,10 +285,9 @@ class TestCreatePrintLayout:
                 )
             except sqlite3.IntegrityError:
                 # Already exists, update it
-                db_handler.execute(
+                db_handler.execute_and_commit(
                     "UPDATE script_codes SET code=? WHERE script=?", (code, script)
                 )
-                db_handler.commit()
 
         yield db_handler
 
