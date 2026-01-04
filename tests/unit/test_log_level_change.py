@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 def test_apply_log_level_sets_root_logger():
     """Test that apply_log_level sets the root logger level."""
-    from ttmp32gme.ttmp32gme import apply_log_level
+    from ttmp32gme.log_handler import apply_log_level
 
     root_logger = logging.getLogger()
     original_level = root_logger.level
@@ -35,7 +35,7 @@ def test_apply_log_level_sets_root_logger():
 
 def test_apply_log_level_sets_werkzeug_logger():
     """Test that apply_log_level sets werkzeug logger appropriately."""
-    from ttmp32gme.ttmp32gme import apply_log_level
+    from ttmp32gme.log_handler import apply_log_level
 
     werkzeug_logger = logging.getLogger("werkzeug")
     root_logger = logging.getLogger()
@@ -67,7 +67,7 @@ def test_apply_log_level_sets_werkzeug_logger():
 
 def test_apply_log_level_sets_waitress_logger():
     """Test that apply_log_level sets waitress logger appropriately."""
-    from ttmp32gme.ttmp32gme import apply_log_level
+    from ttmp32gme.log_handler import apply_log_level
 
     waitress_logger = logging.getLogger("waitress")
     root_logger = logging.getLogger()
@@ -99,7 +99,7 @@ def test_apply_log_level_sets_waitress_logger():
 
 def test_apply_log_level_logs_info_message(caplog):
     """Test that apply_log_level logs an info message."""
-    from ttmp32gme.ttmp32gme import apply_log_level
+    from ttmp32gme.log_handler import apply_log_level
 
     root_logger = logging.getLogger()
     original_level = root_logger.level
