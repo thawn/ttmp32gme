@@ -335,21 +335,61 @@ def get_executable_path(executable_name: str) -> Optional[str]:
         if bundled_path.exists() and os.access(bundled_path, os.X_OK):
             return str(bundled_path)
 
-    # Check if it's in PATH
+    # Check if it's in PATH using shutil.which (cross-platform)
     result = shutil.which(executable_name)
     if result:
         return result
 
     # Check common installation locations
-    common_paths = [
-        Path("/usr/local/bin"),
-        Path("/usr/bin"),
-        Path.home() / "bin",
-        Path.home() / ".local" / "bin",
-    ]
+    common_paths = []
 
     if platform.system() == "Windows":
+        # Windows-specific Chrome/Chromium installation paths
+        if executable_name in [
+            "chrome",
+            "google-chrome",
+            "chromium",
+            "chromium-browser",
+        ]:
+            # Map various names to their actual executable locations
+            chrome_paths = [
+                # Google Chrome in Program Files (64-bit)
+                Path(os.environ.get("ProgramFiles", "C:\\Program Files"))
+                / "Google"
+                / "Chrome"
+                / "Application"
+                / "chrome.exe",
+                # Google Chrome in Program Files (x86) (32-bit)
+                Path(os.environ.get("ProgramFiles(x86)", "C:\\Program Files (x86)"))
+                / "Google"
+                / "Chrome"
+                / "Application"
+                / "chrome.exe",
+                # Chromium in LocalAppData
+                Path(os.environ.get("LocalAppData", Path.home() / "AppData" / "Local"))
+                / "Chromium"
+                / "Application"
+                / "chrome.exe",
+                # Google Chrome in LocalAppData (per-user install)
+                Path(os.environ.get("LocalAppData", Path.home() / "AppData" / "Local"))
+                / "Google"
+                / "Chrome"
+                / "Application"
+                / "chrome.exe",
+            ]
+            for chrome_path in chrome_paths:
+                if chrome_path.exists() and os.access(chrome_path, os.X_OK):
+                    return str(chrome_path)
+        # Add .exe extension for other Windows executables
         executable_name += ".exe"
+    else:
+        # Unix-like systems
+        common_paths = [
+            Path("/usr/local/bin"),
+            Path("/usr/bin"),
+            Path.home() / "bin",
+            Path.home() / ".local" / "bin",
+        ]
 
     for path in common_paths:
         full_path = path / executable_name
