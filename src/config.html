@@ -96,7 +96,7 @@ var changeLogLevel = function(){
 	});
 }
 
-// Auto-refresh logs every 3 seconds
+// Auto-refresh logs every 5 seconds
 var logRefreshInterval;
 
 $(function(){
@@ -118,8 +118,8 @@ $(function(){
 	// Initial log load
 	loadLogs();
 
-	// Auto-refresh logs every 3 seconds
-	logRefreshInterval = setInterval(loadLogs, 3000);
+	// Auto-refresh logs every 5 seconds
+	logRefreshInterval = setInterval(loadLogs, 5000);
 });
 
 </script>
@@ -199,7 +199,7 @@ $(function(){
 		<h4 class="panel-title">Server Logs:</h4>
 	</div>
 	<div class="panel-body">
-		<p>View recent server logs. Logs are automatically refreshed every 3 seconds. Change the log level above to control verbosity.</p>
+		<p>View recent server logs. Logs are automatically refreshed every 5 seconds. Change the log level above to control verbosity.</p>
 		<button type="button" id="refresh-logs" class="btn btn-info btn-sm" data-toggle="tooltip"
 			title="Manually refresh the log display">
 			<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Refresh Now

@@ -36,7 +36,7 @@ from ttmp32gme.db_handler import (
     DBHandler,
     LibraryActionModel,
 )
-from ttmp32gme.log_handler import MemoryLogHandler
+from ttmp32gme.log_handler import MemoryLogHandler, apply_log_level
 from ttmp32gme.print_handler import (
     create_print_layout,
     format_print_button,
@@ -181,9 +181,7 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
     # Handle log level changes
     if "log_level" in config_params:
         level_str = config_params["log_level"]
-        level = getattr(logging, level_str, logging.WARNING)
-        logging.getLogger().setLevel(level)
-        logger.info(f"Log level changed to {level_str}")
+        apply_log_level(level_str)
 
     # Validate DPI and pixel size
     if "tt_dpi" in config_params and "tt_pixel-size" in config_params:
@@ -628,6 +626,7 @@ def get_logs():
     """Get recent log entries."""
     num_lines = request.args.get("lines", default=100, type=int)
     logs = memory_handler.get_logs(num_lines)
+    logger.debug(f"Serving {len(logs)} log lines")
     return jsonify({"success": True, "logs": logs})
 
 
@@ -645,9 +644,7 @@ def set_log_level():
         return jsonify({"success": False, "error": "Invalid log level"}), 400
 
     # Set the log level
-    level = getattr(logging, level_str)
-    logging.getLogger().setLevel(level)
-    logger.info(f"Log level changed to {level_str}")
+    apply_log_level(level_str)
 
     # Save to config
     db = get_db()
@@ -775,10 +772,10 @@ def main():
 
     # Set logging level based on verbose flag (do this early)
     if args.verbose == 1:
-        logging.getLogger().setLevel(logging.INFO)
+        apply_log_level("INFO")
         logger.info("Verbose mode enabled (INFO level)")
     elif args.verbose >= 2:
-        logging.getLogger().setLevel(logging.DEBUG)
+        apply_log_level("DEBUG")
         logger.debug("Verbose mode enabled (DEBUG level)")
 
     if args.version:
@@ -812,8 +809,7 @@ def main():
     # Apply log level from config if not overridden by command line
     if args.verbose == 0:  # Only apply config if -v/-vv not used
         log_level_str = config.get("log_level", "WARNING")
-        log_level = getattr(logging, log_level_str, logging.WARNING)
-        logging.getLogger().setLevel(log_level)
+        apply_log_level(log_level_str)
         logger.info(f"Log level set to {log_level_str} from config")
 
     # Override config with command-line args
