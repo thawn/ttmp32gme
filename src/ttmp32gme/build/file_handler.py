@@ -352,6 +352,9 @@ def get_executable_path(executable_name: str) -> Optional[str]:
             "chromium-browser",
         ]:
             # Map various names to their actual executable locations
+            local_appdata = Path(
+                os.environ.get("LocalAppData", Path.home() / "AppData" / "Local")
+            )
             chrome_paths = [
                 # Google Chrome in Program Files (64-bit)
                 Path(os.environ.get("ProgramFiles", "C:\\Program Files"))
@@ -366,16 +369,9 @@ def get_executable_path(executable_name: str) -> Optional[str]:
                 / "Application"
                 / "chrome.exe",
                 # Chromium in LocalAppData
-                Path(os.environ.get("LocalAppData", Path.home() / "AppData" / "Local"))
-                / "Chromium"
-                / "Application"
-                / "chrome.exe",
+                local_appdata / "Chromium" / "Application" / "chrome.exe",
                 # Google Chrome in LocalAppData (per-user install)
-                Path(os.environ.get("LocalAppData", Path.home() / "AppData" / "Local"))
-                / "Google"
-                / "Chrome"
-                / "Application"
-                / "chrome.exe",
+                local_appdata / "Google" / "Chrome" / "Application" / "chrome.exe",
             ]
             for chrome_path in chrome_paths:
                 if chrome_path.exists() and os.access(chrome_path, os.X_OK):
