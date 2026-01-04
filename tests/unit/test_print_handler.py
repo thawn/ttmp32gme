@@ -424,7 +424,8 @@ class TestCreatePdf:
         mock_is_container,
     ):
         """Test PDF creation adds --no-sandbox flag when running in container."""
-        mock_get_exec.return_value = "/usr/bin/chromium"
+        chromium_path = "/usr/bin/chromium"
+        mock_get_exec.return_value = chromium_path
         mock_is_container.return_value = True  # Simulate running in container
 
         # Mock the process - poll() returns None (still running)
@@ -451,7 +452,7 @@ class TestCreatePdf:
             call_args = mock_popen.call_args[0][0]
             assert "--no-sandbox" in call_args
             # Verify it's positioned right after chromium path
-            chromium_index = call_args.index("/usr/bin/chromium")
+            chromium_index = call_args.index(chromium_path)
             assert call_args[chromium_index + 1] == "--no-sandbox"
 
     @patch("ttmp32gme.print_handler.is_running_in_container")

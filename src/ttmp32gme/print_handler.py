@@ -324,7 +324,8 @@ def create_pdf(
     # This is necessary because containers typically don't have the required
     # Linux capabilities for Chromium's sandbox to work
     if is_running_in_container():
-        args.insert(1, "--no-sandbox")  # Insert after chromium_path
+        # Insert after chromium path (first element) but before other args
+        args.insert(1, "--no-sandbox")
         logger.debug("Running in container, adding --no-sandbox flag to Chromium")
 
     logger.info(f"Creating PDF with {found_name}: {' '.join(args)}")
