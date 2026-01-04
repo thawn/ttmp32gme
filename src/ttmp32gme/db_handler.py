@@ -2,6 +2,7 @@ import io
 import logging
 import shutil
 import sqlite3
+import threading
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -216,16 +217,21 @@ class DBHandler:
         self.db_path = db_path
         self.conn: Optional[sqlite3.Connection] = None
         self._gme_library_columns: Optional[List[str]] = None
+        # Reentrant thread lock to serialize database operations when using check_same_thread=False
+        # This prevents concurrent cursor operations that cause sqlite3.InterfaceError
+        # RLock allows the same thread to acquire the lock multiple times (e.g., execute + commit)
+        self._db_lock = threading.RLock()
 
     @property
     def gme_library_columns(self) -> List[str]:
         if self._gme_library_columns is None:
-            self.connect()
-            assert self.conn is not None
-            cursor = self.conn.cursor()
-            cursor.execute("PRAGMA table_info(gme_library);")
-            self._gme_library_columns = [row[1] for row in cursor.fetchall()]
-            cursor.close()
+            with self._db_lock:
+                self.connect()
+                assert self.conn is not None
+                cursor = self.conn.cursor()
+                cursor.execute("PRAGMA table_info(gme_library);")
+                self._gme_library_columns = [row[1] for row in cursor.fetchall()]
+                cursor.close()
         return self._gme_library_columns
 
     def connect(self):
@@ -243,124 +249,138 @@ class DBHandler:
             self.conn = None
 
     def initialize(self):
-        self.connect()
-        assert self.conn is not None
-        cursor = self.conn.cursor()
-        cursor.execute(
+        with self._db_lock:
+            self.connect()
+            assert self.conn is not None
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS config (
+                param TEXT NOT NULL UNIQUE,
+                value TEXT,
+                PRIMARY KEY(param)
+            );
             """
-        CREATE TABLE IF NOT EXISTS config (
-            param TEXT NOT NULL UNIQUE,
-            value TEXT,
-            PRIMARY KEY(param)
-        );
+            )
+            cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS gme_library (
+                oid INTEGER NOT NULL UNIQUE,
+                album_title TEXT,
+                album_artist TEXT,
+                album_year INTEGER,
+                num_tracks INTEGER NOT NULL DEFAULT 0,
+                picture_filename TEXT,
+                gme_file TEXT,
+                path TEXT,
+                player_mode TEXT DEFAULT 'music',
+                PRIMARY KEY(`oid`)
+            );
+            """
+            )
+            cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS script_codes (
+                script TEXT NOT NULL UNIQUE,
+                code INTEGER NOT NULL,
+                PRIMARY KEY(script)
+            );
+            """
+            )
+            cursor.execute(
+                """
+            CREATE TABLE IF NOT EXISTS tracks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parent_oid	INTEGER NOT NULL,
+                album	TEXT,
+                artist	TEXT,
+                disc	INTEGER,
+                duration	INTEGER,
+                genre	TEXT,
+                lyrics	TEXT,
+                title	TEXT,
+                track	INTEGER,
+                filename	TEXT,
+                tt_script	TEXT
+            );
+            """
+            )
+            cursor.executescript(
+                """
+                INSERT OR IGNORE INTO config VALUES('host','127.0.0.1');
+                INSERT OR IGNORE INTO config VALUES('port','10020');
+                INSERT OR IGNORE INTO config VALUES('version','2.0.0');
+                INSERT OR IGNORE INTO config VALUES('open_browser','TRUE');
+                INSERT OR IGNORE INTO config VALUES('tt_dpi','1200');
+                INSERT OR IGNORE INTO config VALUES('tt_code-dim',NULL);
+                INSERT OR IGNORE INTO config VALUES('tt_pixel-size','2');
+                INSERT OR IGNORE INTO config VALUES('tt_transscript',NULL);
+                INSERT OR IGNORE INTO config VALUES('audio_format','mp3');
+                INSERT OR IGNORE INTO config VALUES('print_max_track_controls','24');
+                INSERT OR IGNORE INTO config VALUES('print_page_size','A4');
+                INSERT OR IGNORE INTO config VALUES('print_page_margin','0.5in');
+                INSERT OR IGNORE INTO config VALUES('print_show_cover','TRUE');
+                INSERT OR IGNORE INTO config VALUES('print_show_album_info','TRUE');
+                INSERT OR IGNORE INTO config VALUES('print_show_album_controls','TRUE');
+                INSERT OR IGNORE INTO config VALUES('print_show_tracks','TRUE');
+                INSERT OR IGNORE INTO config VALUES('print_show_general_controls','FALSE');
+                INSERT OR IGNORE INTO config VALUES('print_num_cols','1');
+                INSERT OR IGNORE INTO config VALUES('print_tile_size',NULL);
+                INSERT OR IGNORE INTO config VALUES('print_preset','list');
+                INSERT OR IGNORE INTO config VALUES('pen_language','GERMAN');
+                INSERT OR IGNORE INTO config VALUES('library_path','');
+            """
+            )
+            cursor.executescript(
+                """
+                INSERT OR IGNORE INTO script_codes VALUES('next',3944);
+                INSERT OR IGNORE INTO script_codes VALUES('prev',3945);
+                INSERT OR IGNORE INTO script_codes VALUES('stop',3946);
+                INSERT OR IGNORE INTO script_codes VALUES('play',3947);
+                INSERT OR IGNORE INTO script_codes VALUES('t0',2663);
+                INSERT OR IGNORE INTO script_codes VALUES('t1',2664);
+                INSERT OR IGNORE INTO script_codes VALUES('t2',2665);
+                INSERT OR IGNORE INTO script_codes VALUES('t3',2666);
+                INSERT OR IGNORE INTO script_codes VALUES('t4',2667);
+                INSERT OR IGNORE INTO script_codes VALUES('t5',2047);
+                INSERT OR IGNORE INTO script_codes VALUES('t6',2048);
+                INSERT OR IGNORE INTO script_codes VALUES('t7',2049);
+                INSERT OR IGNORE INTO script_codes VALUES('t8',2050);
+                INSERT OR IGNORE INTO script_codes VALUES('t9',2051);
+                INSERT OR IGNORE INTO script_codes VALUES('t10',2052);
+                INSERT OR IGNORE INTO script_codes VALUES('t11',2053);
+                INSERT OR IGNORE INTO script_codes VALUES('t12',2054);
+                INSERT OR IGNORE INTO script_codes VALUES('t13',2055);
+                INSERT OR IGNORE INTO script_codes VALUES('t14',2056);
+                INSERT OR IGNORE INTO script_codes VALUES('t15',2057);
+                INSERT OR IGNORE INTO script_codes VALUES('t16',2058);
+                INSERT OR IGNORE INTO script_codes VALUES('t17',2059);
+                INSERT OR IGNORE INTO script_codes VALUES('t18',2060);
+                INSERT OR IGNORE INTO script_codes VALUES('t19',2061);
+                INSERT OR IGNORE INTO script_codes VALUES('t20',2062);
+                INSERT OR IGNORE INTO script_codes VALUES('t21',2063);
+                INSERT OR IGNORE INTO script_codes VALUES('t22',2064);
+                INSERT OR IGNORE INTO script_codes VALUES('t23',2065);
         """
-        )
-        cursor.execute(
-            """
-        CREATE TABLE IF NOT EXISTS gme_library (
-            oid INTEGER NOT NULL UNIQUE,
-            album_title TEXT,
-            album_artist TEXT,
-            album_year INTEGER,
-            num_tracks INTEGER NOT NULL DEFAULT 0,
-            picture_filename TEXT,
-            gme_file TEXT,
-            path TEXT,
-            player_mode TEXT DEFAULT 'music',
-            PRIMARY KEY(`oid`)
-        );
-        """
-        )
-        cursor.execute(
-            """
-        CREATE TABLE IF NOT EXISTS script_codes (
-            script TEXT NOT NULL UNIQUE,
-            code INTEGER NOT NULL,
-            PRIMARY KEY(script)
-        );
-        """
-        )
-        cursor.execute(
-            """
-        CREATE TABLE IF NOT EXISTS tracks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            parent_oid	INTEGER NOT NULL,
-            album	TEXT,
-            artist	TEXT,
-            disc	INTEGER,
-            duration	INTEGER,
-            genre	TEXT,
-            lyrics	TEXT,
-            title	TEXT,
-            track	INTEGER,
-            filename	TEXT,
-            tt_script	TEXT
-        );
-        """
-        )
-        cursor.executescript(
-            """
-            INSERT OR IGNORE INTO config VALUES('host','127.0.0.1');
-            INSERT OR IGNORE INTO config VALUES('port','10020');
-            INSERT OR IGNORE INTO config VALUES('version','2.0.0');
-            INSERT OR IGNORE INTO config VALUES('open_browser','TRUE');
-            INSERT OR IGNORE INTO config VALUES('tt_dpi','1200');
-            INSERT OR IGNORE INTO config VALUES('tt_code-dim',NULL);
-            INSERT OR IGNORE INTO config VALUES('tt_pixel-size','2');
-            INSERT OR IGNORE INTO config VALUES('tt_transscript',NULL);
-            INSERT OR IGNORE INTO config VALUES('audio_format','mp3');
-            INSERT OR IGNORE INTO config VALUES('print_max_track_controls','24');
-            INSERT OR IGNORE INTO config VALUES('print_page_size','A4');
-            INSERT OR IGNORE INTO config VALUES('print_page_margin','0.5in');
-            INSERT OR IGNORE INTO config VALUES('print_show_cover','TRUE');
-            INSERT OR IGNORE INTO config VALUES('print_show_album_info','TRUE');
-            INSERT OR IGNORE INTO config VALUES('print_show_album_controls','TRUE');
-            INSERT OR IGNORE INTO config VALUES('print_show_tracks','TRUE');
-            INSERT OR IGNORE INTO config VALUES('print_show_general_controls','FALSE');
-            INSERT OR IGNORE INTO config VALUES('print_num_cols','1');
-            INSERT OR IGNORE INTO config VALUES('print_tile_size',NULL);
-            INSERT OR IGNORE INTO config VALUES('print_preset','list');
-            INSERT OR IGNORE INTO config VALUES('pen_language','GERMAN');
-            INSERT OR IGNORE INTO config VALUES('library_path','');
-        """
-        )
-        cursor.executescript(
-            """
-            INSERT OR IGNORE INTO script_codes VALUES('next',3944);
-            INSERT OR IGNORE INTO script_codes VALUES('prev',3945);
-            INSERT OR IGNORE INTO script_codes VALUES('stop',3946);
-            INSERT OR IGNORE INTO script_codes VALUES('play',3947);
-            INSERT OR IGNORE INTO script_codes VALUES('t0',2663);
-            INSERT OR IGNORE INTO script_codes VALUES('t1',2664);
-            INSERT OR IGNORE INTO script_codes VALUES('t2',2665);
-            INSERT OR IGNORE INTO script_codes VALUES('t3',2666);
-            INSERT OR IGNORE INTO script_codes VALUES('t4',2667);
-            INSERT OR IGNORE INTO script_codes VALUES('t5',2047);
-            INSERT OR IGNORE INTO script_codes VALUES('t6',2048);
-            INSERT OR IGNORE INTO script_codes VALUES('t7',2049);
-            INSERT OR IGNORE INTO script_codes VALUES('t8',2050);
-            INSERT OR IGNORE INTO script_codes VALUES('t9',2051);
-            INSERT OR IGNORE INTO script_codes VALUES('t10',2052);
-            INSERT OR IGNORE INTO script_codes VALUES('t11',2053);
-            INSERT OR IGNORE INTO script_codes VALUES('t12',2054);
-            INSERT OR IGNORE INTO script_codes VALUES('t13',2055);
-            INSERT OR IGNORE INTO script_codes VALUES('t14',2056);
-            INSERT OR IGNORE INTO script_codes VALUES('t15',2057);
-            INSERT OR IGNORE INTO script_codes VALUES('t16',2058);
-            INSERT OR IGNORE INTO script_codes VALUES('t17',2059);
-            INSERT OR IGNORE INTO script_codes VALUES('t18',2060);
-            INSERT OR IGNORE INTO script_codes VALUES('t19',2061);
-            INSERT OR IGNORE INTO script_codes VALUES('t20',2062);
-            INSERT OR IGNORE INTO script_codes VALUES('t21',2063);
-            INSERT OR IGNORE INTO script_codes VALUES('t22',2064);
-            INSERT OR IGNORE INTO script_codes VALUES('t23',2065);
-    """
-        )
-        self.commit()
-        # Refresh column cache after table creation
-        self._populate_valid_columns()
+            )
+            self.commit()
+            # Refresh column cache after table creation
+            self._populate_valid_columns()
 
     def execute(self, query: str, params: Tuple[Any, ...] = ()) -> sqlite3.Cursor:
+        """Execute a database query.
+
+        Note: This method acquires the DB lock but returns a cursor that will be
+        used outside the lock. For thread-safe operations, use fetchall() or fetchone()
+        instead, which keep the entire operation within the lock.
+
+        Args:
+            query: SQL query to execute
+            params: Query parameters tuple
+
+        Returns:
+            Database cursor with query results
+        """
         self.connect()
         assert self.conn is not None
         cur = self.conn.cursor()
@@ -368,22 +388,50 @@ class DBHandler:
         return cur
 
     def fetchall(self, query: str, params: Tuple[Any, ...] = ()) -> List[sqlite3.Row]:
-        cur = self.execute(query, params)
-        results = cur.fetchall()
-        cur.close()
-        return results
+        """Execute query and fetch all results with thread-safe locking.
+
+        Args:
+            query: SQL query to execute
+            params: Query parameters tuple
+
+        Returns:
+            List of result rows
+        """
+        with self._db_lock:
+            self.connect()
+            assert self.conn is not None
+            cur = self.conn.cursor()
+            cur.execute(query, params)
+            results = cur.fetchall()
+            cur.close()
+            return results
 
     def fetchone(
         self, query: str, params: Tuple[Any, ...] = ()
     ) -> Optional[sqlite3.Row]:
-        cur = self.execute(query, params)
-        result = cur.fetchone()
-        cur.close()
-        return result
+        """Execute query and fetch one result with thread-safe locking.
+
+        Args:
+            query: SQL query to execute
+            params: Query parameters tuple
+
+        Returns:
+            Single result row or None
+        """
+        with self._db_lock:
+            self.connect()
+            assert self.conn is not None
+            cur = self.conn.cursor()
+            cur.execute(query, params)
+            result = cur.fetchone()
+            cur.close()
+            return result
 
     def commit(self):
-        if self.conn:
-            self.conn.commit()
+        """Commit database changes with thread-safe locking."""
+        with self._db_lock:
+            if self.conn:
+                self.conn.commit()
 
     def _populate_valid_columns(self):
         """Populate the cache of valid column names for each table."""
@@ -457,8 +505,9 @@ class DBHandler:
         placeholders = ", ".join("?" * len(fields))
         query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
 
-        self.execute(query, tuple(values))
-        self.commit()
+        with self._db_lock:
+            self.execute(query, tuple(values))
+            self.commit()
 
     def __enter__(self):
         self.connect()
@@ -562,14 +611,15 @@ class DBHandler:
         """
         query = "SELECT * FROM tracks WHERE parent_oid=? ORDER BY track"
         params = (album["oid"],)
-        cursor = self.execute(query, params)
 
-        columns = [desc[0] for desc in cursor.description]
-        tracks = {}
+        with self._db_lock:
+            cursor = self.execute(query, params)
+            columns = [desc[0] for desc in cursor.description]
+            tracks = {}
 
-        for row in cursor.fetchall():
-            track = dict(zip(columns, row))
-            tracks[track["track"]] = track
+            for row in cursor.fetchall():
+                track = dict(zip(columns, row))
+                tracks[track["track"]] = track
 
         return tracks
 
@@ -598,8 +648,9 @@ class DBHandler:
         set_clause = ", ".join(f"{field}=?" for field in fields)
         query = f"UPDATE {table} SET {set_clause} WHERE {keyname}"
 
-        self.execute(query, tuple(values + search_keys))
-        self.commit()
+        with self._db_lock:
+            self.execute(query, tuple(values + search_keys))
+            self.commit()
         return True
 
     def _extract_audio_metadata(
@@ -1009,30 +1060,33 @@ class DBHandler:
         Returns:
             True if successful
         """
-        for track in tracks:
-            # Get the track id from frontend
-            track_id = track.get("id")
+        with self._db_lock:
+            for track in tracks:
+                # Get the track id from frontend
+                track_id = track.get("id")
 
-            if not track_id:
-                raise ValueError(
-                    "Track has no id. "
-                    "Database migration to v2.0.1 may not have completed successfully."
-                )
+                if not track_id:
+                    raise ValueError(
+                        "Track has no id. "
+                        "Database migration to v2.0.1 may not have completed successfully."
+                    )
 
-            # Update only the fields sent from frontend: title, track, and parent_oid
-            track["parent_oid"] = new_parent_oid
+                # Update only the fields sent from frontend: title, track, and parent_oid
+                track["parent_oid"] = new_parent_oid
 
-            # Build UPDATE query with only the fields we have
-            update_fields = {k: v for k, v in track.items() if k != "id"}
+                # Build UPDATE query with only the fields we have
+                update_fields = {k: v for k, v in track.items() if k != "id"}
 
-            if update_fields:
-                set_clause = ", ".join(f"{field}=?" for field in update_fields.keys())
-                values = list(update_fields.values()) + [track_id]
-                query = f"UPDATE tracks SET {set_clause} WHERE id=?"
+                if update_fields:
+                    set_clause = ", ".join(
+                        f"{field}=?" for field in update_fields.keys()
+                    )
+                    values = list(update_fields.values()) + [track_id]
+                    query = f"UPDATE tracks SET {set_clause} WHERE id=?"
 
-                self.execute(query, tuple(values))
+                    self.execute(query, tuple(values))
 
-        self.commit()
+            self.commit()
         return True
 
     def update_album(self, album_data: Dict[str, Any]) -> int:
@@ -1087,9 +1141,10 @@ class DBHandler:
             remove_album(album_dir)
 
             # Delete from database
-            self.execute("DELETE FROM tracks WHERE parent_oid=?", (uid,))
-            self.execute("DELETE FROM gme_library WHERE oid=?", (uid,))
-            self.commit()
+            with self._db_lock:
+                self.execute("DELETE FROM tracks WHERE parent_oid=?", (uid,))
+                self.execute("DELETE FROM gme_library WHERE oid=?", (uid,))
+                self.commit()
 
         return uid
 
@@ -1102,8 +1157,9 @@ class DBHandler:
         Returns:
             Album OID
         """
-        self.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,))
-        self.commit()
+        with self._db_lock:
+            self.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,))
+            self.commit()
         return oid
 
     def cleanup_album(self, uid: int) -> int:
@@ -1182,21 +1238,22 @@ class DBHandler:
         """
         import re
 
-        cursor = self.execute("SELECT oid, path FROM gme_library")
-        rows = cursor.fetchall()
-        try:
-            for oid, old_path in rows:
-                updated_path = re.sub(
-                    re.escape(old_path), str(new_path.absolute()), old_path
-                )
-                cursor.execute(
-                    "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
-                )
-            self.commit()
-        except Exception as e:
-            assert self.conn is not None
-            self.conn.rollback()
-            raise RuntimeError(f"Error updating library paths: {e}")
+        with self._db_lock:
+            cursor = self.execute("SELECT oid, path FROM gme_library")
+            rows = cursor.fetchall()
+            try:
+                for oid, old_path in rows:
+                    updated_path = re.sub(
+                        re.escape(old_path), str(new_path.absolute()), old_path
+                    )
+                    cursor.execute(
+                        "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
+                    )
+                self.commit()
+            except Exception as e:
+                assert self.conn is not None
+                self.conn.rollback()
+                raise RuntimeError(f"Error updating library paths: {e}")
         return True
 
     def update_db(self) -> bool:
@@ -1394,20 +1451,25 @@ class DBHandler:
         for version_str in sorted(updates.keys(), key=Version):
             update_version = Version(version_str)
             if update_version > current_version:
-                try:
-                    for sql_or_func in updates[version_str]:
-                        if callable(sql_or_func):
-                            # Execute function (e.g., for encoding fixes)
-                            result = sql_or_func()
-                            logger.info(f"Executed update function, result: {result}")
-                        else:
-                            # Execute SQL
-                            self.execute(sql_or_func)
-                    self.commit()
-                except Exception as e:
-                    assert self.conn is not None
-                    self.conn.rollback()
-                    raise RuntimeError(f"Can't update config database.\n\tError: {e}")
+                with self._db_lock:
+                    try:
+                        for sql_or_func in updates[version_str]:
+                            if callable(sql_or_func):
+                                # Execute function (e.g., for encoding fixes)
+                                result = sql_or_func()
+                                logger.info(
+                                    f"Executed update function, result: {result}"
+                                )
+                            else:
+                                # Execute SQL
+                                self.execute(sql_or_func)
+                        self.commit()
+                    except Exception as e:
+                        assert self.conn is not None
+                        self.conn.rollback()
+                        raise RuntimeError(
+                            f"Can't update config database.\n\tError: {e}"
+                        )
 
         return True
 
