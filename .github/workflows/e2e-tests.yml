@@ -141,6 +141,7 @@ jobs:
         sudo mv tttool /usr/local/bin/tttool
 
         # Copy all .dylib files if they exist
+        # Note: tttool on macOS requires these dynamic libraries to run
         if ls *.dylib 1> /dev/null 2>&1; then
           sudo mv *.dylib /usr/local/bin/
         fi
@@ -250,7 +251,8 @@ jobs:
         Remove-Item -Recurse -Force $tempDir
 
         # Verify installation
-        & "$binDir\tttool.exe" --help
+        $tttoolPath = Join-Path $binDir "tttool.exe"
+        & $tttoolPath --help
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: tttool installation failed"
             exit 1

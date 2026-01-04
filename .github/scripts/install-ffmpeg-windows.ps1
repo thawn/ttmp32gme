@@ -44,7 +44,7 @@ function Install-Ffmpeg {
                     Write-Host "Error: ffmpeg directory not found in archive"
                     return $false
                 }
-                $ffmpegExe = Join-Path $ffmpegDir.FullName "bin/ffmpeg.exe"
+                $ffmpegExe = Join-Path (Join-Path $ffmpegDir.FullName "bin") "ffmpeg.exe"
                 if (-not (Test-Path $ffmpegExe)) {
                     Write-Host "Error: ffmpeg.exe not found at $ffmpegExe"
                     return $false
