@@ -3,7 +3,7 @@
 import sqlite3
 import tempfile
 from pathlib import Path
-from version import Version
+from packaging.version import Version
 
 import pytest
 
