@@ -267,18 +267,33 @@ jobs:
         uv pip install --system -e ".[test]"
 
     - name: Prepare test fixtures
-      shell: bash
+      shell: python
       run: |
-        # Bundled test audio file already exists in repo
-        ls -lh tests/fixtures/test_audio.mp3
+        import os
+        from pathlib import Path
+
+        # Verify bundled test audio file exists
+        test_audio = Path("tests/fixtures/test_audio.mp3")
+        if test_audio.exists():
+            print(f"Test audio file found: {test_audio} ({test_audio.stat().st_size} bytes)")
+        else:
+            raise FileNotFoundError(f"Test audio file not found: {test_audio}")
 
         # Create test cover image if needed
-        if [ ! -f tests/fixtures/test_cover.jpg ]; then
-          python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"
-        fi
+        test_cover = Path("tests/fixtures/test_cover.jpg")
+        if not test_cover.exists():
+            from PIL import Image
+            img = Image.new("RGB", (100, 100), color="green")
+            img.save(test_cover)
+            print(f"Created test cover image: {test_cover}")
+        else:
+            print(f"Test cover image found: {test_cover}")
 
-        # Verify files exist
-        ls -lh tests/fixtures/
+        # Verify all fixtures
+        print("\nTest fixtures:")
+        for f in Path("tests/fixtures").iterdir():
+            if f.is_file():
+                print(f"  {f.name} ({f.stat().st_size} bytes)")
 
     - name: Run E2E tests with pytest (includes tttool tests)
       shell: bash
