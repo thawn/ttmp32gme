@@ -95,6 +95,118 @@ class TestFileHandler:
         result = get_executable_path("nonexistent_executable_12345")
         assert result is None
 
+    @patch("ttmp32gme.build.file_handler.platform.system")
+    @patch("ttmp32gme.build.file_handler.os.environ")
+    @patch("ttmp32gme.build.file_handler.os.access")
+    @patch("ttmp32gme.build.file_handler.shutil.which")
+    def test_get_executable_path_chrome_windows_program_files(
+        self, mock_which, mock_access, mock_environ, mock_system
+    ):
+        """Test finding Chrome in Windows Program Files."""
+        mock_system.return_value = "Windows"
+        mock_which.return_value = None  # Not in PATH
+        mock_access.return_value = True  # File is executable
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create fake Chrome executable in Program Files
+            chrome_dir = Path(tmpdir) / "Google" / "Chrome" / "Application"
+            chrome_dir.mkdir(parents=True)
+            chrome_exe = chrome_dir / "chrome.exe"
+            chrome_exe.write_text("fake chrome")
+
+            # Mock environment to point to our temp directory
+            mock_environ.get.side_effect = lambda key, default: {
+                "ProgramFiles": str(tmpdir),
+                "ProgramFiles(x86)": "C:\\Program Files (x86)",
+                "LocalAppData": "C:\\Users\\TestUser\\AppData\\Local",
+            }.get(key, default)
+
+            result = get_executable_path("chrome")
+
+            # Should find chrome.exe in Program Files
+            assert result is not None
+            assert "chrome.exe" in result
+            assert str(chrome_exe) == result
+
+    @patch("ttmp32gme.build.file_handler.platform.system")
+    @patch("ttmp32gme.build.file_handler.os.environ")
+    @patch("ttmp32gme.build.file_handler.os.access")
+    @patch("ttmp32gme.build.file_handler.shutil.which")
+    def test_get_executable_path_chromium_windows_localappdata(
+        self, mock_which, mock_access, mock_environ, mock_system
+    ):
+        """Test finding Chromium in Windows LocalAppData."""
+        mock_system.return_value = "Windows"
+        mock_which.return_value = None  # Not in PATH
+        mock_access.return_value = True  # File is executable
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create fake Chromium executable in LocalAppData
+            chromium_dir = Path(tmpdir) / "Chromium" / "Application"
+            chromium_dir.mkdir(parents=True)
+            chromium_exe = chromium_dir / "chrome.exe"
+            chromium_exe.write_text("fake chromium")
+
+            # Mock environment to point to our temp directory
+            mock_environ.get.side_effect = lambda key, default: {
+                "ProgramFiles": "C:\\Program Files",
+                "ProgramFiles(x86)": "C:\\Program Files (x86)",
+                "LocalAppData": str(tmpdir),
+            }.get(key, default)
+
+            result = get_executable_path("chromium")
+
+            # Should find chromium.exe in LocalAppData
+            assert result is not None
+            assert "chrome.exe" in result
+            assert str(chromium_exe) == result
+
+    @patch("ttmp32gme.build.file_handler.platform.system")
+    @patch("ttmp32gme.build.file_handler.os.environ")
+    @patch("ttmp32gme.build.file_handler.os.access")
+    @patch("ttmp32gme.build.file_handler.shutil.which")
+    def test_get_executable_path_google_chrome_windows_localappdata(
+        self, mock_which, mock_access, mock_environ, mock_system
+    ):
+        """Test finding Chrome in Windows LocalAppData (per-user install)."""
+        mock_system.return_value = "Windows"
+        mock_which.return_value = None  # Not in PATH
+        mock_access.return_value = True  # File is executable
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create fake Chrome executable in LocalAppData
+            chrome_dir = Path(tmpdir) / "Google" / "Chrome" / "Application"
+            chrome_dir.mkdir(parents=True)
+            chrome_exe = chrome_dir / "chrome.exe"
+            chrome_exe.write_text("fake chrome")
+
+            # Mock environment to point to our temp directory
+            mock_environ.get.side_effect = lambda key, default: {
+                "ProgramFiles": "C:\\Program Files",
+                "ProgramFiles(x86)": "C:\\Program Files (x86)",
+                "LocalAppData": str(tmpdir),
+            }.get(key, default)
+
+            result = get_executable_path("google-chrome")
+
+            # Should find chrome.exe in LocalAppData
+            assert result is not None
+            assert "chrome.exe" in result
+            assert str(chrome_exe) == result
+
+    @patch("ttmp32gme.build.file_handler.platform.system")
+    @patch("ttmp32gme.build.file_handler.shutil.which")
+    def test_get_executable_path_windows_uses_which(self, mock_which, mock_system):
+        """Test that Windows still uses shutil.which for executables in PATH."""
+        mock_system.return_value = "Windows"
+        mock_which.return_value = "C:\\Windows\\System32\\cmd.exe"
+
+        result = get_executable_path("cmd")
+
+        # Should find cmd using shutil.which before checking common paths
+        assert result == "C:\\Windows\\System32\\cmd.exe"
+        mock_which.assert_called_once_with("cmd")
+
     def test_move_to_album(self):
         """Test moving files from temp to album directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
