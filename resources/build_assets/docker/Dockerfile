@@ -15,11 +15,13 @@ RUN apt-get update && \
         git \
         chromium \
         chromium-sandbox && \
+    # Update CA certificates to fix certificate issues
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Install uv for faster, more reliable package management
-RUN wget -qO- https://astral.sh/uv/install.sh | sh && \
-    mv /root/.local/bin/uv /usr/local/bin/uv
+# Using the official installation method for containers
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Install tttool (from releases)
 # Note: --no-check-certificate is required in some build environments due to SSL certificate chain issues.
@@ -36,13 +38,14 @@ RUN TTTOOL_VERSION="1.8.1" && \
 COPY . /app/
 
 # Install Python dependencies using uv
-RUN uv pip install --system --no-cache -e .
+# Using --native-tls to avoid certificate issues in containers
+RUN uv pip install --system --no-cache --native-tls -e .
 
 # Test stage - runs unit and integration tests
 FROM base AS test
 
 # Install test dependencies using uv
-RUN uv pip install --system --no-cache -e ".[test]"
+RUN uv pip install --system --no-cache --native-tls -e ".[test]"
 
 # Run tests
 RUN pytest tests/unit/ -v --tb=short
