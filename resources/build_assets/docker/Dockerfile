@@ -56,6 +56,10 @@ FROM base AS production
 RUN groupadd -g 1000 ttmp32gme && \
     useradd -r -u 1000 -g ttmp32gme -m -d /home/ttmp32gme -s /bin/bash ttmp32gme
 
+# Copy and set up entrypoint script
+COPY resources/build_assets/docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Set up directories and copy config
 # Use proper permissions instead of 777 for security
 RUN mkdir -p /data/library /mnt/tiptoi && \
@@ -74,11 +78,11 @@ EXPOSE 8080
 # Switch to non-root user
 USER ttmp32gme
 
-# Run the Python backend
-# Using ENTRYPOINT + CMD allows passing additional arguments to docker run
+# Run the Python backend with entrypoint script
+# Using ENTRYPOINT allows passing additional arguments to docker run
 # e.g., docker run thawn/ttmp32gme -vv
-ENTRYPOINT ["python", "-m", "ttmp32gme.ttmp32gme"]
-CMD ["--host=0.0.0.0", "--port=8080", "--database=/data/config.sqlite", "--library=/data/library"]
+# The entrypoint script combines defaults with user arguments
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Optional health check
 HEALTHCHECK --interval=5m --timeout=3s \
