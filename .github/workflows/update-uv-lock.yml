@@ -1,0 +1,68 @@
+name: Update uv.lock
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    paths:
+      - 'pyproject.toml'
+  pull_request:
+    branches: [ main, master, develop ]
+    paths:
+      - 'pyproject.toml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-lockfile:
+    name: Update uv.lock
+    runs-on: ubuntu-latest
+
+    # Skip if the commit message already indicates this is an automated lockfile update
+    if: "!contains(github.event.head_commit.message, 'Update uv.lock')"
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        # Use a token that can trigger workflows
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+
+    - name: Update lockfile
+      run: |
+        uv lock
+
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if git diff --exit-code uv.lock > /dev/null 2>&1; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+          echo "No changes to uv.lock"
+        else
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "uv.lock has been updated"
+        fi
+
+    - name: Commit and push changes
+      if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'push'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add uv.lock
+        git commit -m "Update uv.lock after pyproject.toml changes"
+        git push
+
+    - name: Warn on pull request
+      if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'pull_request'
+      run: |
+        echo "::warning::uv.lock is out of sync with pyproject.toml. Please run 'uv lock' locally and commit the changes."
+        exit 1
