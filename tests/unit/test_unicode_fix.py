@@ -58,7 +58,7 @@ class TestUnicodeFix:
 
             yield db_path
 
-    def test_read_legacy_db_without_fix_returns_garbage(self, legacy_db):
+    def test_read_legacy_db_without_fix_returns_garbage(self, legacy_db: str):
         """Test that reading legacy DB with encoding issues returns incorrect data.
 
         Note: SQLite 3 may not always raise an error with invalid UTF-8, but the data
@@ -82,7 +82,7 @@ class TestUnicodeFix:
 
         db.close()
 
-    def test_fix_text_encoding_fixes_gme_library(self, legacy_db):
+    def test_fix_text_encoding_fixes_gme_library(self, legacy_db: str):
         """Test that update_db fixes gme_library table encoding."""
         db = DBHandler(legacy_db)
 
@@ -110,7 +110,7 @@ class TestUnicodeFix:
 
         db.close()
 
-    def test_fix_text_encoding_fixes_tracks(self, legacy_db):
+    def test_fix_text_encoding_fixes_tracks(self, legacy_db: str):
         """Test that update_db fixes tracks table encoding."""
         db = DBHandler(legacy_db)
 
@@ -130,7 +130,7 @@ class TestUnicodeFix:
 
         db.close()
 
-    def test_update_db_fixes_encoding_for_version_2_0_1(self, legacy_db):
+    def test_update_db_fixes_encoding_for_version_2_0_1(self, legacy_db: str):
         """Test that update_db fixes encoding issues when upgrading to 2.0.1."""
         db = DBHandler(legacy_db)
 
@@ -142,7 +142,7 @@ class TestUnicodeFix:
         assert result is True
 
         # Verify version was updated
-        version = db.get_config_value("version")
+        version = str(db.get_config_value("version"))
         assert Version(version) > Version("2.0.0")
 
         # Verify data can now be read
