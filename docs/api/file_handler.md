@@ -2,13 +2,6 @@
 
 File system operations for ttmp32gme.
 
-```{eval-rst}
-.. automodule:: ttmp32gme.build.file_handler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ## Key Functions
 
 **make_new_album_dir(library_path, album_title, album_artist)**: Create album directory
@@ -39,4 +32,11 @@ album_dir = make_new_album_dir("/path/to/library", "Album", "Artist")
 tiptoi = get_tiptoi_dir()
 if tiptoi:
     print(f"Found at: {tiptoi}")
+```
+
+```{eval-rst}
+.. automodule:: ttmp32gme.build.file_handler
+   :members:
+   :undoc-members:
+   :show-inheritance:
 ```

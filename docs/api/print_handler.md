@@ -2,13 +2,6 @@
 
 Print layout generation for ttmp32gme.
 
-```{eval-rst}
-.. automodule:: ttmp32gme.print_handler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ## Key Functions
 
 **create_print_layout(album_ids, layout_config, db_handler)**: Generate HTML print layout
@@ -39,4 +32,11 @@ config = {
 }
 
 html = create_print_layout([123, 456], config, db)
+```
+
+```{eval-rst}
+.. automodule:: ttmp32gme.print_handler
+   :members:
+   :undoc-members:
+   :show-inheritance:
 ```

@@ -5,7 +5,8 @@
 Download pre-built executables from [releases page](https://github.com/thawn/ttmp32gme/releases), extract, and run. Open `http://localhost:10020` in browser.
 
 **Requirements**:
-- Chrome or Chromium browser (for PDF generation) - [Download Chrome](https://www.google.com/chrome/)
+- Chrome or Chromium browser (optional, for PDF generation) - [Download Chrome](https://www.google.com/chrome/)
+  - Note: Chromium is only needed if printing directly from your browser doesn't work. You can print control sheets directly from most browsers without Chromium.
 
 **Installation steps**:
 1. Download the appropriate ZIP file for your platform:
@@ -21,20 +22,7 @@ The executable includes all necessary dependencies (tttool, ffmpeg) except Chrom
 
 ## Linux
 
-### Python (Recommended)
-
-```bash
-git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme
-uv pip install -e .  # Recommended; or: pip install -e .
-```
-
-Install tttool: See [tttool installation](https://github.com/entropia/tip-toi-reveng#installation)
-
-Optional (OGG support): `sudo apt-get install ffmpeg`
-
-Run: `ttmp32gme` or `python -m ttmp32gme.ttmp32gme`
-
-### Podman
+### Podman (Recommended)
 
 **Pre-built image**:
 ```bash
@@ -46,6 +34,19 @@ podman run -d --rm \
 ```
 
 **Podman Compose**: Download [docker-compose.yml](https://raw.githubusercontent.com/thawn/ttmp32gme/master/docker-compose.yml), run `podman-compose up -d` (the docker-compose.yml file format is compatible with podman-compose)
+
+### Python
+
+```bash
+git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme
+uv pip install -e .  # Recommended; or: pip install -e .
+```
+
+Install tttool: See [tttool installation](https://github.com/entropia/tip-toi-reveng#installation)
+
+Optional (OGG support): `sudo apt-get install ffmpeg`
+
+Run: `ttmp32gme` or `python -m ttmp32gme.ttmp32gme`
 
 ## Command Line Options
 

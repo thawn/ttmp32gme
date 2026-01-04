@@ -2,16 +2,9 @@
 
 Main Flask application for ttmp32gme.
 
-```{eval-rst}
-.. automodule:: ttmp32gme.ttmp32gme
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ## Overview
 
-Flask web server providing UI and REST API for ttmp32gme.
+Flask web server providing UI and HTTP API for ttmp32gme.
 
 ## Key Functions
 
@@ -50,3 +43,10 @@ Options:
 - `library_path`: Album storage directory
 - `audio_format`: MP3 or OGG
 - `pen_language`: TipToi language
+
+```{eval-rst}
+.. automodule:: ttmp32gme.ttmp32gme
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```

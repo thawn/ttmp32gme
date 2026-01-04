@@ -2,7 +2,7 @@
 
 ## Web Interface
 
-Access at `http://localhost:10020` after starting ttmp32gme.
+Access at `http://localhost:10020` after starting ttmp32gme (or `http://localhost:8080` if using Docker/Podman).
 
 **Pages**:
 - **Upload** - Add MP3/OGG files and cover images
@@ -49,9 +49,9 @@ On Library page:
 
 ## Player Modes
 
-**Music**: Shuffle, repeat, playback controls
+**Music**: Play all tracks, then stop
 
-**Audiobook (TipToi)**: Sequential, resume from last position
+**Audiobook (TipToi)**: Play all tracks, repeat from beginning when finished
 
 ## Command Line
 
