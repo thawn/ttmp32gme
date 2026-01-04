@@ -74,8 +74,8 @@ EXPOSE 8080
 # Switch to non-root user
 USER ttmp32gme
 
-# Run the Python backend with production WSGI server
-CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080", "--database=/data/config.sqlite", "--library=/data/library", "--production"]
+# Run the Python backend with production WSGI server (default)
+CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080", "--database=/data/config.sqlite", "--library=/data/library"]
 
 # Optional health check
 HEALTHCHECK --interval=5m --timeout=3s \

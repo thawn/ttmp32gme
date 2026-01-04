@@ -38,24 +38,6 @@
 - **Copy fails**: Check pen storage space
 - **No audio**: Verify GME file copied, OID numbers match
 
-## Server Warnings
-
-**"WARNING: This is a development server"**:
-
-This warning appears when running with `-v` (verbose mode) and indicates Flask's built-in development server is in use. This is normal and acceptable for:
-- Personal use on your local machine
-- Development and testing
-
-**Why the warning?**
-- Flask's development server is single-threaded and not optimized for performance
-- It lacks production-grade security features
-- Not designed for handling many concurrent connections
-
-**Should you worry?**
-- **For local use**: No, it's perfectly fine
-- **For Docker/network deployment**: The Docker image uses Waitress (a production WSGI server) automatically
-- **For public internet exposure**: Don't expose directly; use a reverse proxy (nginx, Apache) or container orchestration
-
 ## Getting Help
 
 Search [GitHub issues](https://github.com/thawn/ttmp32gme/issues) or create new issue with:

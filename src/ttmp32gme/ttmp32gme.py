@@ -760,9 +760,9 @@ def main():
         "--no-browser", action="store_true", help="Do not open web browser on start"
     )
     parser.add_argument(
-        "--production",
+        "--dev",
         action="store_true",
-        help="Use production WSGI server (Waitress) instead of Flask dev server",
+        help="Use Flask development server instead of production WSGI server",
     )
 
     args = parser.parse_args()
@@ -833,8 +833,12 @@ def main():
     logger.info(f"Server running on http://{host}:{port}/")
     logger.info("Open this URL in your web browser to continue.")
 
-    # Run with production WSGI server or Flask dev server
-    if args.production:
+    # Run with Flask dev server or production WSGI server (Waitress is default)
+    if args.dev:
+        logger.info("Starting Flask development server...")
+        # Run Flask dev server (enable Flask debug mode only with -vv or more)
+        app.run(host=host, port=port, debug=(args.verbose >= 2))
+    else:
         logger.info("Starting production server (Waitress)...")
         try:
             from waitress import serve
@@ -845,9 +849,6 @@ def main():
                 "Waitress not installed. Reinstall with: 'uv pip install -e .' or 'pip install -e .'"
             )
             sys.exit(1)
-    else:
-        # Run Flask dev server (enable Flask debug mode only with -vv or more)
-        app.run(host=host, port=port, debug=(args.verbose >= 2))
 
 
 if __name__ == "__main__":

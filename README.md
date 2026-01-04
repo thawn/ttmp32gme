@@ -50,7 +50,6 @@ ttmp32gme --port 8080              # Custom port
 ttmp32gme --host 0.0.0.0           # Network access
 ttmp32gme --library /path/to/lib   # Custom library
 ttmp32gme -v                       # Increase verbosity (-v for INFO, -vv for DEBUG)
-ttmp32gme --production             # Use production WSGI server (recommended for network deployments)
 ttmp32gme --version                # Show version
 ttmp32gme --help                   # Show all options
 ```

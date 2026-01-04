@@ -1,4 +1,4 @@
-"""Tests for production flag and Waitress integration."""
+"""Tests for dev flag and production server behavior."""
 
 import subprocess
 import time
@@ -67,11 +67,11 @@ def _start_server_and_capture_output(args, timeout=5, wait_for_warning=False):
     return "".join(output_lines)
 
 
-class TestProductionFlag:
-    """Test --production flag and Waitress server."""
+class TestDevFlag:
+    """Test --dev flag and production server default behavior."""
 
-    def test_dev_server_shows_warning(self):
-        """Test that dev server shows warning in verbose mode."""
+    def test_default_uses_production_server(self):
+        """Test that production server is used by default (no --dev flag)."""
         args = [
             "python",
             "-m",
@@ -81,18 +81,19 @@ class TestProductionFlag:
             "--no-browser",
             "-v",
         ]
-        output = _start_server_and_capture_output(
-            args, timeout=7, wait_for_warning=True
-        )
+        output = _start_server_and_capture_output(args)
 
-        # Check for development server warning
+        # Check that production server is used
         assert (
-            "WARNING: This is a development server" in output
-        ), "Dev server should show warning"
-        assert "werkzeug" in output.lower(), "Warning should come from werkzeug"
+            "Starting production server" in output or "Serving on" in output
+        ), "Should use Waitress by default"
+        # Check that no development server warning is present
+        assert (
+            "WARNING: This is a development server" not in output
+        ), "Production server should not show warning"
 
-    def test_production_server_no_warning(self):
-        """Test that production server does not show warning."""
+    def test_dev_flag_shows_warning(self):
+        """Test that dev server shows warning when --dev flag is used."""
         args = [
             "python",
             "-m",
@@ -100,22 +101,24 @@ class TestProductionFlag:
             "--host=127.0.0.1",
             "--port=10031",
             "--no-browser",
-            "--production",
+            "--dev",
             "-v",
         ]
-        output = _start_server_and_capture_output(args)
+        output = _start_server_and_capture_output(
+            args, timeout=7, wait_for_warning=True
+        )
 
-        # Check that no development server warning is present
+        # Check for development server warning
         assert (
-            "WARNING: This is a development server" not in output
-        ), "Production server should not show warning"
-        # Check that Waitress is running
+            "WARNING: This is a development server" in output
+        ), "Dev server should show warning with --dev flag"
+        assert "werkzeug" in output.lower(), "Warning should come from werkzeug"
         assert (
-            "Starting production server" in output or "Serving on" in output
-        ), "Should use Waitress"
+            "Starting Flask development server" in output
+        ), "Should indicate Flask dev server"
 
-    def test_production_flag_in_help(self):
-        """Test that --production flag appears in help."""
+    def test_dev_flag_in_help(self):
+        """Test that --dev flag appears in help."""
         result = subprocess.run(
             ["python", "-m", "ttmp32gme.ttmp32gme", "--help"],
             capture_output=True,
@@ -124,7 +127,7 @@ class TestProductionFlag:
         )
 
         assert result.returncode == 0, "Help should succeed"
-        assert "--production" in result.stdout, "Help should mention --production flag"
+        assert "--dev" in result.stdout, "Help should mention --dev flag"
         assert (
-            "WSGI server" in result.stdout
-        ), "Help should explain production flag (with WSGI in uppercase)"
+            "development server" in result.stdout.lower()
+        ), "Help should explain dev flag"
