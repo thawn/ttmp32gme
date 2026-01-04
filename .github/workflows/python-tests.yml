@@ -3,8 +3,16 @@ name: Python Tests
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - 'src/ttmp32gme/**'
+      - 'tests/unit/**'
+      - 'tests/test_*.py'
   pull_request:
     branches: [ main, master, develop ]
+    paths:
+      - 'src/ttmp32gme/**'
+      - 'tests/unit/**'
+      - 'tests/test_*.py'
 
 permissions:
   contents: read
