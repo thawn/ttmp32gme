@@ -378,6 +378,36 @@ def get_executable_path(executable_name: str) -> Optional[str]:
                     return str(chrome_path)
         # Add .exe extension for other Windows executables
         executable_name += ".exe"
+    elif platform.system() == "Darwin":  # macOS
+        # macOS-specific Chrome/Chromium installation paths
+        if executable_name in [
+            "chrome",
+            "google-chrome",
+            "chromium",
+            "chromium-browser",
+        ]:
+            chrome_paths = [
+                # Google Chrome in /Applications
+                Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+                # Chromium in /Applications
+                Path("/Applications/Chromium.app/Contents/MacOS/Chromium"),
+                # Google Chrome in ~/Applications
+                Path.home()
+                / "Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                # Chromium in ~/Applications
+                Path.home() / "Applications/Chromium.app/Contents/MacOS/Chromium",
+            ]
+            for chrome_path in chrome_paths:
+                if chrome_path.exists() and os.access(chrome_path, os.X_OK):
+                    return str(chrome_path)
+
+        # Unix-like systems (including macOS fallback)
+        common_paths = [
+            Path("/usr/local/bin"),
+            Path("/usr/bin"),
+            Path.home() / "bin",
+            Path.home() / ".local" / "bin",
+        ]
     else:
         # Unix-like systems
         common_paths = [
