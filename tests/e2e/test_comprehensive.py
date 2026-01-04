@@ -1095,27 +1095,26 @@ class TestWebInterface:
             pdf_save_button.click()
             logger.info("Clicked PDF save button")
 
-            # Step 7: Wait for PDF generation
-            # The PDF is now created in a temporary file, but we mock tempfile.mkstemp
-            # to create it in the library folder so we can check for it
-            library_path = server_info["library_path"]
-            pdf_file = library_path / "print.pdf"
+            # Step 7: Wait for PDF to be downloaded by the browser
+            # Check the browser's download directory for the PDF file
+            download_dir = driver.download_dir
+            expected_pdf = download_dir / "print.pdf"
 
-            pdf_created = False
+            pdf_downloaded = False
             max_wait = 30  # seconds
             start_time = time.time()
 
             while time.time() - start_time < max_wait:
-                if pdf_file.exists() and pdf_file.stat().st_size > 0:
-                    pdf_created = True
-                    logger.info(f"PDF file created at {pdf_file}")
+                if expected_pdf.exists() and expected_pdf.stat().st_size > 0:
+                    pdf_downloaded = True
+                    logger.info(f"PDF file downloaded to {expected_pdf}")
                     break
                 time.sleep(1)
 
             # Read and log the server output for debugging
-            if not pdf_created:
+            if not pdf_downloaded:
                 logger.error("=" * 80)
-                logger.error("PDF WAS NOT CREATED - DUMPING SERVER LOGS")
+                logger.error("PDF WAS NOT DOWNLOADED - DUMPING SERVER LOGS")
                 logger.error("=" * 80)
 
                 if server_info.get("log_file") and server_info["log_file"].exists():
@@ -1130,16 +1129,23 @@ class TestWebInterface:
                 else:
                     logger.error("No server stderr log file found")
 
+                # Also check what files exist in the download directory
+                if download_dir.exists():
+                    files_in_download_dir = list(download_dir.iterdir())
+                    logger.error(
+                        f"Files in download directory: {files_in_download_dir}"
+                    )
+                else:
+                    logger.error("Download directory does not exist")
+
                 logger.error("=" * 80)
 
             assert (
-                pdf_created
-            ), f"PDF file not created within {max_wait} seconds at {pdf_file}"
+                pdf_downloaded
+            ), f"PDF file not downloaded within {max_wait} seconds to {expected_pdf}"
 
-            # The PDF should have been downloaded to the browser's download location
-            # In a real test, we'd check the browser's download directory
-            # For CI, we just verify the file was created and is valid
-            logger.info("PDF generation workflow completed successfully")
+            # Verify the downloaded PDF has valid content
+            logger.info("PDF generation and download workflow completed successfully")
 
         except NoSuchElementException:
             # If chromium is not available, the PDF save button won't be present

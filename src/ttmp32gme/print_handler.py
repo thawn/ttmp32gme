@@ -281,20 +281,10 @@ def create_pdf(
         return None
 
     # Create PDF in a temporary file
-    # Check if E2E test wants to override the temp directory
-    test_temp_dir = os.environ.get("TTMP32GME_TEST_TEMP_DIR")
-    if test_temp_dir:
-        # For E2E testing: create PDF in specified directory
-        pdf_file = Path(test_temp_dir) / "print.pdf"
-        # Create empty file for chromium to write to
-        pdf_file.touch()
-        temp_fd = None
-    else:
-        # Normal operation: create PDF in system temp directory
-        temp_fd, temp_path = tempfile.mkstemp(suffix=".pdf", prefix="ttmp32gme_print_")
-        pdf_file = Path(temp_path)
-        # Close the file descriptor as chromium will write to the file
-        os.close(temp_fd)
+    temp_fd, temp_path = tempfile.mkstemp(suffix=".pdf", prefix="ttmp32gme_print_")
+    pdf_file = Path(temp_path)
+    # Close the file descriptor as chromium will write to the file
+    os.close(temp_fd)
 
     args = [
         chromium_path,
