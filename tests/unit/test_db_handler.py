@@ -490,7 +490,7 @@ class TestDBHandlerCoreMethods:
         finally:
             Path(db_path).unlink(missing_ok=True)
 
-    def testexecute_context(self, db: DBHandler):
+    def test_execute_context(self, db: DBHandler):
         """Test execute method."""
         with db.execute_context(
             "SELECT * FROM config WHERE param=?", ("version",)
