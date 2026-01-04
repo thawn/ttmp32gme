@@ -168,11 +168,30 @@ jobs:
         # Install Chrome using Chocolatey
         choco install googlechrome -y --ignore-checksums
 
+        # Find Chrome installation (check multiple common paths)
+        $chromePaths = @(
+          "C:\Program Files\Google\Chrome\Application\chrome.exe",
+          "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+          "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+        )
+
+        $chromePath = $null
+        foreach ($path in $chromePaths) {
+          if (Test-Path $path) {
+            $chromePath = $path
+            break
+          }
+        }
+
+        if (-not $chromePath) {
+          Write-Host "Error: Chrome installation not found"
+          exit 1
+        }
+
         # Get Chrome version and download matching ChromeDriver
-        $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
         $chromeVersion = (Get-Item $chromePath).VersionInfo.ProductVersion
         $majorVersion = $chromeVersion.Split('.')[0]
-        Write-Host "Chrome version: $chromeVersion"
+        Write-Host "Chrome version: $chromeVersion (found at: $chromePath)"
 
         # Get ChromeDriver download URL for Windows
         $json = Invoke-RestMethod -Uri "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json"

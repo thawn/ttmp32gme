@@ -40,15 +40,25 @@ function Install-Ffmpeg {
 
                 # Find and move ffmpeg.exe to PATH
                 $ffmpegDir = Get-ChildItem -Path $tempDir -Directory -Filter "ffmpeg-*" | Select-Object -First 1
+                if (-not $ffmpegDir) {
+                    Write-Host "Error: ffmpeg directory not found in archive"
+                    return $false
+                }
                 $ffmpegExe = Join-Path $ffmpegDir.FullName "bin/ffmpeg.exe"
+                if (-not (Test-Path $ffmpegExe)) {
+                    Write-Host "Error: ffmpeg.exe not found at $ffmpegExe"
+                    return $false
+                }
 
                 # Copy to a location in PATH (using GitHub Actions runner's bin directory)
+                $targetBin = $null
                 if ($env:GITHUB_PATH) {
                     # In GitHub Actions, add to GITHUB_PATH
                     $binDir = Join-Path $env:RUNNER_TEMP "bin"
                     New-Item -ItemType Directory -Force -Path $binDir | Out-Null
                     Copy-Item -Path $ffmpegExe -Destination (Join-Path $binDir "ffmpeg.exe") -Force
                     Add-Content -Path $env:GITHUB_PATH -Value $binDir
+                    $targetBin = Join-Path $binDir "ffmpeg.exe"
                     Write-Host "Added $binDir to PATH via GITHUB_PATH"
                 } else {
                     # For local testing, copy to a user directory
@@ -58,13 +68,21 @@ function Install-Ffmpeg {
                     $localBin = Join-Path $env:USERPROFILE "bin"
                     New-Item -ItemType Directory -Force -Path $localBin | Out-Null
                     Copy-Item -Path $ffmpegExe -Destination (Join-Path $localBin "ffmpeg.exe") -Force
+                    $targetBin = Join-Path $localBin "ffmpeg.exe"
                     Write-Host "Installed to $localBin"
                     Write-Host "IMPORTANT: Add this directory to your PATH if not already present:"
                     Write-Host "  PowerShell: `$env:PATH += ';$localBin'"
                     Write-Host "  Permanent: [Environment]::SetEnvironmentVariable('Path', `$env:Path + ';$localBin', [System.EnvironmentVariableTarget]::User)"
                 }
 
-                return $true
+                # Verify installation using full path
+                & $targetBin -version | Select-Object -First 1
+                if ($LASTEXITCODE -eq 0) {
+                    return $true
+                } else {
+                    Write-Host "Error: ffmpeg verification failed"
+                    return $false
+                }
             } else {
                 Stop-Job -Job $extractJob
                 Remove-Job -Job $extractJob -Force
@@ -104,6 +122,4 @@ if (Install-Ffmpeg -TimeoutSeconds $TIMEOUT_SECONDS) {
     }
 }
 
-# Verify installation
-ffmpeg -version | Select-Object -First 1
 Write-Host "ffmpeg installation complete"
