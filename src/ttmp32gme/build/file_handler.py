@@ -401,15 +401,8 @@ def get_executable_path(executable_name: str) -> Optional[str]:
                 if chrome_path.exists() and os.access(chrome_path, os.X_OK):
                     return str(chrome_path)
 
-        # Unix-like systems (including macOS fallback)
-        common_paths = [
-            Path("/usr/local/bin"),
-            Path("/usr/bin"),
-            Path.home() / "bin",
-            Path.home() / ".local" / "bin",
-        ]
-    else:
-        # Unix-like systems
+    # Check common Unix-like system paths (Linux and macOS)
+    if platform.system() != "Windows":
         common_paths = [
             Path("/usr/local/bin"),
             Path("/usr/bin"),
@@ -417,10 +410,10 @@ def get_executable_path(executable_name: str) -> Optional[str]:
             Path.home() / ".local" / "bin",
         ]
 
-    for path in common_paths:
-        full_path = path / executable_name
-        if full_path.exists() and os.access(full_path, os.X_OK):
-            return str(full_path)
+        for path in common_paths:
+            full_path = path / executable_name
+            if full_path.exists() and os.access(full_path, os.X_OK):
+                return str(full_path)
 
     return None
 
