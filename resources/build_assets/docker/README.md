@@ -107,11 +107,11 @@ docker run --rm thawn/ttmp32gme --help
 Available arguments (see `--help` for full list):
 - `-v`, `--verbose`: Increase verbosity (INFO level)
 - `-vv`: Extra verbosity (DEBUG level)
-- `--port PORT`: Custom port (also requires updating `--publish`)
+- `--port PORT`: Custom port (must also update `--publish`, e.g., `-p 9000:9000 thawn/ttmp32gme --port=9000`)
 - `--host HOST`: Server bind address
 - `--no-browser`: Don't open browser on start (always set in container)
 
-**Note**: The container automatically includes default arguments `--host=0.0.0.0 --port=8080 --database=/data/config.sqlite --library=/data/library`. Any additional arguments you provide are appended to these defaults.
+**Note**: The container automatically includes default arguments `--host=0.0.0.0 --port=8080 --database=/data/config.sqlite --library=/data/library`. Any additional arguments you provide are appended to these defaults. If you provide an argument that conflicts with a default (e.g., `--port`), the last value wins (yours will override the default).
 
 ## Security Features
 
