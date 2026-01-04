@@ -94,6 +94,13 @@ class TransientConfigChange:
         format_select = self._get_config_element()
         format_select.send_keys(setting)
         save_button = self.driver.find_element(By.ID, "submit")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)  # Wait for save
 
@@ -392,6 +399,13 @@ class TestWebInterface:
 
         # Save configuration
         save_button = driver.find_element(By.ID, "submit")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(
             5
@@ -517,6 +531,13 @@ class TestWebInterface:
 
         # Save
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
@@ -546,6 +567,13 @@ class TestWebInterface:
 
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
@@ -637,6 +665,13 @@ class TestWebInterface:
 
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
@@ -732,6 +767,13 @@ class TestWebInterface:
 
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
