@@ -22,6 +22,12 @@ pre-commit install
 
 Run: `ttmp32gme -vv` (for debug output)
 
+**Development Server**: By default, ttmp32gme uses Waitress (production WSGI server). Use `--dev` flag to enable Flask's development server with auto-reload for rapid iteration during development:
+
+```bash
+ttmp32gme --dev -vv  # Flask dev server with auto-reload
+```
+
 ## Code Quality
 
 **Pre-commit hooks** automatically run:
