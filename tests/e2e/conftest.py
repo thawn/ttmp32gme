@@ -49,12 +49,29 @@ def chrome_options():
 
 
 @pytest.fixture
-def driver(chrome_options):
-    """Create a Chrome WebDriver instance."""
+def driver(chrome_options, tmp_path):
+    """Create a Chrome WebDriver instance with download directory configured."""
     from selenium import webdriver
+
+    # Create a temporary download directory for this test session
+    download_dir = tmp_path / "downloads"
+    download_dir.mkdir(parents=True, exist_ok=True)
+
+    # Configure Chrome to download PDFs automatically to the download directory
+    prefs = {
+        "download.default_directory": str(download_dir),
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "plugins.always_open_pdf_externally": True,  # Download PDFs instead of opening in viewer
+        "profile.default_content_settings.popups": 0,
+    }
+    chrome_options.add_experimental_option("prefs", prefs)
 
     driver = webdriver.Chrome(options=chrome_options)
     driver.implicitly_wait(10)
+
+    # Store download directory on driver for tests to access
+    driver.download_dir = download_dir
 
     yield driver
 
@@ -229,9 +246,6 @@ def clean_server(tmp_path, driver, monkeypatch):
 
     This fixture creates temporary database and library paths, starts a server with
     those paths, and cleans up everything after the test completes.
-
-    Also mocks tempfile.mkstemp to create PDF files in the test library folder
-    so E2E tests can verify PDF creation.
     """
     import os
     import subprocess
@@ -246,11 +260,6 @@ def clean_server(tmp_path, driver, monkeypatch):
     # Find an available port (use a different port from default to avoid conflicts)
     test_port = 10021
     test_host = "127.0.0.1"
-
-    # Set environment variable to tell the server to create PDFs in the test library
-    # This allows E2E tests to verify PDF creation
-    # (Monkeypatch doesn't work because server runs in a separate process)
-    os.environ["TTMP32GME_TEST_TEMP_DIR"] = str(test_library)
 
     # Start server with custom paths in background
     server_cmd = [
