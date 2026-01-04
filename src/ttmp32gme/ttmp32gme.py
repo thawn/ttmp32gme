@@ -841,7 +841,9 @@ def main():
 
             serve(app, host=host, port=port, threads=4)
         except ImportError:
-            logger.error("Waitress not installed. Install with: pip install waitress")
+            logger.error(
+                "Waitress not installed. Reinstall the package with: uv pip install -e . or pip install -e ."
+            )
             sys.exit(1)
     else:
         # Run Flask dev server (enable Flask debug mode only with -vv or more)
