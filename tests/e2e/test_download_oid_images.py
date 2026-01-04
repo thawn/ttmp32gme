@@ -27,6 +27,17 @@ def _create_gme_for_test(server_url, driver, element_number=0):
     # Find the library row and click edit button
     library_row = driver.find_element(By.ID, f"el{element_number}")
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+
+    # Scroll element into view to ensure it's interactable (especially on Windows)
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'});", edit_button
+    )
+    time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
+    # Wait for button to be clickable before clicking
+    WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.CLASS_NAME, "edit-button"))
+    )
     edit_button.click()
 
     # Wait for edit panel to be visible and clickable
@@ -36,6 +47,13 @@ def _create_gme_for_test(server_url, driver, element_number=0):
 
     # Click the "Create GME" button to generate OID images
     create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
+
+    # Scroll button into view to ensure it's interactable
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'});", create_button
+    )
+    time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
     create_button.click()
 
     # Wait for GME creation to complete

@@ -29,6 +29,17 @@ def _open_library_element_for_editing(server_url, driver, element_number: int = 
     # Look for create GME button and click it
     library_row = driver.find_element(By.ID, f"el{element_number}")
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+
+    # Scroll element into view to ensure it's interactable (especially on Windows)
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'});", edit_button
+    )
+    time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
+    # Wait for button to be clickable before clicking
+    WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.CLASS_NAME, "edit-button"))
+    )
     edit_button.click()
     WebDriverWait(driver, 5).until(
         EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
@@ -39,6 +50,13 @@ def _open_library_element_for_editing(server_url, driver, element_number: int = 
 def _create_gme(server_url, driver, element_number=0):
     library_row = _open_library_element_for_editing(server_url, driver, element_number)
     create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
+
+    # Scroll button into view to ensure it's interactable
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'});", create_button
+    )
+    time.sleep(0.5)  # Brief pause to ensure scrolling completes
+
     create_button.click()
     time.sleep(5)  #
 
