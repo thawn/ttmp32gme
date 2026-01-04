@@ -139,27 +139,21 @@ def should_use_gui() -> bool:
     return platform.system() == "Darwin" and getattr(sys, "frozen", False)
 
 
-def run_server_with_gui(
-    app: "Flask", host: str, port: int, shutdown_event: threading.Event
-) -> None:
+def run_server_with_gui(app: "Flask", host: str, port: int) -> None:
     """Run the Flask server in a background thread with GUI control.
 
     Args:
         app: Flask application instance
         host: Server host address
         port: Server port number
-        shutdown_event: Threading event to signal shutdown
     """
     try:
         from waitress import serve  # type: ignore
 
         logger.info(f"Starting server on {host}:{port} in background thread")
 
-        # Waitress doesn't have a built-in shutdown mechanism when run in a thread
-        # We'll use a wrapper to check the shutdown event periodically
-        # For simplicity, we'll just start the server and rely on process termination
-        # when the GUI closes (daemon thread will be terminated)
-
+        # Run waitress server (blocking call)
+        # The daemon thread will be terminated when the main process exits
         serve(
             app,
             host=host,
@@ -187,12 +181,10 @@ def start_gui_server(
         port: Server port number
         auto_open_browser: Whether to automatically open the browser on start
     """
-    shutdown_event = threading.Event()
 
     def shutdown_callback():
         """Callback to shut down the server."""
         logger.info("Shutdown callback triggered")
-        shutdown_event.set()
         # Exit the process to ensure clean shutdown
         import os
 
@@ -200,14 +192,24 @@ def start_gui_server(
 
     # Start server in background thread
     server_thread = threading.Thread(
-        target=run_server_with_gui, args=(app, host, port, shutdown_event), daemon=True
+        target=run_server_with_gui, args=(app, host, port), daemon=True
     )
     server_thread.start()
 
-    # Give server a moment to start
+    # Wait for server to start with health check
     import time
+    import urllib.request
 
-    time.sleep(1)
+    max_retries = 10
+    for i in range(max_retries):
+        try:
+            urllib.request.urlopen(f"http://{host}:{port}/", timeout=1)
+            logger.info("Server ready")
+            break
+        except Exception:
+            if i == max_retries - 1:
+                logger.warning("Server may not be ready yet, continuing anyway")
+            time.sleep(0.3)
 
     # Create and run GUI window
     status_window = ServerStatusWindow(host, port, shutdown_callback)
