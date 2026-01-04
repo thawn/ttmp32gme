@@ -129,7 +129,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='ttmp32gme.app',
-    icon=None,  # TODO: Create a .icns file for macOS icon
+    icon='resources/build_assets/mac/appIcon.icns',
     bundle_identifier='org.korten.ttmp32gme',
     info_plist={
         'CFBundleName': 'ttmp32gme',
