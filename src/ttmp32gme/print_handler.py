@@ -5,6 +5,7 @@ import os
 import platform
 import subprocess
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -366,3 +367,81 @@ def format_print_button() -> str:
         )
 
     return '<button type="button" class="btn btn-info" onclick="javascript:window.print()">Print This Page</button>'
+
+
+def generate_pdf_with_threading(
+    port: int, timeout: int = 60
+) -> Dict[str, Optional[Any]]:
+    """Generate PDF using threading to avoid server deadlock.
+
+    This function generates a PDF in a separate thread to avoid blocking
+    the server when Chromium needs to make a request back to the server
+    to render the page.
+
+    Args:
+        port: Server port number for accessing the print page via HTTP
+        timeout: Maximum time in seconds to wait for PDF generation (default: 60)
+
+    Returns:
+        Dictionary with the following keys:
+        - 'success': Boolean indicating if PDF generation succeeded
+        - 'file': Path to the generated PDF file (if successful)
+        - 'error': Error message (if failed)
+        - 'timeout': Boolean indicating if operation timed out
+    """
+    # Use threading to avoid deadlock with Waitress
+    # The PDF generation spawns Chromium which needs to make a request back
+    # to this server. By using a thread, we ensure the request handler
+    # doesn't block all available threads.
+    pdf_result: Dict[str, Optional[Any]] = {"file": None, "error": None}
+    pdf_event = threading.Event()
+
+    def generate_pdf_async() -> None:
+        """Generate PDF in a separate thread to avoid blocking."""
+        try:
+            pdf_result["file"] = create_pdf(port)
+        except Exception as e:
+            pdf_result["error"] = str(e)
+        finally:
+            pdf_event.set()
+
+    # Start PDF generation in background thread
+    pdf_thread = threading.Thread(target=generate_pdf_async, daemon=True)
+    pdf_thread.start()
+
+    # Wait for PDF generation to complete (with timeout)
+    # This allows other threads to handle Chromium's /pdf request
+    if pdf_event.wait(timeout=timeout):
+        if pdf_result["error"]:
+            logger.error(f"PDF generation error: {pdf_result['error']}")
+            return {
+                "success": False,
+                "file": None,
+                "error": f"PDF generation failed: {pdf_result['error']}",
+                "timeout": False,
+            }
+        elif pdf_result["file"]:
+            logger.info(f"PDF generated successfully: {pdf_result['file']}")
+            return {
+                "success": True,
+                "file": pdf_result["file"],
+                "error": None,
+                "timeout": False,
+            }
+        else:
+            logger.error("PDF generation failed without specific error")
+            return {
+                "success": False,
+                "file": None,
+                "error": "PDF generation failed",
+                "timeout": False,
+            }
+    else:
+        # Timeout occurred
+        logger.error(f"PDF generation timed out after {timeout} seconds")
+        return {
+            "success": False,
+            "file": None,
+            "error": "PDF generation timed out",
+            "timeout": True,
+        }

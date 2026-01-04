@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import sys
-import threading
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -38,7 +37,11 @@ from ttmp32gme.db_handler import (
     LibraryActionModel,
 )
 from ttmp32gme.log_handler import MemoryLogHandler
-from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
+from ttmp32gme.print_handler import (
+    create_print_layout,
+    format_print_button,
+    generate_pdf_with_threading,
+)
 from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
 # Configure logging (default to WARNING, can be overridden by -v flags)
@@ -483,82 +486,40 @@ def print_post():
             global print_content
             print_content = data.get("content", "")
 
-            # Use threading to avoid deadlock with Waitress
-            # The PDF generation spawns Chromium which needs to make a request back
-            # to this server. By using a thread, we ensure the request handler
-            # doesn't block all available threads.
-            pdf_result: Dict[str, Optional[Any]] = {"file": None, "error": None}
-            pdf_event = threading.Event()
+            # Generate PDF using threading to avoid deadlock
+            pdf_result = generate_pdf_with_threading(config["port"], timeout=60)
 
-            def generate_pdf_async() -> None:
-                """Generate PDF in a separate thread to avoid blocking."""
-                try:
-                    pdf_result["file"] = create_pdf(config["port"])
-                except Exception as e:
-                    pdf_result["error"] = str(e)
-                finally:
-                    pdf_event.set()
-
-            # Start PDF generation in background thread
-            pdf_thread = threading.Thread(target=generate_pdf_async, daemon=True)
-            pdf_thread.start()
-
-            # Wait for PDF generation to complete (with timeout)
-            # This allows other threads to handle Chromium's /pdf request
-            if pdf_event.wait(timeout=60):  # 60 second timeout
+            if pdf_result["success"] and pdf_result["file"]:
                 pdf_file = pdf_result["file"]
-                if pdf_result["error"]:
-                    logger.error(f"PDF generation error: {pdf_result['error']}")
+                try:
+                    logger.info(f"Serving PDF file: {pdf_file}")
+                    response = send_file(
+                        pdf_file,
+                        mimetype="application/pdf",
+                        as_attachment=True,
+                        download_name="print.pdf",
+                    )
+
+                    # Clean up the PDF file after sending it
+                    # This ensures the next print request generates a fresh PDF
+                    try:
+                        pdf_file.unlink()
+                        logger.info(f"Cleaned up PDF file: {pdf_file}")
+                    except Exception as cleanup_error:
+                        logger.warning(f"Failed to clean up PDF file: {cleanup_error}")
+
+                    return response
+                except Exception as e:
+                    logger.error(f"Failed to serve PDF: {e}")
                     return (
                         jsonify(
-                            {
-                                "success": False,
-                                "error": f"PDF generation failed: {pdf_result['error']}",
-                            }
+                            {"success": False, "error": f"Failed to serve PDF: {e}"}
                         ),
                         500,
                     )
-                elif pdf_file:
-                    try:
-                        logger.info(f"Serving PDF file: {pdf_file}")
-                        response = send_file(
-                            pdf_file,
-                            mimetype="application/pdf",
-                            as_attachment=True,
-                            download_name="print.pdf",
-                        )
-
-                        # Clean up the PDF file after sending it
-                        # This ensures the next print request generates a fresh PDF
-                        try:
-                            pdf_file.unlink()
-                            logger.info(f"Cleaned up PDF file: {pdf_file}")
-                        except Exception as cleanup_error:
-                            logger.warning(
-                                f"Failed to clean up PDF file: {cleanup_error}"
-                            )
-
-                        return response
-                    except Exception as e:
-                        logger.error(f"Failed to serve PDF: {e}")
-                        return (
-                            jsonify(
-                                {"success": False, "error": f"Failed to serve PDF: {e}"}
-                            ),
-                            500,
-                        )
-                else:
-                    return (
-                        jsonify({"success": False, "error": "PDF generation failed"}),
-                        500,
-                    )
             else:
-                # Timeout occurred
-                logger.error("PDF generation timed out after 60 seconds")
-                return (
-                    jsonify({"success": False, "error": "PDF generation timed out"}),
-                    500,
-                )
+                # PDF generation failed
+                return jsonify({"success": False, "error": pdf_result["error"]}), 500
 
     return jsonify({"success": False, "error": "Invalid action"}), 400
 
