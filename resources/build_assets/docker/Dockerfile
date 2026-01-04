@@ -15,8 +15,6 @@ RUN apt-get update && \
         git \
         chromium \
         chromium-sandbox && \
-    # Update CA certificates to fix certificate issues
-    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Install uv for faster, more reliable package management
@@ -39,13 +37,13 @@ COPY . /app/
 
 # Install Python dependencies using uv
 # Using --native-tls to avoid certificate issues in containers
-RUN uv pip install --system --no-cache --native-tls -e .
+RUN uv pip install --system --no-cache -e .
 
 # Test stage - runs unit and integration tests
 FROM base AS test
 
 # Install test dependencies using uv
-RUN uv pip install --system --no-cache --native-tls -e ".[test]"
+RUN uv pip install --system --no-cache -e ".[test]"
 
 # Run tests
 RUN pytest tests/unit/ -v --tb=short
