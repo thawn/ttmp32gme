@@ -662,6 +662,9 @@ def get_logs():
 @app.route("/logs/level", methods=["POST"])
 def set_log_level():
     """Set the log level dynamically."""
+    if not request.json:
+        return jsonify({"success": False, "error": "Invalid request"}), 400
+
     level_str = request.json.get("level", "WARNING")
 
     # Validate log level
