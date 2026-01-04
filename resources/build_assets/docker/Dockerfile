@@ -36,7 +36,6 @@ RUN TTTOOL_VERSION="1.8.1" && \
 COPY . /app/
 
 # Install Python dependencies using uv
-# Using --native-tls to avoid certificate issues in containers
 RUN uv pip install --system --no-cache -e .
 
 # Test stage - runs unit and integration tests
