@@ -51,9 +51,12 @@ function Install-Ffmpeg {
                     Add-Content -Path $env:GITHUB_PATH -Value $binDir
                     Write-Host "Added $binDir to PATH via GITHUB_PATH"
                 } else {
-                    # For local testing, copy to system PATH location
-                    $systemBin = "C:\Windows\System32"
-                    Copy-Item -Path $ffmpegExe -Destination (Join-Path $systemBin "ffmpeg.exe") -Force
+                    # For local testing, copy to a user directory that's likely in PATH
+                    # Note: This requires the user directory to be in the PATH environment variable
+                    $localBin = Join-Path $env:USERPROFILE "bin"
+                    New-Item -ItemType Directory -Force -Path $localBin | Out-Null
+                    Copy-Item -Path $ffmpegExe -Destination (Join-Path $localBin "ffmpeg.exe") -Force
+                    Write-Host "Installed to $localBin - ensure this directory is in your PATH"
                 }
 
                 return $true
