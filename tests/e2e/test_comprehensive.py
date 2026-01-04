@@ -407,15 +407,32 @@ class TestWebInterface:
         time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
-        time.sleep(
-            5
-        )  # Wait longer for library move to complete (can take time with large files)
+
+        # Wait for library move to complete (can take longer on Windows due to file operations)
+        # Use a longer timeout on Windows where file operations are slower
+        import platform
+
+        wait_time = 10 if platform.system() == "Windows" else 5
+        time.sleep(wait_time)
 
         # Verify library_path updated in config table
-        new_config_path = _get_database_value(
-            "SELECT value FROM config WHERE param = 'library_path'",
-            db_path=server_info["db_path"],
-        )[0]
+        # Retry a few times in case Windows needs extra time for file operations
+        max_retries = 3
+        retry_delay = 2
+        new_config_path = None
+
+        for attempt in range(max_retries):
+            new_config_path = _get_database_value(
+                "SELECT value FROM config WHERE param = 'library_path'",
+                db_path=server_info["db_path"],
+            )[0]
+
+            if new_config_path == str(new_library_path):
+                break
+
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+
         assert new_config_path == str(new_library_path), (
             f"Library path not updated in config. "
             f"Expected {new_library_path}, got {new_config_path}"
