@@ -24,11 +24,16 @@ permissions:
 
 jobs:
   e2e-tests:
-    name: End-to-End Tests with Selenium
-    runs-on: ubuntu-latest
+    name: End-to-End Tests with Selenium (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
 
     permissions:
       contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -45,12 +50,15 @@ jobs:
       with:
         version: "latest"
 
-    - name: Install system dependencies
+    # Linux-specific setup
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y wget unzip
 
-    - name: Install Chrome and ChromeDriver
+    - name: Install Chrome and ChromeDriver (Linux)
+      if: runner.os == 'Linux'
       run: |
         # Install Chrome
         wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -67,7 +75,8 @@ jobs:
         sudo chmod +x /usr/local/bin/chromedriver
         rm -rf chromedriver-linux64*
 
-    - name: Install tttool (from releases)
+    - name: Install tttool (Linux)
+      if: runner.os == 'Linux'
       run: |
         # Download a specific working version from GitHub releases
         # Using the correct URL pattern: tttool-{version}.zip
@@ -95,14 +104,141 @@ jobs:
         # Verify installation
         tttool --help || { echo "Error: tttool installation failed"; exit 1; }
 
-    - name: Install ffmpeg (static build)
+    - name: Install ffmpeg (Linux)
+      if: runner.os == 'Linux'
       run: .github/scripts/install-ffmpeg-linux.sh
 
+    # macOS-specific setup
+    - name: Install ChromeDriver (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        # Install Chrome and ChromeDriver using Homebrew
+        brew install --cask google-chrome
+        brew install chromedriver
+
+        # Remove quarantine attribute from chromedriver
+        xattr -d com.apple.quarantine $(which chromedriver) || true
+
+    - name: Install tttool (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        TTTOOL_VERSION="1.11"
+        echo "Installing tttool version $TTTOOL_VERSION for macOS"
+
+        # Create temp directory for extraction
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+
+        # Download and extract tttool
+        wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
+        unzip -q "tttool-${TTTOOL_VERSION}.zip"
+        cd tttool-1.11/osx
+
+        # Move binary to /usr/local/bin
+        chmod +x tttool
+        sudo mv tttool /usr/local/bin/tttool
+
+        # Copy all .dylib files if they exist
+        if ls *.dylib 1> /dev/null 2>&1; then
+          sudo mv *.dylib /usr/local/bin/
+        fi
+
+        # Cleanup temp directory
+        cd "$GITHUB_WORKSPACE"
+        chmod -R u+w "$TEMP_DIR" || true
+        rm -rf "$TEMP_DIR"
+
+        # Verify installation
+        tttool --help || { echo "Error: tttool installation failed"; exit 1; }
+
+    - name: Install ffmpeg (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        # Install ffmpeg using Homebrew
+        brew install ffmpeg
+        ffmpeg -version | head -n1
+
+    # Windows-specific setup
+    - name: Install Chrome and ChromeDriver (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Install Chrome using Chocolatey
+        choco install googlechrome -y --ignore-checksums
+
+        # Get Chrome version and download matching ChromeDriver
+        $chromePath = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+        $chromeVersion = (Get-Item $chromePath).VersionInfo.ProductVersion
+        $majorVersion = $chromeVersion.Split('.')[0]
+        Write-Host "Chrome version: $chromeVersion"
+
+        # Get ChromeDriver download URL for Windows
+        $json = Invoke-RestMethod -Uri "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json"
+        $driverUrl = ($json.channels.Stable.downloads.chromedriver | Where-Object { $_.platform -eq "win64" }).url
+
+        # Download and extract ChromeDriver
+        $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "chromedriver-temp-$(Get-Random)")
+        $zipPath = Join-Path $tempDir "chromedriver.zip"
+        Invoke-WebRequest -Uri $driverUrl -OutFile $zipPath
+        Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+
+        # Move chromedriver to a location in PATH
+        $binDir = Join-Path $env:RUNNER_TEMP "bin"
+        New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+        Copy-Item -Path (Join-Path $tempDir "chromedriver-win64\chromedriver.exe") -Destination (Join-Path $binDir "chromedriver.exe") -Force
+        Add-Content -Path $env:GITHUB_PATH -Value $binDir
+
+        # Cleanup
+        Remove-Item -Recurse -Force $tempDir
+
+        Write-Host "ChromeDriver installed successfully"
+
+    - name: Install tttool (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $TTTOOL_VERSION = "1.8.1"
+        Write-Host "Installing tttool version $TTTOOL_VERSION for Windows"
+
+        # Create temp directory for extraction
+        $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "tttool-temp-$(Get-Random)")
+        $zipPath = Join-Path $tempDir "tttool.zip"
+
+        # Download tttool
+        $url = "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
+        Invoke-WebRequest -Uri $url -OutFile $zipPath
+
+        # Extract to temp directory
+        Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
+
+        # Move binary to a location in PATH
+        $binDir = Join-Path $env:RUNNER_TEMP "bin"
+        New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+        Copy-Item -Path (Join-Path $tempDir "tttool.exe") -Destination (Join-Path $binDir "tttool.exe") -Force
+        Add-Content -Path $env:GITHUB_PATH -Value $binDir
+
+        # Cleanup
+        Remove-Item -Recurse -Force $tempDir
+
+        # Verify installation
+        & "$binDir\tttool.exe" --help
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: tttool installation failed"
+            exit 1
+        }
+
+    - name: Install ffmpeg (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: .github/scripts/install-ffmpeg-windows.ps1
+
     - name: Install Python dependencies
+      shell: bash
       run: |
         uv pip install --system -e ".[test]"
 
     - name: Prepare test fixtures
+      shell: bash
       run: |
         # Bundled test audio file already exists in repo
         ls -lh tests/fixtures/test_audio.mp3
@@ -116,12 +252,13 @@ jobs:
         ls -lh tests/fixtures/
 
     - name: Run E2E tests with pytest (includes tttool tests)
+      shell: bash
       run: |
         pytest tests/e2e/ -v --tb=short --html=e2e-report.html --self-contained-html
 
     - name: Upload test report
       uses: actions/upload-artifact@v4
       with:
-        name: e2e-test-report
+        name: e2e-test-report-${{ matrix.os }}
         path: e2e-report.html
       if: always()
