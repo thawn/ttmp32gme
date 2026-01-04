@@ -86,23 +86,32 @@ Once running, open your web browser to:
 - **Local access**: http://localhost:8080
 - **Network access**: http://your-server-ip:8080
 
-## Environment Variables
+## Command Line Arguments
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| HOST | 0.0.0.0 | Server bind address |
-| PORT | 8080 | Server port |
-
-Example with custom settings:
+You can pass additional command line arguments to the container:
 
 ```bash
-podman run -d \
-  --env HOST=127.0.0.1 \
-  --env PORT=9000 \
-  --publish 9000:9000 \
+# Increase verbosity
+docker run thawn/ttmp32gme -vv
+
+# Combine with volume mounts
+docker run -d \
+  --publish 8080:8080 \
   --volume ttmp32gme-data:/data \
-  thawn/ttmp32gme:latest
+  thawn/ttmp32gme:latest -v
+
+# Show help
+docker run --rm thawn/ttmp32gme --help
 ```
+
+Available arguments (see `--help` for full list):
+- `-v`, `--verbose`: Increase verbosity (INFO level)
+- `-vv`: Extra verbosity (DEBUG level)
+- `--port PORT`: Custom port (also requires updating `--publish`)
+- `--host HOST`: Server bind address
+- `--no-browser`: Don't open browser on start (always set in container)
+
+**Note**: Default arguments are `--host=0.0.0.0 --port=8080 --database=/data/config.sqlite --library=/data/library`. When you provide arguments, they are appended to these defaults.
 
 ## Security Features
 

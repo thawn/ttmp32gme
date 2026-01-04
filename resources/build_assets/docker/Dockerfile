@@ -75,7 +75,10 @@ EXPOSE 8080
 USER ttmp32gme
 
 # Run the Python backend
-CMD ["python", "-m", "ttmp32gme.ttmp32gme", "--host=0.0.0.0", "--port=8080", "--database=/data/config.sqlite", "--library=/data/library"]
+# Using ENTRYPOINT + CMD allows passing additional arguments to docker run
+# e.g., docker run thawn/ttmp32gme -vv
+ENTRYPOINT ["python", "-m", "ttmp32gme.ttmp32gme"]
+CMD ["--host=0.0.0.0", "--port=8080", "--database=/data/config.sqlite", "--library=/data/library"]
 
 # Optional health check
 HEALTHCHECK --interval=5m --timeout=3s \
