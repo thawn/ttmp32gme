@@ -20,6 +20,8 @@ Download pre-built executables from [releases page](https://github.com/thawn/ttm
      - If Windows SmartScreen blocks it: Click "More info" → "Run anyway" ([details](https://support.microsoft.com/en-us/windows/what-is-smartscreen-and-how-can-it-help-protect-me-1c9a874a-6826-be5e-45b1-67fa445a74c8))
    - **macOS**: Right-click `ttmp32gme.app` → "Open" (first time only to bypass Gatekeeper)
      - If blocked: System Settings → Privacy & Security → scroll down → "Open Anyway" ([details](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac))
+     - A status window will appear showing the server URL and providing shutdown controls
+     - Close the status window or click "Stop Server" to shut down the application
 4. Open your browser to `http://localhost:10020`
 
 The executable includes all necessary dependencies (tttool, ffmpeg) except Chrome/Chromium which should be installed separately.
