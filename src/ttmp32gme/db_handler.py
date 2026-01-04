@@ -118,6 +118,9 @@ class ConfigUpdateModel(BaseModel):
     audio_format: Optional[str] = Field(None, pattern="^(mp3|ogg)$")
     pen_language: Optional[str] = Field(None, max_length=50)
     library_path: Optional[str] = Field(None, max_length=500)
+    log_level: Optional[str] = Field(
+        None, pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"
+    )
 
     # Allow other config fields
     model_config = {"extra": "allow"}
@@ -379,6 +382,7 @@ class DBHandler:
                 INSERT OR IGNORE INTO config VALUES('print_preset','list');
                 INSERT OR IGNORE INTO config VALUES('pen_language','GERMAN');
                 INSERT OR IGNORE INTO config VALUES('library_path','');
+                INSERT OR IGNORE INTO config VALUES('log_level','WARNING');
             """
             )
             cursor.executescript(
@@ -1469,6 +1473,10 @@ class DBHandler:
                     ],
                 ),
                 "UPDATE config SET value='2.0.1' WHERE param='version';",
+            ],
+            "2.0.2": [
+                "UPDATE config SET value='2.0.2' WHERE param='version';",
+                "INSERT OR IGNORE INTO config (param, value) VALUES ('log_level', 'WARNING');",
             ],
         }
         version_str = self.get_config_value("version")

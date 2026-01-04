@@ -36,6 +36,7 @@ from ttmp32gme.db_handler import (
     DBHandler,
     LibraryActionModel,
 )
+from ttmp32gme.log_handler import MemoryLogHandler
 from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
 from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
 
@@ -44,6 +45,13 @@ logging.basicConfig(
     level=logging.WARNING, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Add memory handler to capture logs for frontend
+memory_handler = MemoryLogHandler(max_records=1000)
+memory_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+logging.getLogger().addHandler(memory_handler)
 
 # Create Flask app
 # Configure paths for both development and PyInstaller
@@ -165,6 +173,13 @@ def save_config(config_params: Dict[str, Any]) -> tuple[Dict[str, Any], str]:
                 import shutil
 
                 shutil.rmtree(new_path, ignore_errors=True)
+
+    # Handle log level changes
+    if "log_level" in config_params:
+        level_str = config_params["log_level"]
+        level = getattr(logging, level_str, logging.WARNING)
+        logging.getLogger().setLevel(level)
+        logger.info(f"Log level changed to {level_str}")
 
     # Validate DPI and pixel size
     if "tt_dpi" in config_params and "tt_pixel-size" in config_params:
@@ -560,6 +575,7 @@ def config_post():
                         "audio_format": new_config["audio_format"],
                         "pen_language": new_config["pen_language"],
                         "library_path": new_config["library_path"],
+                        "log_level": new_config.get("log_level", "WARNING"),
                     },
                 }
             )
@@ -577,6 +593,7 @@ def config_post():
                     "audio_format": config["audio_format"],
                     "pen_language": config["pen_language"],
                     "library_path": config["library_path"],
+                    "log_level": config.get("log_level", "WARNING"),
                 },
             }
         )
@@ -598,6 +615,40 @@ def help_page():
         navigation=get_navigation("/help"),
         content=content,
     )
+
+
+@app.route("/logs")
+def get_logs():
+    """Get recent log entries."""
+    num_lines = request.args.get("lines", default=100, type=int)
+    logs = memory_handler.get_logs(num_lines)
+    return jsonify({"success": True, "logs": logs})
+
+
+@app.route("/logs/level", methods=["POST"])
+def set_log_level():
+    """Set the log level dynamically."""
+    if not request.json:
+        return jsonify({"success": False, "error": "Invalid request"}), 400
+
+    level_str = request.json.get("level", "WARNING")
+
+    # Validate log level
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if level_str not in valid_levels:
+        return jsonify({"success": False, "error": "Invalid log level"}), 400
+
+    # Set the log level
+    level = getattr(logging, level_str)
+    logging.getLogger().setLevel(level)
+    logger.info(f"Log level changed to {level_str}")
+
+    # Save to config
+    db = get_db()
+    db.insert_or_replace_config("log_level", level_str)
+    config["log_level"] = level_str
+
+    return jsonify({"success": True, "level": level_str})
 
 
 @app.route("/images/<path:filename>")
@@ -746,6 +797,13 @@ def main():
         db.update_db()
         logger.info("Update successful.")
         config = fetch_config()
+
+    # Apply log level from config if not overridden by command line
+    if args.verbose == 0:  # Only apply config if -v/-vv not used
+        log_level_str = config.get("log_level", "WARNING")
+        log_level = getattr(logging, log_level_str, logging.WARNING)
+        logging.getLogger().setLevel(log_level)
+        logger.info(f"Log level set to {log_level_str} from config")
 
     # Override config with command-line args
     if args.port:

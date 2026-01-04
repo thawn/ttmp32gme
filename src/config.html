@@ -7,7 +7,8 @@ var updateConfig = function(caller){
 					  'open_browser' : testCheckBox('#open_browser'),
 					  'audio_format' : $('#audio_format').val(),
 					  'pen_language' : $('#pen_language').val(),
-					  'library_path' : $('#library_path').val()
+					  'library_path' : $('#library_path').val(),
+					  'log_level' : $('#log_level').val()
 					  };
 	$.post('/config',
 		   'action=update&data=' + encodeURIComponent(JSON.stringify(configVars)))
@@ -59,6 +60,45 @@ var downloadOidImages = function(){
 	window.location.href = '/download_oid_images';
 }
 
+var loadLogs = function(){
+	$.get('/logs?lines=100')
+		.done(function(data) {
+			if (data.success) {
+				var logsText = data.logs.join('\n');
+				$('#log-display').text(logsText);
+				// Auto-scroll to bottom
+				var logDisplay = document.getElementById('log-display');
+				logDisplay.scrollTop = logDisplay.scrollHeight;
+			}
+		})
+		.fail(function() {
+			$('#log-display').text('Failed to load logs');
+		});
+}
+
+var changeLogLevel = function(){
+	var level = $('#log_level').val();
+	$.ajax({
+		url: '/logs/level',
+		type: 'POST',
+		contentType: 'application/json',
+		data: JSON.stringify({level: level})
+	})
+	.done(function(data) {
+		if (data.success) {
+			notify($('#log_level'), '', 'Log level changed to ' + level, 'bg-success', 2000);
+			// Refresh logs after a short delay to show the change
+			setTimeout(loadLogs, 500);
+		}
+	})
+	.fail(function() {
+		notify($('#log_level'), '', 'Failed to change log level', 'bg-danger', 4000);
+	});
+}
+
+// Auto-refresh logs every 3 seconds
+var logRefreshInterval;
+
 $(function(){
     loadConfig();
 	$('[data-toggle="tooltip"]').tooltip();
@@ -68,6 +108,18 @@ $(function(){
 	$('#download-oid-images').click(function(){
 		downloadOidImages();
 	});
+	$('#log_level').change(function(){
+		changeLogLevel();
+	});
+	$('#refresh-logs').click(function(){
+		loadLogs();
+	});
+
+	// Initial log load
+	loadLogs();
+
+	// Auto-refresh logs every 3 seconds
+	logRefreshInterval = setInterval(loadLogs, 3000);
 });
 
 </script>
@@ -115,6 +167,17 @@ $(function(){
 				<option value="ITALIAN">ITALIAN</option>
 			</select>
 		</div>
+		<div class="form-group">
+			<label for="log_level">Log Level:</label>
+			<select id="log_level" class="custom-select form-control" data-toggle="tooltip"
+				title="Set the logging level for the application. Changes take effect immediately.">
+				<option value="DEBUG">DEBUG</option>
+				<option value="INFO">INFO</option>
+				<option value="WARNING">WARNING</option>
+				<option value="ERROR">ERROR</option>
+				<option value="CRITICAL">CRITICAL</option>
+			</select>
+		</div>
 		<button type="button" id="submit" class="btn btn-primary" data-toggle="popover" disabled>Save
 			Configuration</button>
 	</div>
@@ -129,5 +192,23 @@ $(function(){
 			title="Download all OID images as a ZIP file">
 			<span class="glyphicon glyphicon-download-alt" aria-hidden="true"></span> Download OID Images
 		</button>
+	</div>
+</div>
+<div class="panel panel-default">
+	<div class="panel-heading">
+		<h4 class="panel-title">Server Logs:</h4>
+	</div>
+	<div class="panel-body">
+		<p>View recent server logs. Logs are automatically refreshed every 3 seconds. Change the log level above to control verbosity.</p>
+		<button type="button" id="refresh-logs" class="btn btn-info btn-sm" data-toggle="tooltip"
+			title="Manually refresh the log display">
+			<span class="glyphicon glyphicon-refresh" aria-hidden="true"></span> Refresh Now
+		</button>
+		<div style="margin-top: 10px;">
+			<textarea id="log-display" class="form-control" readonly
+				style="font-family: monospace; font-size: 12px; height: 400px; overflow-y: scroll; background-color: #f5f5f5; color: #333;">
+Loading logs...
+			</textarea>
+		</div>
 	</div>
 </div>
