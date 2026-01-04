@@ -828,22 +828,33 @@ def main():
     else:
         logger.error("No useable tttool found")
 
-    # Open browser if configured and not disabled by command-line argument
-    if config.get("open_browser") == "TRUE" and not args.no_browser:
-        open_browser(host, port)
-
     logger.info(f"Server running on http://{host}:{port}/")
     logger.info("Open this URL in your web browser to continue.")
+
+    # Check if we should use GUI (macOS + PyInstaller)
+    from ttmp32gme.gui_handler import should_use_gui, start_gui_server
+
+    auto_open_browser = config.get("open_browser") == "TRUE" and not args.no_browser
 
     # Run with Flask dev server or production WSGI server (Waitress is default)
     if args.dev:
         logger.info("Starting Flask development server...")
+        # Open browser if configured
+        if auto_open_browser:
+            open_browser(host, port)
         # Run Flask dev server (enable Flask debug mode only with -vv or more)
         app.run(host=host, port=port, debug=(args.verbose >= 2))
+    elif should_use_gui():
+        logger.info("Starting server with GUI control window...")
+        start_gui_server(app, host, port, auto_open_browser)
     else:
         logger.info("Starting production server (Waitress)...")
         try:
-            from waitress import serve
+            from waitress import serve  # type: ignore
+
+            # Open browser if configured and not disabled by command-line argument
+            if auto_open_browser:
+                open_browser(host, port)
 
             # Use more threads to handle concurrent requests, especially for PDF generation
             # where Chromium makes a nested request back to the server.

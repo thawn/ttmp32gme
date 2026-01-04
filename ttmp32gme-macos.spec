@@ -64,6 +64,7 @@ hiddenimports = [
     'ttmp32gme.db_handler',
     'ttmp32gme.tttool_handler',
     'ttmp32gme.print_handler',
+    'ttmp32gme.gui_handler',
     'flask',
     'werkzeug',
     'jinja2',
@@ -83,7 +84,6 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
     excludes=[
-        'tkinter',
         'unittest',
         'test',
         'tests',
