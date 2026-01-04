@@ -3,9 +3,9 @@
 import sqlite3
 import tempfile
 from pathlib import Path
-from packaging.version import Version
 
 import pytest
+from packaging.version import Version
 
 from ttmp32gme.db_handler import DBHandler
 
