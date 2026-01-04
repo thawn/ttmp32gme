@@ -3,9 +3,10 @@ import logging
 import shutil
 import sqlite3
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from mutagen import File as MutagenFile  # type: ignore[attr-defined]
 from mutagen.easyid3 import EasyID3
@@ -367,25 +368,34 @@ class DBHandler:
             # Refresh column cache after table creation
             self._populate_valid_columns()
 
-    def execute(self, query: str, params: Tuple[Any, ...] = ()) -> sqlite3.Cursor:
-        """Execute a database query.
+    @contextmanager
+    def execute(
+        self, query: str, params: Tuple[Any, ...] = ()
+    ) -> Generator[sqlite3.Cursor, None, None]:
+        """Execute a database query with automatic locking and cursor cleanup.
 
-        Note: This method is not thread-safe by itself. It should only be called
-        from within a locked context (with self._db_lock). Public methods like
-        fetchall(), fetchone(), and write_to_database() handle locking automatically.
+        Use as a context manager to automatically handle thread-safe locking
+        and cursor cleanup:
+            with db.execute(query, params) as cursor:
+                result = cursor.fetchone()
 
         Args:
             query: SQL query to execute
             params: Query parameters tuple
 
-        Returns:
+        Yields:
             Database cursor with query results
         """
-        self.connect()
-        assert self.conn is not None
-        cur = self.conn.cursor()
-        cur.execute(query, params)
-        return cur
+        self._db_lock.acquire()
+        try:
+            self.connect()
+            assert self.conn is not None
+            cursor = self.conn.cursor()
+            cursor.execute(query, params)
+            yield cursor
+            cursor.close()
+        finally:
+            self._db_lock.release()
 
     def fetchall(self, query: str, params: Tuple[Any, ...] = ()) -> List[sqlite3.Row]:
         """Execute query and fetch all results with thread-safe locking.
@@ -397,11 +407,8 @@ class DBHandler:
         Returns:
             List of result rows
         """
-        with self._db_lock:
-            cur = self.execute(query, params)
-            results = cur.fetchall()
-            cur.close()
-            return results
+        with self.execute(query, params) as cur:
+            return cur.fetchall()
 
     def fetchone(
         self, query: str, params: Tuple[Any, ...] = ()
@@ -415,11 +422,8 @@ class DBHandler:
         Returns:
             Single result row or None
         """
-        with self._db_lock:
-            cur = self.execute(query, params)
-            result = cur.fetchone()
-            cur.close()
-            return result
+        with self.execute(query, params) as cur:
+            return cur.fetchone()
 
     def commit(self):
         """Commit database changes with thread-safe locking."""
@@ -499,8 +503,9 @@ class DBHandler:
         placeholders = ", ".join("?" * len(fields))
         query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
 
+        with self.execute(query, tuple(values)):
+            pass  # Cursor automatically closed by context manager
         with self._db_lock:
-            self.execute(query, tuple(values))
             self.commit()
 
     def __enter__(self):
@@ -606,8 +611,7 @@ class DBHandler:
         query = "SELECT * FROM tracks WHERE parent_oid=? ORDER BY track"
         params = (album["oid"],)
 
-        with self._db_lock:
-            cursor = self.execute(query, params)
+        with self.execute(query, params) as cursor:
             columns = [desc[0] for desc in cursor.description]
             tracks = {}
 
@@ -642,8 +646,9 @@ class DBHandler:
         set_clause = ", ".join(f"{field}=?" for field in fields)
         query = f"UPDATE {table} SET {set_clause} WHERE {keyname}"
 
+        with self.execute(query, tuple(values + search_keys)):
+            pass  # Cursor automatically closed by context manager
         with self._db_lock:
-            self.execute(query, tuple(values + search_keys))
             self.commit()
         return True
 
@@ -1054,32 +1059,31 @@ class DBHandler:
         Returns:
             True if successful
         """
+        for track in tracks:
+            # Get the track id from frontend
+            track_id = track.get("id")
+
+            if not track_id:
+                raise ValueError(
+                    "Track has no id. "
+                    "Database migration to v2.0.1 may not have completed successfully."
+                )
+
+            # Update only the fields sent from frontend: title, track, and parent_oid
+            track["parent_oid"] = new_parent_oid
+
+            # Build UPDATE query with only the fields we have
+            update_fields = {k: v for k, v in track.items() if k != "id"}
+
+            if update_fields:
+                set_clause = ", ".join(f"{field}=?" for field in update_fields.keys())
+                values = list(update_fields.values()) + [track_id]
+                query = f"UPDATE tracks SET {set_clause} WHERE id=?"
+
+                with self.execute(query, tuple(values)):
+                    pass  # Cursor automatically closed by context manager
+
         with self._db_lock:
-            for track in tracks:
-                # Get the track id from frontend
-                track_id = track.get("id")
-
-                if not track_id:
-                    raise ValueError(
-                        "Track has no id. "
-                        "Database migration to v2.0.1 may not have completed successfully."
-                    )
-
-                # Update only the fields sent from frontend: title, track, and parent_oid
-                track["parent_oid"] = new_parent_oid
-
-                # Build UPDATE query with only the fields we have
-                update_fields = {k: v for k, v in track.items() if k != "id"}
-
-                if update_fields:
-                    set_clause = ", ".join(
-                        f"{field}=?" for field in update_fields.keys()
-                    )
-                    values = list(update_fields.values()) + [track_id]
-                    query = f"UPDATE tracks SET {set_clause} WHERE id=?"
-
-                    self.execute(query, tuple(values))
-
             self.commit()
         return True
 
@@ -1135,9 +1139,11 @@ class DBHandler:
             remove_album(album_dir)
 
             # Delete from database
+            with self.execute("DELETE FROM tracks WHERE parent_oid=?", (uid,)):
+                pass
+            with self.execute("DELETE FROM gme_library WHERE oid=?", (uid,)):
+                pass
             with self._db_lock:
-                self.execute("DELETE FROM tracks WHERE parent_oid=?", (uid,))
-                self.execute("DELETE FROM gme_library WHERE oid=?", (uid,))
                 self.commit()
 
         return uid
@@ -1151,8 +1157,9 @@ class DBHandler:
         Returns:
             Album OID
         """
+        with self.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,)):
+            pass
         with self._db_lock:
-            self.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,))
             self.commit()
         return oid
 
@@ -1232,22 +1239,24 @@ class DBHandler:
         """
         import re
 
-        with self._db_lock:
-            cursor = self.execute("SELECT oid, path FROM gme_library")
+        with self.execute("SELECT oid, path FROM gme_library") as cursor:
             rows = cursor.fetchall()
-            try:
-                for oid, old_path in rows:
-                    updated_path = re.sub(
-                        re.escape(old_path), str(new_path.absolute()), old_path
-                    )
-                    cursor.execute(
-                        "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
-                    )
+
+        try:
+            for oid, old_path in rows:
+                updated_path = re.sub(
+                    re.escape(old_path), str(new_path.absolute()), old_path
+                )
+                with self.execute(
+                    "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
+                ):
+                    pass
+            with self._db_lock:
                 self.commit()
-            except Exception as e:
-                assert self.conn is not None
-                self.conn.rollback()
-                raise RuntimeError(f"Error updating library paths: {e}")
+        except Exception as e:
+            assert self.conn is not None
+            self.conn.rollback()
+            raise RuntimeError(f"Error updating library paths: {e}")
         return True
 
     def update_db(self) -> bool:
@@ -1445,25 +1454,22 @@ class DBHandler:
         for version_str in sorted(updates.keys(), key=Version):
             update_version = Version(version_str)
             if update_version > current_version:
-                with self._db_lock:
-                    try:
-                        for sql_or_func in updates[version_str]:
-                            if callable(sql_or_func):
-                                # Execute function (e.g., for encoding fixes)
-                                result = sql_or_func()
-                                logger.info(
-                                    f"Executed update function, result: {result}"
-                                )
-                            else:
-                                # Execute SQL
-                                self.execute(sql_or_func)
+                try:
+                    for sql_or_func in updates[version_str]:
+                        if callable(sql_or_func):
+                            # Execute function (e.g., for encoding fixes)
+                            result = sql_or_func()
+                            logger.info(f"Executed update function, result: {result}")
+                        else:
+                            # Execute SQL
+                            with self.execute(sql_or_func):
+                                pass
+                    with self._db_lock:
                         self.commit()
-                    except Exception as e:
-                        assert self.conn is not None
-                        self.conn.rollback()
-                        raise RuntimeError(
-                            f"Can't update config database.\n\tError: {e}"
-                        )
+                except Exception as e:
+                    assert self.conn is not None
+                    self.conn.rollback()
+                    raise RuntimeError(f"Can't update config database.\n\tError: {e}")
 
         return True
 

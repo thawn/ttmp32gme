@@ -492,11 +492,10 @@ class TestDBHandlerCoreMethods:
 
     def test_execute(self, db):
         """Test execute method."""
-        cursor = db.execute("SELECT * FROM config WHERE param=?", ("version",))
-        assert cursor is not None
-        result = cursor.fetchone()
-        assert result is not None
-        cursor.close()
+        with db.execute("SELECT * FROM config WHERE param=?", ("version",)) as cursor:
+            assert cursor is not None
+            result = cursor.fetchone()
+            assert result is not None
 
     def test_fetchall(self, db):
         """Test fetchall method."""
@@ -517,10 +516,11 @@ class TestDBHandlerCoreMethods:
 
     def test_commit(self, db):
         """Test commit method."""
-        db.execute(
+        with db.execute(
             "INSERT INTO config (param, value) VALUES (?, ?)",
             ("test_param", "test_value"),
-        )
+        ):
+            pass
         db.commit()
 
         result = db.fetchone("SELECT * FROM config WHERE param=?", ("test_param",))
