@@ -51,7 +51,7 @@ On Library page:
 
 **Music**: Play all tracks, then stop
 
-**Audiobook (TipToi)**: Play all tracks, repeat from beginning when finished
+**TipToi**: Play all tracks, repeat from beginning when finished
 
 ## Command Line
 
