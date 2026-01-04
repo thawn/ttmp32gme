@@ -1474,6 +1474,10 @@ class DBHandler:
                 ),
                 "UPDATE config SET value='2.0.1' WHERE param='version';",
             ],
+            "2.0.2": [
+                "UPDATE config SET value='2.0.2' WHERE param='version';",
+                "INSERT OR IGNORE INTO config (param, value) VALUES ('log_level', 'WARNING');",
+            ],
         }
         version_str = self.get_config_value("version")
         if version_str is None:

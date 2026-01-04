@@ -5,10 +5,8 @@ import json
 import logging
 import os
 import sys
-from collections import deque
 from pathlib import Path
-from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from flask import (
     Flask,
@@ -38,41 +36,9 @@ from ttmp32gme.db_handler import (
     DBHandler,
     LibraryActionModel,
 )
+from ttmp32gme.log_handler import MemoryLogHandler
 from ttmp32gme.print_handler import create_pdf, create_print_layout, format_print_button
 from ttmp32gme.tttool_handler import copy_gme, delete_gme_tiptoi, make_gme
-
-
-# In-memory log handler to capture logs for frontend display
-class MemoryLogHandler(logging.Handler):
-    """Custom log handler that stores recent log records in memory."""
-
-    def __init__(self, max_records: int = 1000):
-        super().__init__()
-        self.max_records = max_records
-        self.records: deque[str] = deque(maxlen=max_records)
-        self._lock: Lock = Lock()
-
-    def emit(self, record: logging.LogRecord) -> None:
-        """Store log record in memory."""
-        try:
-            msg = self.format(record)
-            with self._lock:
-                self.records.append(msg)
-        except Exception:
-            self.handleError(record)
-
-    def get_logs(self, num_lines: int = 100) -> List[str]:
-        """Get recent log entries.
-
-        Args:
-            num_lines: Number of recent log lines to return
-
-        Returns:
-            List of formatted log messages
-        """
-        with self._lock:
-            return list(self.records)[-num_lines:]
-
 
 # Configure logging (default to WARNING, can be overridden by -v flags)
 logging.basicConfig(
