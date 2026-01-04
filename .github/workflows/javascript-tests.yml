@@ -3,8 +3,19 @@ name: JavaScript Tests
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - 'src/assets/js/**'
+      - 'src/templates/**'
+      - '__tests__/**'
+      - 'package.json'
+      - 'jest.config.js'
   pull_request:
     branches: [ main, master, develop ]
+    paths:
+      - 'src/assets/js/**'
+      - '__tests__/**'
+      - 'package.json'
+      - 'jest.config.js'
 
 jobs:
   test:
