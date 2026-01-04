@@ -64,7 +64,6 @@ class TestUnicodeFix:
         will be corrupted/incorrect. This test verifies the data is wrong before fixing.
         """
         db = DBHandler(legacy_db)
-        db.connect()
 
         # Try to read the album - may not raise error but data will be wrong
         album = db.get_album(920)
@@ -85,11 +84,9 @@ class TestUnicodeFix:
     def test_fix_text_encoding_fixes_gme_library(self, legacy_db):
         """Test that update_db fixes gme_library table encoding."""
         db = DBHandler(legacy_db)
-        db.connect()
 
         # Set version to 2.0.0 to trigger 2.0.1 migration
-        db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
-        db.commit()
+        db.execute_and_commit("UPDATE config SET value='2.0.0' WHERE param='version'")
 
         # Run update_db which includes encoding fixes
         result = db.update_db()
@@ -115,11 +112,9 @@ class TestUnicodeFix:
     def test_fix_text_encoding_fixes_tracks(self, legacy_db):
         """Test that update_db fixes tracks table encoding."""
         db = DBHandler(legacy_db)
-        db.connect()
 
         # Set version to 2.0.0 to trigger 2.0.1 migration
-        db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
-        db.commit()
+        db.execute_and_commit("UPDATE config SET value='2.0.0' WHERE param='version'")
 
         # Run update_db which includes encoding fixes
         result = db.update_db()
@@ -137,11 +132,9 @@ class TestUnicodeFix:
     def test_update_db_fixes_encoding_for_version_2_0_1(self, legacy_db):
         """Test that update_db fixes encoding issues when upgrading to 2.0.1."""
         db = DBHandler(legacy_db)
-        db.connect()
 
         # Set version to 2.0.0 to trigger 2.0.1 update
-        db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
-        db.commit()
+        db.execute_and_commit("UPDATE config SET value='2.0.0' WHERE param='version'")
 
         # Run update_db
         result = db.update_db()
@@ -172,15 +165,14 @@ class TestUnicodeFix:
             db.initialize()
 
             # Insert album with NULL artist
-            db.execute(
+            db.execute_and_commit(
                 "INSERT INTO gme_library (oid, album_title, album_artist, num_tracks, path) VALUES (?, ?, ?, ?, ?)",
                 (920, "Test Album", None, 0, "/tmp/test"),
             )
-            db.commit()
-
             # Set version to 2.0.0 to trigger 2.0.1 migration
-            db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
-            db.commit()
+            db.execute_and_commit(
+                "UPDATE config SET value='2.0.0' WHERE param='version'"
+            )
 
             # Run update_db - should not crash on NULL
             result = db.update_db()
@@ -204,15 +196,14 @@ class TestUnicodeFix:
 
             # Insert album with proper UTF-8
             good_title = "Albert E erklärt den menschlichen Körper"
-            db.execute(
+            db.execute_and_commit(
                 "INSERT INTO gme_library (oid, album_title, album_artist, num_tracks, path) VALUES (?, ?, ?, ?, ?)",
                 (920, good_title, "Good Artist", 0, "/tmp/test"),
             )
-            db.commit()
-
             # Set version to 2.0.0 to trigger 2.0.1 migration
-            db.execute("UPDATE config SET value='2.0.0' WHERE param='version'")
-            db.commit()
+            db.execute_and_commit(
+                "UPDATE config SET value='2.0.0' WHERE param='version'"
+            )
 
             # Run update_db - should detect no issues and not change valid UTF-8
             result = db.update_db()

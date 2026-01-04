@@ -63,7 +63,6 @@ from ttmp32gme.db_handler import DBHandler, AlbumUpdateModel
 from pydantic import ValidationError
 
 db = DBHandler("/path/to/db.sqlite")
-db.connect()
 
 # Validate and update
 try:

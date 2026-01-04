@@ -216,7 +216,7 @@ class DBHandler:
 
     def __init__(self, db_path: str):
         self.db_path = db_path
-        self.conn: Optional[sqlite3.Connection] = None
+        self._conn: Optional[sqlite3.Connection] = None
         self._gme_library_columns: Optional[List[str]] = None
         # Reentrant thread lock to serialize database operations when using check_same_thread=False
         # This prevents concurrent cursor operations that cause sqlite3.InterfaceError
@@ -226,33 +226,82 @@ class DBHandler:
     @property
     def gme_library_columns(self) -> List[str]:
         if self._gme_library_columns is None:
-            with self._db_lock:
-                self.connect()
-                assert self.conn is not None
-                cursor = self.conn.cursor()
-                cursor.execute("PRAGMA table_info(gme_library);")
-                self._gme_library_columns = [row[1] for row in cursor.fetchall()]
-                cursor.close()
+            self._gme_library_columns = [
+                row[1] for row in self.fetchall("PRAGMA table_info(gme_library);")
+            ]
         return self._gme_library_columns
 
-    def connect(self):
-        if not self.conn:
+    @property
+    def conn(self):
+        if not self._conn:
             # check_same_thread=False allows connection to be used across Flask request threads
             # Thread safety is ensured by the RLock that protects all database operations
-            self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            self.conn.row_factory = sqlite3.Row
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            self._conn.row_factory = sqlite3.Row
             # Populate valid columns cache
             self._populate_valid_columns()
+        return self._conn
 
     def close(self):
-        if self.conn:
-            self.conn.close()
-            self.conn = None
+        if self._conn:
+            self._conn.close()
+            self._conn = None
+
+    def _populate_valid_columns(self):
+        """Populate the cache of valid column names for each table."""
+        assert self._conn is not None
+        for table in self.VALID_TABLES:
+            try:
+                cursor = self._conn.cursor()
+                # Safe to use f-string here: table is from VALID_TABLES whitelist
+                cursor.execute(f"PRAGMA table_info({table});")
+                columns = [row[1] for row in cursor.fetchall()]
+                self._valid_columns[table] = set(columns)
+                cursor.close()
+            except sqlite3.OperationalError:
+                # Table might not exist yet (during initialization)
+                self._valid_columns[table] = set()
+
+    def _validate_table_name(self, table: str) -> None:
+        """Validate that a table name is allowed.
+
+        Args:
+            table: Table name to validate
+
+        Raises:
+            ValueError: If table name is not in the whitelist
+        """
+        if table not in self.VALID_TABLES:
+            raise ValueError(
+                f"Invalid table name: {table}. "
+                f"Allowed tables: {', '.join(sorted(self.VALID_TABLES))}"
+            )
+
+    def _validate_field_names(self, table: str, fields: List[str]) -> None:
+        """Validate that field names are allowed for the given table.
+
+        Args:
+            table: Table name
+            fields: List of field names to validate
+
+        Raises:
+            ValueError: If any field name is not valid for the table
+        """
+        valid_columns = self._valid_columns.get(table, set())
+        if not valid_columns:
+            # Re-populate in case table was just created
+            self._populate_valid_columns()
+            valid_columns = self._valid_columns.get(table, set())
+
+        invalid_fields = [f for f in fields if f not in valid_columns]
+        if invalid_fields:
+            raise ValueError(
+                f"Invalid field names for table {table}: {', '.join(invalid_fields)}. "
+                f"Allowed fields: {', '.join(sorted(valid_columns))}"
+            )
 
     def initialize(self):
         with self._db_lock:
-            self.connect()
-            assert self.conn is not None
             cursor = self.conn.cursor()
             cursor.execute(
                 """
@@ -369,14 +418,14 @@ class DBHandler:
             self._populate_valid_columns()
 
     @contextmanager
-    def execute(
+    def execute_context(
         self, query: str, params: Tuple[Any, ...] = ()
     ) -> Generator[sqlite3.Cursor, None, None]:
         """Execute a database query with automatic locking and cursor cleanup.
 
         Use as a context manager to automatically handle thread-safe locking
         and cursor cleanup:
-            with db.execute(query, params) as cursor:
+            with db.execute_context(query, params) as cursor:
                 result = cursor.fetchone()
 
         Args:
@@ -386,16 +435,25 @@ class DBHandler:
         Yields:
             Database cursor with query results
         """
-        self._db_lock.acquire()
-        try:
-            self.connect()
-            assert self.conn is not None
+        with self._db_lock:
             cursor = self.conn.cursor()
             cursor.execute(query, params)
             yield cursor
             cursor.close()
-        finally:
-            self._db_lock.release()
+
+    def execute_and_commit(self, query: str, params: Tuple[Any, ...] = ()) -> None:
+        """Execute a single database query and commit the changes.
+
+        Args:
+            query: SQL query to execute
+            params: Query parameters tuple
+
+        Returns:
+            None
+        """
+        with self.execute_context(query, params):
+            pass
+        self.commit()
 
     def fetchall(self, query: str, params: Tuple[Any, ...] = ()) -> List[sqlite3.Row]:
         """Execute query and fetch all results with thread-safe locking.
@@ -407,7 +465,7 @@ class DBHandler:
         Returns:
             List of result rows
         """
-        with self.execute(query, params) as cur:
+        with self.execute_context(query, params) as cur:
             return cur.fetchall()
 
     def fetchone(
@@ -422,7 +480,7 @@ class DBHandler:
         Returns:
             Single result row or None
         """
-        with self.execute(query, params) as cur:
+        with self.execute_context(query, params) as cur:
             return cur.fetchone()
 
     def commit(self):
@@ -431,85 +489,7 @@ class DBHandler:
             if self.conn:
                 self.conn.commit()
 
-    def _populate_valid_columns(self):
-        """Populate the cache of valid column names for each table."""
-        assert self.conn is not None
-        for table in self.VALID_TABLES:
-            try:
-                cursor = self.conn.cursor()
-                # Safe to use f-string here: table is from VALID_TABLES whitelist
-                cursor.execute(f"PRAGMA table_info({table});")
-                columns = [row[1] for row in cursor.fetchall()]
-                self._valid_columns[table] = set(columns)
-                cursor.close()
-            except sqlite3.OperationalError:
-                # Table might not exist yet (during initialization)
-                self._valid_columns[table] = set()
-
-    def _validate_table_name(self, table: str) -> None:
-        """Validate that a table name is allowed.
-
-        Args:
-            table: Table name to validate
-
-        Raises:
-            ValueError: If table name is not in the whitelist
-        """
-        if table not in self.VALID_TABLES:
-            raise ValueError(
-                f"Invalid table name: {table}. "
-                f"Allowed tables: {', '.join(sorted(self.VALID_TABLES))}"
-            )
-
-    def _validate_field_names(self, table: str, fields: List[str]) -> None:
-        """Validate that field names are allowed for the given table.
-
-        Args:
-            table: Table name
-            fields: List of field names to validate
-
-        Raises:
-            ValueError: If any field name is not valid for the table
-        """
-        valid_columns = self._valid_columns.get(table, set())
-        if not valid_columns:
-            # Re-populate in case table was just created
-            self._populate_valid_columns()
-            valid_columns = self._valid_columns.get(table, set())
-
-        invalid_fields = [f for f in fields if f not in valid_columns]
-        if invalid_fields:
-            raise ValueError(
-                f"Invalid field names for table {table}: {', '.join(invalid_fields)}. "
-                f"Allowed fields: {', '.join(sorted(valid_columns))}"
-            )
-
-    def write_to_database(self, table: str, data: Dict[str, Any]):
-        """Write data to database table.
-
-        Args:
-            table: Table name
-            data: Data dictionary
-            connection: Database connection
-
-        Raises:
-            ValueError: If table name or field names are invalid
-        """
-        self._validate_table_name(table)
-        fields = sorted(data.keys())
-        self._validate_field_names(table, fields)
-
-        values = [data[field] for field in fields]
-        placeholders = ", ".join("?" * len(fields))
-        query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
-
-        with self.execute(query, tuple(values)):
-            pass  # Cursor automatically closed by context manager
-        with self._db_lock:
-            self.commit()
-
     def __enter__(self):
-        self.connect()
         return self
 
     def __exit__(
@@ -532,6 +512,29 @@ class DBHandler:
             config[row["param"]] = row["value"]
         return config
 
+    def write_to_database(self, table: str, data: Dict[str, Any]):
+        """Write data to database table.
+
+        Args:
+            table: Table name
+            data: Data dictionary
+            connection: Database connection
+
+        Raises:
+            ValueError: If table name or field names are invalid
+        """
+        self._validate_table_name(table)
+        fields = sorted(data.keys())
+        self._validate_field_names(table, fields)
+
+        values = [data[field] for field in fields]
+        placeholders = ", ".join("?" * len(fields))
+        query = f"INSERT INTO {table} ({', '.join(fields)}) VALUES ({placeholders})"
+
+        with self.execute_context(query, tuple(values)):
+            pass  # Cursor automatically closed by context manager
+        self.commit()
+
     def get_config_value(self, param: str) -> Optional[str]:
         """Get a specific configuration value.
 
@@ -545,6 +548,32 @@ class DBHandler:
         params = (param,)
         row = self.fetchone(query, params)
         return row["value"] if row else None
+
+    def set_config_value(self, param: str, value: str) -> None:
+        """Set a specific configuration value.
+
+        Args:
+            param: Configuration parameter name
+            value: Configuration value
+        """
+        query = "UPDATE config SET value=? WHERE param=?"
+        params = (value, param)
+        with self.execute_context(query, params):
+            pass  # Cursor automatically closed by context manager
+        self.commit()
+
+    def insert_or_replace_config(self, param: str, value: str) -> None:
+        """Insert or replace a configuration parameter.
+
+        Args:
+            param: Configuration parameter name
+            value: Configuration value
+        """
+        query = "INSERT OR REPLACE INTO config (param, value) VALUES (?, ?)"
+        params = (param, value)
+        with self.execute_context(query, params):
+            pass  # Cursor automatically closed by context manager
+        self.commit()
 
     def oid_exist(self, oid: int) -> bool:
         """Check if an OID exists in the database.
@@ -611,7 +640,7 @@ class DBHandler:
         query = "SELECT * FROM tracks WHERE parent_oid=? ORDER BY track"
         params = (album["oid"],)
 
-        with self.execute(query, params) as cursor:
+        with self.execute_context(query, params) as cursor:
             columns = [desc[0] for desc in cursor.description]
             tracks = {}
 
@@ -646,10 +675,9 @@ class DBHandler:
         set_clause = ", ".join(f"{field}=?" for field in fields)
         query = f"UPDATE {table} SET {set_clause} WHERE {keyname}"
 
-        with self.execute(query, tuple(values + search_keys)):
+        with self.execute_context(query, tuple(values + search_keys)):
             pass  # Cursor automatically closed by context manager
-        with self._db_lock:
-            self.commit()
+        self.commit()
         return True
 
     def _extract_audio_metadata(
@@ -1080,11 +1108,10 @@ class DBHandler:
                 values = list(update_fields.values()) + [track_id]
                 query = f"UPDATE tracks SET {set_clause} WHERE id=?"
 
-                with self.execute(query, tuple(values)):
+                with self.execute_context(query, tuple(values)):
                     pass  # Cursor automatically closed by context manager
 
-        with self._db_lock:
-            self.commit()
+        self.commit()
         return True
 
     def update_album(self, album_data: Dict[str, Any]) -> int:
@@ -1139,12 +1166,11 @@ class DBHandler:
             remove_album(album_dir)
 
             # Delete from database
-            with self.execute("DELETE FROM tracks WHERE parent_oid=?", (uid,)):
+            with self.execute_context("DELETE FROM tracks WHERE parent_oid=?", (uid,)):
                 pass
-            with self.execute("DELETE FROM gme_library WHERE oid=?", (uid,)):
+            with self.execute_context("DELETE FROM gme_library WHERE oid=?", (uid,)):
                 pass
-            with self._db_lock:
-                self.commit()
+            self.commit()
 
         return uid
 
@@ -1157,10 +1183,9 @@ class DBHandler:
         Returns:
             Album OID
         """
-        with self.execute("DELETE FROM tracks WHERE parent_oid=?", (oid,)):
+        with self.execute_context("DELETE FROM tracks WHERE parent_oid=?", (oid,)):
             pass
-        with self._db_lock:
-            self.commit()
+        self.commit()
         return oid
 
     def cleanup_album(self, uid: int) -> int:
@@ -1239,7 +1264,7 @@ class DBHandler:
         """
         import re
 
-        with self.execute("SELECT oid, path FROM gme_library") as cursor:
+        with self.execute_context("SELECT oid, path FROM gme_library") as cursor:
             rows = cursor.fetchall()
 
         try:
@@ -1247,12 +1272,11 @@ class DBHandler:
                 updated_path = re.sub(
                     re.escape(old_path), str(new_path.absolute()), old_path
                 )
-                with self.execute(
+                with self.execute_context(
                     "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
                 ):
                     pass
-            with self._db_lock:
-                self.commit()
+            self.commit()
         except Exception as e:
             assert self.conn is not None
             self.conn.rollback()
@@ -1462,10 +1486,9 @@ class DBHandler:
                             logger.info(f"Executed update function, result: {result}")
                         else:
                             # Execute SQL
-                            with self.execute(sql_or_func):
+                            with self.execute_context(sql_or_func):
                                 pass
-                    with self._db_lock:
-                        self.commit()
+                    self.commit()
                 except Exception as e:
                     assert self.conn is not None
                     self.conn.rollback()

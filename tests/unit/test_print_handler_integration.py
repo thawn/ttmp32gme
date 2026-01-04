@@ -23,21 +23,28 @@ class TestFormatTracksIntegration:
         db.initialize()
 
         # Insert album
-        db.execute(
-            """
-            INSERT INTO gme_library (oid, album_title, num_tracks, path)
-            VALUES (920, 'Test Album', 3, '/tmp/test')
-        """
+        db.write_to_database(
+            table="gme_library",
+            data={
+                "oid": 920,
+                "album_title": "Test Album",
+                "num_tracks": 3,
+                "path": "/tmp/test",
+            },
         )
 
         # Insert tracks with None tt_script (simulating pre-GME state)
         for i in range(3):
-            db.execute(
-                """
-                INSERT INTO tracks (parent_oid, title, track, duration, filename, tt_script)
-                VALUES (?, ?, ?, ?, ?, NULL)
-            """,
-                (920, f"Track {i + 1}", i + 1, 180000, f"track{i + 1}.mp3"),
+            db.write_to_database(
+                table="tracks",
+                data={
+                    "parent_oid": 920,
+                    "title": f"Track {i + 1}",
+                    "track": i + 1,
+                    "duration": 180000,
+                    "filename": f"track{i + 1}.mp3",
+                    "tt_script": None,
+                },
             )
 
         db.commit()
