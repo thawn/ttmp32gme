@@ -237,7 +237,7 @@ class DBHandler:
     def connect(self):
         if not self.conn:
             # check_same_thread=False allows connection to be used across Flask request threads
-            # This is safe because SQLite handles its own locking
+            # Thread safety is ensured by the RLock that protects all database operations
             self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
             # Populate valid columns cache
@@ -370,9 +370,9 @@ class DBHandler:
     def execute(self, query: str, params: Tuple[Any, ...] = ()) -> sqlite3.Cursor:
         """Execute a database query.
 
-        Note: This method acquires the DB lock but returns a cursor that will be
-        used outside the lock. For thread-safe operations, use fetchall() or fetchone()
-        instead, which keep the entire operation within the lock.
+        Note: This method is not thread-safe by itself. It should only be called
+        from within a locked context (with self._db_lock). Public methods like
+        fetchall(), fetchone(), and write_to_database() handle locking automatically.
 
         Args:
             query: SQL query to execute
