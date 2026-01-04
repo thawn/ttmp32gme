@@ -424,9 +424,7 @@ class DBHandler:
         """Execute a database query with automatic locking and cursor cleanup.
 
         Use as a context manager to automatically handle thread-safe locking
-        and cursor cleanup:
-            with db.execute_context(query, params) as cursor:
-                result = cursor.fetchone()
+        and cursor cleanup.
 
         Args:
             query: SQL query to execute
@@ -434,6 +432,10 @@ class DBHandler:
 
         Yields:
             Database cursor with query results
+
+        Example:
+            with db.execute_context(query, params) as cursor:
+                result = cursor.fetchone()
         """
         with self._db_lock:
             cursor = self.conn.cursor()
