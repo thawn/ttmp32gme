@@ -24,11 +24,17 @@ permissions:
 
 jobs:
   e2e-tests:
-    name: End-to-End Tests with Selenium
-    runs-on: ubuntu-latest
+    name: End-to-End Tests with Selenium (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
 
     permissions:
       contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Always run on Linux, but only run on macOS/Windows for pushes to main/master or manual workflow dispatch
+        os: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') || fromJSON('["ubuntu-latest"]') }}
 
     steps:
     - uses: actions/checkout@v4
@@ -45,12 +51,15 @@ jobs:
       with:
         version: "latest"
 
-    - name: Install system dependencies
+    # Linux-specific setup
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
       run: |
         sudo apt-get update
         sudo apt-get install -y wget unzip
 
-    - name: Install Chrome and ChromeDriver
+    - name: Install Chrome and ChromeDriver (Linux)
+      if: runner.os == 'Linux'
       run: |
         # Install Chrome
         wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -67,61 +76,91 @@ jobs:
         sudo chmod +x /usr/local/bin/chromedriver
         rm -rf chromedriver-linux64*
 
-    - name: Install tttool (from releases)
-      run: |
-        # Download a specific working version from GitHub releases
-        # Using the correct URL pattern: tttool-{version}.zip
-        TTTOOL_VERSION="1.8.1"
-        echo "Installing tttool version $TTTOOL_VERSION"
+    - name: Install tttool (Linux)
+      if: runner.os == 'Linux'
+      run: .github/scripts/install-tttool-linux.sh
 
-        # Use system temp directory for extraction
-        TEMP_DIR=$(mktemp -d)
-        cd "$TEMP_DIR"
-
-        wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
-
-        # Extract into temp directory
-        unzip -q "tttool-${TTTOOL_VERSION}.zip"
-
-        # Move the binary to /usr/local/bin
-        chmod +x tttool
-        sudo mv tttool /usr/local/bin/
-
-        # Cleanup - change permissions recursively then remove
-        cd "$GITHUB_WORKSPACE"
-        chmod -R u+w "$TEMP_DIR" || true
-        rm -rf "$TEMP_DIR"
-
-        # Verify installation
-        tttool --help || { echo "Error: tttool installation failed"; exit 1; }
-
-    - name: Install ffmpeg (static build)
+    - name: Install ffmpeg (Linux)
+      if: runner.os == 'Linux'
       run: .github/scripts/install-ffmpeg-linux.sh
 
+    # macOS-specific setup
+    - name: Install ChromeDriver (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        # Install Chrome and ChromeDriver using Homebrew
+        brew install --cask google-chrome
+        brew install chromedriver
+
+        # Remove quarantine attribute from chromedriver
+        xattr -d com.apple.quarantine $(which chromedriver) || true
+
+    - name: Install tttool (macOS)
+      if: runner.os == 'macOS'
+      run: .github/scripts/install-tttool-macos.sh
+
+    - name: Install ffmpeg (macOS)
+      if: runner.os == 'macOS'
+      run: .github/scripts/install-ffmpeg-macos.sh
+
+    # Windows-specific setup
+    - name: Install Chrome and ChromeDriver (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: .github/scripts/install-chrome-windows.ps1
+
+    - name: Install tttool (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: .github/scripts/install-tttool-windows.ps1
+
+    - name: Install ffmpeg (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: .github/scripts/install-ffmpeg-windows.ps1
+
     - name: Install Python dependencies
+      shell: bash
       run: |
         uv pip install --system -e ".[test]"
 
     - name: Prepare test fixtures
+      shell: python
       run: |
-        # Bundled test audio file already exists in repo
-        ls -lh tests/fixtures/test_audio.mp3
+        import os
+        from pathlib import Path
+
+        # Verify bundled test audio file exists
+        test_audio = Path("tests/fixtures/test_audio.mp3")
+        if test_audio.exists():
+            print(f"Test audio file found: {test_audio} ({test_audio.stat().st_size} bytes)")
+        else:
+            raise FileNotFoundError(f"Test audio file not found: {test_audio}")
 
         # Create test cover image if needed
-        if [ ! -f tests/fixtures/test_cover.jpg ]; then
-          python3 -c "from PIL import Image; img = Image.new('RGB', (100, 100), color='green'); img.save('tests/fixtures/test_cover.jpg')"
-        fi
+        test_cover = Path("tests/fixtures/test_cover.jpg")
+        if not test_cover.exists():
+            from PIL import Image
+            img = Image.new("RGB", (100, 100), color="green")
+            img.save(test_cover)
+            print(f"Created test cover image: {test_cover}")
+        else:
+            print(f"Test cover image found: {test_cover}")
 
-        # Verify files exist
-        ls -lh tests/fixtures/
+        # Verify all fixtures
+        print("\nTest fixtures:")
+        for f in Path("tests/fixtures").iterdir():
+            if f.is_file():
+                print(f"  {f.name} ({f.stat().st_size} bytes)")
 
     - name: Run E2E tests with pytest (includes tttool tests)
+      shell: bash
       run: |
         pytest tests/e2e/ -v --tb=short --html=e2e-report.html --self-contained-html
 
     - name: Upload test report
       uses: actions/upload-artifact@v4
       with:
-        name: e2e-test-report
+        name: e2e-test-report-${{ matrix.os }}
         path: e2e-report.html
       if: always()

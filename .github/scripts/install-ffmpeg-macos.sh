@@ -1,15 +1,27 @@
 #!/bin/bash
 # Script to install ffmpeg on macOS with timeout and retry
 # Usage: install-ffmpeg-macos.sh <target_dir>
-# Example: install-ffmpeg-macos.sh lib/mac
+# Example: install-ffmpeg-macos.sh lib/mac (for builds)
+#          install-ffmpeg-macos.sh (for CI - installs via Homebrew)
 
 set -e
 
-TARGET_DIR="${1:-lib/mac}"
+TARGET_DIR="${1:-}"
+
+# If no target directory specified, install via Homebrew (for CI)
+if [ -z "$TARGET_DIR" ]; then
+  echo "Installing ffmpeg via Homebrew for CI..."
+  brew install ffmpeg
+  ffmpeg -version | head -n1
+  echo "ffmpeg installation complete"
+  exit 0
+fi
+
+# Otherwise, download static binary (for builds)
+echo "Downloading and installing ffmpeg for macOS to $TARGET_DIR..."
+
 TIMEOUT_SECONDS=60
 URL="https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip"
-
-echo "Downloading and installing ffmpeg for macOS..."
 
 # Function to run command with timeout using Python
 # Only used internally with controlled commands (no user input)

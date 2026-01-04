@@ -44,28 +44,8 @@ jobs:
           uv pip install --system -e ".[build]"
 
       - name: Download tttool for Windows
-        run: |
-          $TTTOOL_VERSION = "1.8.1"
-          Write-Host "Downloading tttool version $TTTOOL_VERSION for Windows"
-
-          # Create lib/win directory if it doesn't exist
-          New-Item -ItemType Directory -Force -Path lib/win
-
-          # Download tttool to temp directory
-          $tempDir = New-Item -ItemType Directory -Path (Join-Path $env:TEMP "tttool-temp-$(Get-Random)")
-          $url = "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
-          $zipPath = Join-Path $tempDir "tttool.zip"
-          Invoke-WebRequest -Uri $url -OutFile $zipPath
-
-          # Extract to temp directory and move binary
-          Expand-Archive -Path $zipPath -DestinationPath $tempDir -Force
-          Move-Item -Path (Join-Path $tempDir "tttool.exe") -Destination lib/win/tttool.exe -Force
-
-          # Cleanup temp directory
-          Remove-Item -Recurse -Force $tempDir
-
-          # Verify
-          lib/win/tttool.exe --help
+        shell: pwsh
+        run: .github/scripts/install-tttool-windows.ps1 lib/win
 
       - name: Download ffmpeg for Windows
         run: |
@@ -194,44 +174,7 @@ jobs:
           uv pip install --system -e ".[build]"
 
       - name: Download tttool for macOS
-        run: |
-          TTTOOL_VERSION="1.11"
-          echo "Downloading tttool version $TTTOOL_VERSION for macOS"
-
-          # Create lib/mac directory if it doesn't exist
-          mkdir -p lib/mac
-
-          # Create temp directory for extraction
-          TEMP_DIR=$(mktemp -d)
-          cd "$TEMP_DIR"
-
-          # Download and extract tttool
-          wget -q "https://github.com/entropia/tip-toi-reveng/releases/download/${TTTOOL_VERSION}/tttool-${TTTOOL_VERSION}.zip"
-          unzip -q "tttool-${TTTOOL_VERSION}.zip"
-          cd tttool-1.11/osx
-
-          # Move binary and dynamic libraries to lib/mac
-          chmod +x tttool
-          mv tttool "$GITHUB_WORKSPACE/lib/mac/tttool"
-
-          # Copy all .dylib files if they exist
-          if ls *.dylib 1> /dev/null 2>&1; then
-            mv *.dylib "$GITHUB_WORKSPACE/lib/mac/"
-          fi
-
-          # Cleanup temp directory - change permissions first to ensure deletion succeeds
-          cd "$GITHUB_WORKSPACE"
-          chmod -R u+w "$TEMP_DIR" || true
-          rm -rf "$TEMP_DIR"
-
-          # Verify - check architecture and try to run
-          lib/mac/tttool --help || {
-            echo "Failed to execute tttool"
-            echo "Exit code: $?"
-            echo "Checking otool dependencies:"
-            otool -L lib/mac/tttool || echo "otool failed"
-            exit 1
-          }
+        run: .github/scripts/install-tttool-macos.sh lib/mac
 
       - name: Download ffmpeg for macOS
         run: .github/scripts/install-ffmpeg-macos.sh lib/mac

@@ -44,7 +44,12 @@ def chrome_options():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.BinaryLocation = "/usr/bin/chromium"
+    # Set window size for headless mode to ensure elements are properly rendered
+    # This is especially important for Windows where elements may not be interactable without it
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--start-maximized")
+    # Don't hardcode binary location - let Selenium find Chrome automatically
+    # This works across Linux, macOS, and Windows
     return options
 
 

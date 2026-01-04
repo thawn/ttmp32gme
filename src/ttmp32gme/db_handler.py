@@ -1268,16 +1268,30 @@ class DBHandler:
         Returns:
             True if successful
         """
-        import re
+        from pathlib import Path
 
         with self.execute_context("SELECT oid, path FROM gme_library") as cursor:
             rows = cursor.fetchall()
 
         try:
-            for oid, old_path in rows:
-                updated_path = re.sub(
-                    re.escape(old_path), str(new_path.absolute()), old_path
-                )
+            # Convert paths to Path objects for proper handling
+            old_library_path = Path(old_path).absolute()
+            new_library_path = new_path.absolute()
+
+            for oid, album_path in rows:
+                # Convert album path to Path object
+                album_path_obj = Path(album_path)
+
+                # Check if the album path starts with the old library path
+                try:
+                    # Get relative path from old library to album
+                    relative_path = album_path_obj.relative_to(old_library_path)
+                    # Construct new album path
+                    updated_path = str(new_library_path / relative_path)
+                except ValueError:
+                    # Path is not relative to old library path, keep it unchanged
+                    updated_path = album_path
+
                 with self.execute_context(
                     "UPDATE gme_library SET path=? WHERE oid=?", (updated_path, oid)
                 ):

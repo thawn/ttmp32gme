@@ -29,6 +29,17 @@ def _open_library_element_for_editing(server_url, driver, element_number: int = 
     # Look for create GME button and click it
     library_row = driver.find_element(By.ID, f"el{element_number}")
     edit_button = library_row.find_element(By.CLASS_NAME, "edit-button")
+
+    # Scroll element into view to ensure it's interactable (especially on Windows)
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'});", edit_button
+    )
+    time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
+    # Wait for button to be clickable before clicking
+    WebDriverWait(driver, 5).until(
+        EC.element_to_be_clickable((By.CLASS_NAME, "edit-button"))
+    )
     edit_button.click()
     WebDriverWait(driver, 5).until(
         EC.element_to_be_clickable((By.CLASS_NAME, "make-gme"))
@@ -39,6 +50,13 @@ def _open_library_element_for_editing(server_url, driver, element_number: int = 
 def _create_gme(server_url, driver, element_number=0):
     library_row = _open_library_element_for_editing(server_url, driver, element_number)
     create_button = library_row.find_element(By.CLASS_NAME, "make-gme")
+
+    # Scroll button into view to ensure it's interactable
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block: 'center'});", create_button
+    )
+    time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
     create_button.click()
     time.sleep(5)  #
 
@@ -76,6 +94,13 @@ class TransientConfigChange:
         format_select = self._get_config_element()
         format_select.send_keys(setting)
         save_button = self.driver.find_element(By.ID, "submit")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)  # Wait for save
 
@@ -374,16 +399,40 @@ class TestWebInterface:
 
         # Save configuration
         save_button = driver.find_element(By.ID, "submit")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
         save_button.click()
-        time.sleep(
-            5
-        )  # Wait longer for library move to complete (can take time with large files)
+
+        # Wait for library move to complete (can take longer on Windows due to file operations)
+        # Use a longer timeout on Windows where file operations are slower
+        import platform
+
+        wait_time = 10 if platform.system() == "Windows" else 5
+        time.sleep(wait_time)
 
         # Verify library_path updated in config table
-        new_config_path = _get_database_value(
-            "SELECT value FROM config WHERE param = 'library_path'",
-            db_path=server_info["db_path"],
-        )[0]
+        # Retry a few times in case Windows needs extra time for file operations
+        max_retries = 3
+        retry_delay = 2
+        new_config_path = None
+
+        for attempt in range(max_retries):
+            new_config_path = _get_database_value(
+                "SELECT value FROM config WHERE param = 'library_path'",
+                db_path=server_info["db_path"],
+            )[0]
+
+            if new_config_path == str(new_library_path):
+                break
+
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+
         assert new_config_path == str(new_library_path), (
             f"Library path not updated in config. "
             f"Expected {new_library_path}, got {new_config_path}"
@@ -499,6 +548,13 @@ class TestWebInterface:
 
         # Save
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
@@ -528,6 +584,13 @@ class TestWebInterface:
 
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
@@ -619,6 +682,13 @@ class TestWebInterface:
 
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
@@ -714,6 +784,13 @@ class TestWebInterface:
 
         # Save changes
         save_button = library_element.find_element(By.CLASS_NAME, "update")
+
+        # Scroll button into view to ensure it's interactable (especially on Windows)
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});", save_button
+        )
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
+
         save_button.click()
         time.sleep(1)
 
