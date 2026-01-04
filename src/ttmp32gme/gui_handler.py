@@ -4,14 +4,23 @@ import logging
 import platform
 import sys
 import threading
-import tkinter as tk
-from tkinter import ttk
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from flask import Flask
 
 logger = logging.getLogger(__name__)
+
+# Check if tkinter is available (it won't be in Docker/headless environments)
+_tkinter_available = True
+tk: Any = None
+ttk: Any = None
+try:
+    import tkinter as tk  # noqa: F811
+    from tkinter import ttk  # noqa: F811
+except ImportError:
+    _tkinter_available = False
+    logger.debug("tkinter not available - GUI will be disabled")
 
 
 class ServerStatusWindow:
@@ -33,73 +42,76 @@ class ServerStatusWindow:
             port: Server port number
             shutdown_callback: Function to call when server should be shut down
         """
+        if not _tkinter_available:
+            raise RuntimeError("tkinter is not available - GUI cannot be used")
+
         self.host = host
         self.port = port
         self.shutdown_callback = shutdown_callback
-        self.root: Optional[tk.Tk] = None
+        self.root: Any = None
         self.is_running = False
-        self.logs_window: Optional[tk.Toplevel] = None
-        self.logs_text: Optional[tk.Text] = None
+        self.logs_window: Any = None
+        self.logs_text: Any = None
 
     def create_window(self) -> None:
         """Create and configure the tkinter window."""
-        self.root = tk.Tk()
-        self.root.title("ttmp32gme Server")
-        self.root.geometry("400x250")
-        self.root.resizable(False, False)
+        self.root = tk.Tk()  # type: ignore[union-attr]
+        self.root.title("ttmp32gme Server")  # type: ignore[union-attr]
+        self.root.geometry("400x250")  # type: ignore[union-attr]
+        self.root.resizable(False, False)  # type: ignore[union-attr]
 
         # Handle window close event
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # type: ignore[union-attr]
 
         # Create main frame with padding
-        main_frame = ttk.Frame(self.root, padding="20")
+        main_frame = ttk.Frame(self.root, padding="20")  # type: ignore[union-attr]
         main_frame.grid(row=0, column=0, sticky="wens")
 
         # Title label
-        title_label = ttk.Label(
+        title_label = ttk.Label(  # type: ignore[union-attr]
             main_frame, text="TipToi MP3 GME Converter", font=("Helvetica", 16, "bold")
         )
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
 
         # Server status section
-        status_label = ttk.Label(
+        status_label = ttk.Label(  # type: ignore[union-attr]
             main_frame, text="Server is running", font=("Helvetica", 12)
         )
         status_label.grid(row=1, column=0, columnspan=2, pady=(0, 10))
 
         # URL display
         url = f"http://{self.host}:{self.port}/"
-        url_frame = ttk.Frame(main_frame)
+        url_frame = ttk.Frame(main_frame)  # type: ignore[union-attr]
         url_frame.grid(row=2, column=0, columnspan=2, pady=(0, 20))
 
-        ttk.Label(url_frame, text="URL:").grid(row=0, column=0, padx=(0, 5))
-        url_entry = ttk.Entry(url_frame, width=30)
+        ttk.Label(url_frame, text="URL:").grid(row=0, column=0, padx=(0, 5))  # type: ignore[union-attr]
+        url_entry = ttk.Entry(url_frame, width=30)  # type: ignore[union-attr]
         url_entry.insert(0, url)
         url_entry.config(state="readonly")
         url_entry.grid(row=0, column=1)
 
         # Buttons frame
-        button_frame = ttk.Frame(main_frame)
+        button_frame = ttk.Frame(main_frame)  # type: ignore[union-attr]
         button_frame.grid(row=3, column=0, columnspan=2, pady=(10, 0))
 
         # Open Browser button
-        open_button = ttk.Button(
+        open_button = ttk.Button(  # type: ignore[union-attr]
             button_frame, text="Open Browser", command=self.open_browser
         )
         open_button.grid(row=0, column=0, padx=(0, 5))
 
         # Show Logs button
-        logs_button = ttk.Button(button_frame, text="Show Logs", command=self.show_logs)
+        logs_button = ttk.Button(button_frame, text="Show Logs", command=self.show_logs)  # type: ignore[union-attr]
         logs_button.grid(row=0, column=1, padx=(0, 5))
 
         # Stop Server button
-        stop_button = ttk.Button(
+        stop_button = ttk.Button(  # type: ignore[union-attr]
             button_frame, text="Stop Server", command=self.on_close
         )
         stop_button.grid(row=0, column=2)
 
         # Info label at the bottom
-        info_label = ttk.Label(
+        info_label = ttk.Label(  # type: ignore[union-attr]
             main_frame,
             text="Close this window to stop the server",
             font=("Helvetica", 9),
@@ -115,65 +127,65 @@ class ServerStatusWindow:
 
     def show_logs(self) -> None:
         """Open a window showing server logs."""
-        if self.logs_window and tk.Toplevel.winfo_exists(self.logs_window):
+        if self.logs_window and tk.Toplevel.winfo_exists(self.logs_window):  # type: ignore[union-attr]
             # Window already exists, just raise it
-            self.logs_window.lift()
-            self.logs_window.focus_force()
+            self.logs_window.lift()  # type: ignore[union-attr]
+            self.logs_window.focus_force()  # type: ignore[union-attr]
             return
 
         # Create logs window
-        self.logs_window = tk.Toplevel(self.root)
-        self.logs_window.title("Server Logs")
-        self.logs_window.geometry("700x500")
+        self.logs_window = tk.Toplevel(self.root)  # type: ignore[union-attr]
+        self.logs_window.title("Server Logs")  # type: ignore[union-attr]
+        self.logs_window.geometry("700x500")  # type: ignore[union-attr]
 
         # Create frame for logs
-        logs_frame = ttk.Frame(self.logs_window, padding="10")
+        logs_frame = ttk.Frame(self.logs_window, padding="10")  # type: ignore[union-attr]
         logs_frame.grid(row=0, column=0, sticky="nsew")
-        self.logs_window.grid_rowconfigure(0, weight=1)
-        self.logs_window.grid_columnconfigure(0, weight=1)
+        self.logs_window.grid_rowconfigure(0, weight=1)  # type: ignore[union-attr]
+        self.logs_window.grid_columnconfigure(0, weight=1)  # type: ignore[union-attr]
 
         # Create scrolled text widget for logs
-        logs_text_frame = ttk.Frame(logs_frame)
+        logs_text_frame = ttk.Frame(logs_frame)  # type: ignore[union-attr]
         logs_text_frame.grid(row=0, column=0, sticky="nsew")
         logs_frame.grid_rowconfigure(0, weight=1)
         logs_frame.grid_columnconfigure(0, weight=1)
 
         # Text widget with scrollbar
-        scrollbar = ttk.Scrollbar(logs_text_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollbar = ttk.Scrollbar(logs_text_frame)  # type: ignore[union-attr]
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)  # type: ignore[union-attr]
 
-        self.logs_text = tk.Text(
+        self.logs_text = tk.Text(  # type: ignore[union-attr]
             logs_text_frame,
-            wrap=tk.WORD,
+            wrap=tk.WORD,  # type: ignore[union-attr]
             yscrollcommand=scrollbar.set,
             font=("Courier", 10),
             bg="white",
             fg="black",
         )
-        self.logs_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.config(command=self.logs_text.yview)
+        self.logs_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # type: ignore[union-attr]
+        scrollbar.config(command=self.logs_text.yview)  # type: ignore[union-attr]
 
         # Buttons frame at bottom
-        button_frame = ttk.Frame(logs_frame)
+        button_frame = ttk.Frame(logs_frame)  # type: ignore[union-attr]
         button_frame.grid(row=1, column=0, pady=(10, 0))
 
         # Refresh button
-        refresh_button = ttk.Button(
+        refresh_button = ttk.Button(  # type: ignore[union-attr]
             button_frame, text="Refresh", command=self.refresh_logs
         )
-        refresh_button.pack(side=tk.LEFT, padx=(0, 5))
+        refresh_button.pack(side=tk.LEFT, padx=(0, 5))  # type: ignore[union-attr]
 
         # Clear button
-        clear_button = ttk.Button(
+        clear_button = ttk.Button(  # type: ignore[union-attr]
             button_frame, text="Clear", command=self.clear_logs_display
         )
-        clear_button.pack(side=tk.LEFT, padx=(0, 5))
+        clear_button.pack(side=tk.LEFT, padx=(0, 5))  # type: ignore[union-attr]
 
         # Close button
-        close_button = ttk.Button(
-            button_frame, text="Close", command=self.logs_window.destroy
+        close_button = ttk.Button(  # type: ignore[union-attr]
+            button_frame, text="Close", command=self.logs_window.destroy  # type: ignore[union-attr]
         )
-        close_button.pack(side=tk.LEFT)
+        close_button.pack(side=tk.LEFT)  # type: ignore[union-attr]
 
         # Load initial logs
         self.refresh_logs()
@@ -241,11 +253,16 @@ def should_use_gui() -> bool:
     - Running on macOS
     - Running from PyInstaller bundle
     - Not in development mode
+    - tkinter is available
 
     Returns:
         True if GUI should be used, False otherwise
     """
-    return platform.system() == "Darwin" and getattr(sys, "frozen", False)
+    return (
+        _tkinter_available
+        and platform.system() == "Darwin"
+        and getattr(sys, "frozen", False)
+    )
 
 
 def run_server_with_gui(app: "Flask", host: str, port: int) -> None:
