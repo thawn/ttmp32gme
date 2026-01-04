@@ -328,6 +328,74 @@ class TestFileHandler:
 
         assert result is False
 
+    @patch("ttmp32gme.build.file_handler.platform.system")
+    @patch("ttmp32gme.build.file_handler.os.access")
+    @patch("ttmp32gme.build.file_handler.shutil.which")
+    @patch("ttmp32gme.build.file_handler.Path.home")
+    def test_get_executable_path_chrome_macos_user_applications(
+        self, mock_home, mock_which, mock_access, mock_system
+    ):
+        """Test finding Chrome in macOS ~/Applications directory."""
+        mock_system.return_value = "Darwin"
+        mock_which.return_value = None  # Not in PATH
+        mock_access.return_value = True  # File is executable
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mock_home.return_value = Path(tmpdir)
+
+            # Create fake Chrome.app structure in ~/Applications
+            chrome_app = (
+                Path(tmpdir)
+                / "Applications"
+                / "Google Chrome.app"
+                / "Contents"
+                / "MacOS"
+            )
+            chrome_app.mkdir(parents=True)
+            chrome_exe = chrome_app / "Google Chrome"
+            chrome_exe.write_text("fake chrome")
+            # Make it executable
+            chrome_exe.chmod(0o755)
+
+            result = get_executable_path("google-chrome")
+
+            # Should find Chrome in ~/Applications
+            assert result is not None
+            assert "Google Chrome" in result
+            assert str(chrome_exe) == result
+
+    @patch("ttmp32gme.build.file_handler.platform.system")
+    @patch("ttmp32gme.build.file_handler.os.access")
+    @patch("ttmp32gme.build.file_handler.shutil.which")
+    @patch("ttmp32gme.build.file_handler.Path.home")
+    def test_get_executable_path_chromium_macos_user_applications(
+        self, mock_home, mock_which, mock_access, mock_system
+    ):
+        """Test finding Chromium in macOS ~/Applications directory."""
+        mock_system.return_value = "Darwin"
+        mock_which.return_value = None  # Not in PATH
+        mock_access.return_value = True  # File is executable
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mock_home.return_value = Path(tmpdir)
+
+            # Create fake Chromium.app structure in ~/Applications
+            chromium_app = (
+                Path(tmpdir) / "Applications" / "Chromium.app" / "Contents" / "MacOS"
+            )
+            chromium_app.mkdir(parents=True)
+            chromium_exe = chromium_app / "Chromium"
+            chromium_exe.write_text("fake chromium")
+            # Make it executable
+            chromium_exe.chmod(0o755)
+
+            result = get_executable_path("chromium")
+
+            # Should find Chromium in ~/Applications
+            assert result is not None
+            assert "Chromium" in result
+            assert str(chromium_exe) == result
+
     @patch("ttmp32gme.build.file_handler.subprocess.run")
     @patch("ttmp32gme.build.file_handler.platform.system")
     def test_open_browser_linux(self, mock_system, mock_run):
