@@ -38,6 +38,8 @@ class ServerStatusWindow:
         self.shutdown_callback = shutdown_callback
         self.root: Optional[tk.Tk] = None
         self.is_running = False
+        self.logs_window: Optional[tk.Toplevel] = None
+        self.logs_text: Optional[tk.Text] = None
 
     def create_window(self) -> None:
         """Create and configure the tkinter window."""
@@ -84,13 +86,17 @@ class ServerStatusWindow:
         open_button = ttk.Button(
             button_frame, text="Open Browser", command=self.open_browser
         )
-        open_button.grid(row=0, column=0, padx=(0, 10))
+        open_button.grid(row=0, column=0, padx=(0, 5))
+
+        # Show Logs button
+        logs_button = ttk.Button(button_frame, text="Show Logs", command=self.show_logs)
+        logs_button.grid(row=0, column=1, padx=(0, 5))
 
         # Stop Server button
         stop_button = ttk.Button(
             button_frame, text="Stop Server", command=self.on_close
         )
-        stop_button.grid(row=0, column=1)
+        stop_button.grid(row=0, column=2)
 
         # Info label at the bottom
         info_label = ttk.Label(
@@ -106,6 +112,109 @@ class ServerStatusWindow:
         from ttmp32gme.build.file_handler import open_browser
 
         open_browser(self.host, self.port)
+
+    def show_logs(self) -> None:
+        """Open a window showing server logs."""
+        if self.logs_window and tk.Toplevel.winfo_exists(self.logs_window):
+            # Window already exists, just raise it
+            self.logs_window.lift()
+            self.logs_window.focus_force()
+            return
+
+        # Create logs window
+        self.logs_window = tk.Toplevel(self.root)
+        self.logs_window.title("Server Logs")
+        self.logs_window.geometry("700x500")
+
+        # Create frame for logs
+        logs_frame = ttk.Frame(self.logs_window, padding="10")
+        logs_frame.grid(row=0, column=0, sticky="nsew")
+        self.logs_window.grid_rowconfigure(0, weight=1)
+        self.logs_window.grid_columnconfigure(0, weight=1)
+
+        # Create scrolled text widget for logs
+        logs_text_frame = ttk.Frame(logs_frame)
+        logs_text_frame.grid(row=0, column=0, sticky="nsew")
+        logs_frame.grid_rowconfigure(0, weight=1)
+        logs_frame.grid_columnconfigure(0, weight=1)
+
+        # Text widget with scrollbar
+        scrollbar = ttk.Scrollbar(logs_text_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.logs_text = tk.Text(
+            logs_text_frame,
+            wrap=tk.WORD,
+            yscrollcommand=scrollbar.set,
+            font=("Courier", 10),
+            bg="white",
+            fg="black",
+        )
+        self.logs_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.logs_text.yview)
+
+        # Buttons frame at bottom
+        button_frame = ttk.Frame(logs_frame)
+        button_frame.grid(row=1, column=0, pady=(10, 0))
+
+        # Refresh button
+        refresh_button = ttk.Button(
+            button_frame, text="Refresh", command=self.refresh_logs
+        )
+        refresh_button.pack(side=tk.LEFT, padx=(0, 5))
+
+        # Clear button
+        clear_button = ttk.Button(
+            button_frame, text="Clear", command=self.clear_logs_display
+        )
+        clear_button.pack(side=tk.LEFT, padx=(0, 5))
+
+        # Close button
+        close_button = ttk.Button(
+            button_frame, text="Close", command=self.logs_window.destroy
+        )
+        close_button.pack(side=tk.LEFT)
+
+        # Load initial logs
+        self.refresh_logs()
+
+    def refresh_logs(self) -> None:
+        """Refresh the logs display with latest logs from the server."""
+        if not self.logs_text:
+            return
+
+        try:
+            # Import here to avoid circular imports
+            import json
+            import urllib.request
+
+            # Fetch logs from the server
+            url = f"http://{self.host}:{self.port}/logs?lines=500"
+            with urllib.request.urlopen(url, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                if data.get("success"):
+                    logs = data.get("logs", [])
+
+                    # Clear current content
+                    self.logs_text.delete("1.0", tk.END)
+
+                    # Insert logs
+                    if logs:
+                        self.logs_text.insert("1.0", "\n".join(logs))
+                        # Scroll to bottom
+                        self.logs_text.see(tk.END)
+                    else:
+                        self.logs_text.insert("1.0", "No logs available yet.")
+        except Exception as e:
+            if self.logs_text:
+                self.logs_text.delete("1.0", tk.END)
+                self.logs_text.insert("1.0", f"Error fetching logs: {e}")
+
+    def clear_logs_display(self) -> None:
+        """Clear the logs display."""
+        if self.logs_text:
+            self.logs_text.delete("1.0", tk.END)
+            self.logs_text.insert("1.0", "Logs cleared. Click Refresh to reload.")
 
     def on_close(self) -> None:
         """Handle window close event and shut down the server."""
