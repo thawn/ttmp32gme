@@ -844,8 +844,16 @@ def main():
             from waitress import serve
 
             # Use more threads to handle concurrent requests, especially for PDF generation
-            # where Chromium makes a nested request back to the server
-            serve(app, host=host, port=port, threads=8)
+            # where Chromium makes a nested request back to the server.
+            # Also increase channel_timeout to handle long-running PDF generation.
+            serve(
+                app,
+                host=host,
+                port=port,
+                threads=8,
+                channel_timeout=120,
+                connection_limit=100,
+            )
         except ImportError:
             logger.error(
                 "Waitress not installed. Reinstall with: 'uv pip install -e .' or 'pip install -e .'"
