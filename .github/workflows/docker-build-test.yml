@@ -8,6 +8,11 @@ on:
         required: false
         type: boolean
         default: false
+      push_to_ghcr:
+        description: 'Whether to push the image to GitHub Container Registry'
+        required: false
+        type: boolean
+        default: false
       image_tag:
         description: 'Docker image tag to use'
         required: false
@@ -21,6 +26,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   docker-build-test:
@@ -48,8 +54,17 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Extract metadata for Docker
-      id: meta
+    - name: Log in to GitHub Container Registry
+      if: ${{ inputs.push_to_ghcr }}
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata for Docker Hub
+      id: meta-dockerhub
+      if: ${{ inputs.push_to_registry }}
       uses: docker/metadata-action@v5
       with:
         images: thawn/ttmp32gme
@@ -59,6 +74,18 @@ jobs:
           type=semver,pattern={{major}}.{{minor}}
           type=semver,pattern={{major}}
           type=sha,prefix=git-
+
+    - name: Extract metadata for GHCR
+      id: meta-ghcr
+      if: ${{ inputs.push_to_ghcr }}
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=raw,value=${{ inputs.image_tag }}
+          type=sha,prefix=git-
+        labels: |
+          org.opencontainers.image.description=ttmp32gme Docker image for testing (expires in 3 days)
 
     - name: Build and test Docker image
       uses: docker/build-push-action@v5
@@ -166,7 +193,23 @@ jobs:
         target: production
         push: true
         platforms: linux/amd64,linux/arm64
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ steps.meta-dockerhub.outputs.tags }}
+        labels: ${{ steps.meta-dockerhub.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    # Build and push to GitHub Container Registry (for testing/PR builds)
+    # Images pushed to GHCR will have a 3-day retention via cleanup workflow
+    - name: Build and push to GitHub Container Registry
+      if: ${{ inputs.push_to_ghcr }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./resources/build_assets/docker/Dockerfile
+        target: production
+        push: true
+        platforms: linux/amd64
+        tags: ${{ steps.meta-ghcr.outputs.tags }}
+        labels: ${{ steps.meta-ghcr.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
