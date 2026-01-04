@@ -398,10 +398,7 @@ class DBHandler:
             List of result rows
         """
         with self._db_lock:
-            self.connect()
-            assert self.conn is not None
-            cur = self.conn.cursor()
-            cur.execute(query, params)
+            cur = self.execute(query, params)
             results = cur.fetchall()
             cur.close()
             return results
@@ -419,10 +416,7 @@ class DBHandler:
             Single result row or None
         """
         with self._db_lock:
-            self.connect()
-            assert self.conn is not None
-            cur = self.conn.cursor()
-            cur.execute(query, params)
+            cur = self.execute(query, params)
             result = cur.fetchone()
             cur.close()
             return result
