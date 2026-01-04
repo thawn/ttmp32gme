@@ -30,8 +30,6 @@ def clean_server_http(tmp_path):
     test_host = "127.0.0.1"
 
     # Start server with custom paths in background
-    # Use --dev flag for tests to use Flask development server which handles
-    # nested requests (like PDF generation with Chromium) more reliably
     server_cmd = [
         "python",
         "-m",
@@ -45,7 +43,6 @@ def clean_server_http(tmp_path):
         "--port",
         str(test_port),
         "--no-browser",
-        "--dev",  # Use Flask dev server for tests
     ]
 
     logger.info(f"Starting test server with command: {' '.join(server_cmd)}")
