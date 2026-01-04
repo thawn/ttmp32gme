@@ -33,8 +33,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Always run on Linux, but only run on macOS/Windows for pushes to main/master
-        os: ${{ github.event_name == 'push' && fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') || fromJSON('["ubuntu-latest"]') }}
+        # Always run on Linux, but only run on macOS/Windows for pushes to main/master or manual workflow dispatch
+        os: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') || fromJSON('["ubuntu-latest"]') }}
 
     steps:
     - uses: actions/checkout@v4
@@ -101,10 +101,7 @@ jobs:
 
     - name: Install ffmpeg (macOS)
       if: runner.os == 'macOS'
-      run: |
-        # Install ffmpeg using Homebrew
-        brew install ffmpeg
-        ffmpeg -version | head -n1
+      run: .github/scripts/install-ffmpeg-macos.sh
 
     # Windows-specific setup
     - name: Install Chrome and ChromeDriver (Windows)

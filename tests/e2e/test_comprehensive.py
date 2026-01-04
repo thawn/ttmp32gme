@@ -99,7 +99,7 @@ class TransientConfigChange:
         self.driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", save_button
         )
-        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
         time.sleep(1)  # Wait for save
@@ -404,7 +404,7 @@ class TestWebInterface:
         driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", save_button
         )
-        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
         time.sleep(
@@ -536,7 +536,7 @@ class TestWebInterface:
         driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", save_button
         )
-        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
         time.sleep(1)
@@ -572,7 +572,7 @@ class TestWebInterface:
         driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", save_button
         )
-        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
         time.sleep(1)
@@ -670,7 +670,7 @@ class TestWebInterface:
         driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", save_button
         )
-        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
         time.sleep(1)
@@ -772,7 +772,7 @@ class TestWebInterface:
         driver.execute_script(
             "arguments[0].scrollIntoView({block: 'center'});", save_button
         )
-        time.sleep(0.5)  # Brief pause to ensure scrolling completes
+        time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
         save_button.click()
         time.sleep(1)

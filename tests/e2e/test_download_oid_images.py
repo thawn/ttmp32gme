@@ -32,7 +32,7 @@ def _create_gme_for_test(server_url, driver, element_number=0):
     driver.execute_script(
         "arguments[0].scrollIntoView({block: 'center'});", edit_button
     )
-    time.sleep(0.5)  # Brief pause to ensure scrolling completes
+    time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
     # Wait for button to be clickable before clicking
     WebDriverWait(driver, 5).until(
@@ -52,7 +52,7 @@ def _create_gme_for_test(server_url, driver, element_number=0):
     driver.execute_script(
         "arguments[0].scrollIntoView({block: 'center'});", create_button
     )
-    time.sleep(0.5)  # Brief pause to ensure scrolling completes
+    time.sleep(0.1)  # Brief pause to ensure scrolling completes
 
     create_button.click()
 
