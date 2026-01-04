@@ -58,9 +58,6 @@ def _start_server_and_capture_output(args, timeout=5, wait_for_warning=False):
                     break
             time.sleep(0.1)
 
-    # Wait a bit more to capture any additional output
-    time.sleep(0.5)
-
     # Terminate and get remaining output
     proc.terminate()
     remaining_output, _ = proc.communicate(timeout=5)
@@ -129,5 +126,5 @@ class TestProductionFlag:
         assert result.returncode == 0, "Help should succeed"
         assert "--production" in result.stdout, "Help should mention --production flag"
         assert (
-            "wsgi server" in result.stdout.lower()
-        ), "Help should explain production flag"
+            "WSGI server" in result.stdout
+        ), "Help should explain production flag (with WSGI in uppercase)"

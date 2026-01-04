@@ -842,7 +842,7 @@ def main():
             serve(app, host=host, port=port, threads=4)
         except ImportError:
             logger.error(
-                "Waitress not installed. Reinstall the package with: uv pip install -e . or pip install -e ."
+                "Waitress not installed. Reinstall with: 'uv pip install -e .' or 'pip install -e .'"
             )
             sys.exit(1)
     else:
