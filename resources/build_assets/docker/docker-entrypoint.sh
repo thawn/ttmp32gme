@@ -22,6 +22,9 @@ if [ -n "$TTMP32GME_VERBOSE" ]; then
         2|vv|debug|DEBUG)
             ARGS="$ARGS -vv"
             ;;
+        *)
+            echo "Warning: Invalid TTMP32GME_VERBOSE value '$TTMP32GME_VERBOSE'. Use 1/v/info or 2/vv/debug." >&2
+            ;;
     esac
 fi
 
