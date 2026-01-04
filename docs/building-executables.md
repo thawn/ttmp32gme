@@ -17,7 +17,7 @@ git clone https://github.com/thawn/ttmp32gme.git
 cd ttmp32gme
 
 # Install build dependencies
-pip install -e ".[build]"
+uv pip install -e ".[build]"  # Recommended; or: pip install -e ".[build]"
 ```
 
 ## Building for Windows

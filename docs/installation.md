@@ -25,7 +25,7 @@ The executable includes all necessary dependencies (tttool, ffmpeg) except Chrom
 
 ```bash
 git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme
-uv pip install -e .  # or: pip install -e .
+uv pip install -e .  # Recommended; or: pip install -e .
 ```
 
 Install tttool: See [tttool installation](https://github.com/entropia/tip-toi-reveng#installation)

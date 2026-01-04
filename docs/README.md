@@ -5,7 +5,8 @@ Sphinx documentation for ttmp32gme.
 ## Building
 
 ```bash
-pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+uv pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+# Or: pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
 cd docs/
 make html
 # Output: _build/html/index.html

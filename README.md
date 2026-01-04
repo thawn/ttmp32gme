@@ -20,7 +20,7 @@ Inspired by the Windows tool [ttaudio](https://github.com/sidiandi/ttaudio), pow
 **Linux** (Python):
 ```bash
 git clone https://github.com/thawn/ttmp32gme.git && cd ttmp32gme
-pip install -e .
+uv pip install -e .  # Recommended; or: pip install -e .
 ttmp32gme  # Opens at http://localhost:10020
 ```
 
@@ -95,7 +95,8 @@ See [Print Configuration](https://thawn.github.io/ttmp32gme/print-configuration.
 
 Build documentation locally:
 ```bash
-pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+uv pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+# Or: pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
 cd docs/ && make html
 # Open docs/_build/html/index.html
 ```
