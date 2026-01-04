@@ -25,6 +25,7 @@ jobs:
         delete-only-untagged-versions: false
         # Delete images older than 3 days
         ignore-versions: '^(latest|v\d+\.\d+\.\d+)$'
+        token: ${{ secrets.GITHUB_TOKEN }}
       continue-on-error: true
 
     - name: Delete old PR images

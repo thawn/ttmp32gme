@@ -200,6 +200,8 @@ jobs:
 
     # Build and push to GitHub Container Registry (for testing/PR builds)
     # Images pushed to GHCR will have a 3-day retention via cleanup workflow
+    # Note: Only building for linux/amd64 to speed up PR builds for testing.
+    # Production releases to Docker Hub include both linux/amd64 and linux/arm64.
     - name: Build and push to GitHub Container Registry
       if: ${{ inputs.push_to_ghcr }}
       uses: docker/build-push-action@v5
