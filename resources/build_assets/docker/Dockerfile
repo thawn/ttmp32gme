@@ -17,6 +17,10 @@ RUN apt-get update && \
         chromium-sandbox && \
     rm -rf /var/lib/apt/lists/*
 
+# Install uv for faster, more reliable package management
+RUN wget -qO- https://astral.sh/uv/install.sh | sh && \
+    mv /root/.local/bin/uv /usr/local/bin/uv
+
 # Install tttool (from releases)
 # Note: --no-check-certificate is required in some build environments due to SSL certificate chain issues.
 # This is a known issue with intermediate certificates in Docker builds.
@@ -31,17 +35,14 @@ RUN TTTOOL_VERSION="1.8.1" && \
 # Copy application source
 COPY . /app/
 
-# Install Python dependencies
-# Note: --trusted-host flags are required in some build environments due to SSL certificate chain issues.
-# This is a known issue with intermediate certificates in Docker builds.
-# For production builds with proper certificate setup, these flags can be removed.
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -e .
+# Install Python dependencies using uv
+RUN uv pip install --system --no-cache -e .
 
 # Test stage - runs unit and integration tests
 FROM base AS test
 
-# Install test dependencies
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -e ".[test]"
+# Install test dependencies using uv
+RUN uv pip install --system --no-cache -e ".[test]"
 
 # Run tests
 RUN pytest tests/unit/ -v --tb=short

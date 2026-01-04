@@ -16,7 +16,7 @@ Flask web application (Python 3.11+) with SQLite database. Uses tttool for GME c
 ```bash
 git clone https://github.com/thawn/ttmp32gme.git
 cd ttmp32gme
-uv pip install -e ".[test,dev]"  # or pip
+uv pip install -e ".[test,dev]"  # Recommended; or: pip install ...
 pre-commit install
 ```
 

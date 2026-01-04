@@ -120,7 +120,7 @@ Documentation is built using Sphinx:
 
 ```bash
 # Install documentation dependencies
-pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
+uv pip install sphinx sphinx-rtd-theme myst-parser sphinx-autodoc-typehints
 
 # Build HTML documentation
 cd docs/

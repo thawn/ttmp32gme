@@ -3,7 +3,7 @@
 ## Quick Start
 
 1. Fork and clone repository
-2. Install: `uv pip install -e ".[dev,test]"`
+2. Install: `uv pip install -e ".[dev,test]"` (Recommended; or: `pip install ...`)
 3. Install pre-commit hooks: `pre-commit install`
 4. Create branch: `git checkout -b feature/name`
 5. Make changes, write tests

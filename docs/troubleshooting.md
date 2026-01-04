@@ -2,13 +2,13 @@
 
 ## Installation
 
-**Python version error**: Use Python 3.11+ (`python3.11 -m pip install -e .`)
+**Python version error**: Use Python 3.11+ (`python3.11 -m pip install -e .` or `uv pip install -e .`)
 
 **tttool not found**: Install tttool ([instructions](installation.md)), check PATH
 
 **Port in use**: Use different port (`ttmp32gme --port 8080`)
 
-**Permission errors**: Use virtual environment or `pip install --user -e .`
+**Permission errors**: Use virtual environment or `uv pip install --user -e .` or `pip install --user -e .`
 
 ## Upload Issues
 
