@@ -3,7 +3,7 @@
 import sqlite3
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
 import pytest
 
@@ -17,6 +17,7 @@ from ttmp32gme.print_handler import (
     format_print_button,
     format_track_control,
     format_tracks,
+    is_running_in_container,
 )
 
 
@@ -407,6 +408,95 @@ class TestCreatePdf:
             assert result == pdf_file
             assert mock_popen.called
 
+    @patch("ttmp32gme.print_handler.is_running_in_container")
+    @patch("ttmp32gme.print_handler.time.sleep")
+    @patch("ttmp32gme.print_handler.get_executable_path")
+    @patch("ttmp32gme.print_handler.subprocess.Popen")
+    @patch("ttmp32gme.print_handler.tempfile.mkstemp")
+    @patch("ttmp32gme.print_handler.os.close")
+    def test_create_pdf_in_container_adds_no_sandbox(
+        self,
+        mock_os_close,
+        mock_mkstemp,
+        mock_popen,
+        mock_get_exec,
+        mock_sleep,
+        mock_is_container,
+    ):
+        """Test PDF creation adds --no-sandbox flag when running in container."""
+        mock_get_exec.return_value = "/usr/bin/chromium"
+        mock_is_container.return_value = True  # Simulate running in container
+
+        # Mock the process - poll() returns None (still running)
+        mock_process = MagicMock()
+        mock_process.poll.return_value = None
+        mock_process.stderr.read.return_value = ""  # No errors in stderr
+        mock_popen.return_value = mock_process
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Mock tempfile.mkstemp to return a path in our temp directory
+            pdf_file = Path(tmpdir) / "ttmp32gme_print_test.pdf"
+            mock_mkstemp.return_value = (999, str(pdf_file))
+
+            # Create the PDF file so the function succeeds
+            pdf_file.write_text("fake pdf content")
+
+            result = create_pdf(10020)
+
+            assert result is not None
+            assert result == pdf_file
+            assert mock_popen.called
+
+            # Verify --no-sandbox flag is present in arguments
+            call_args = mock_popen.call_args[0][0]
+            assert "--no-sandbox" in call_args
+            # Verify it's positioned right after chromium path
+            chromium_index = call_args.index("/usr/bin/chromium")
+            assert call_args[chromium_index + 1] == "--no-sandbox"
+
+    @patch("ttmp32gme.print_handler.is_running_in_container")
+    @patch("ttmp32gme.print_handler.time.sleep")
+    @patch("ttmp32gme.print_handler.get_executable_path")
+    @patch("ttmp32gme.print_handler.subprocess.Popen")
+    @patch("ttmp32gme.print_handler.tempfile.mkstemp")
+    @patch("ttmp32gme.print_handler.os.close")
+    def test_create_pdf_not_in_container_no_sandbox_flag(
+        self,
+        mock_os_close,
+        mock_mkstemp,
+        mock_popen,
+        mock_get_exec,
+        mock_sleep,
+        mock_is_container,
+    ):
+        """Test PDF creation does NOT add --no-sandbox flag when not in container."""
+        mock_get_exec.return_value = "/usr/bin/chromium"
+        mock_is_container.return_value = False  # Simulate NOT running in container
+
+        # Mock the process - poll() returns None (still running)
+        mock_process = MagicMock()
+        mock_process.poll.return_value = None
+        mock_process.stderr.read.return_value = ""  # No errors in stderr
+        mock_popen.return_value = mock_process
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Mock tempfile.mkstemp to return a path in our temp directory
+            pdf_file = Path(tmpdir) / "ttmp32gme_print_test.pdf"
+            mock_mkstemp.return_value = (999, str(pdf_file))
+
+            # Create the PDF file so the function succeeds
+            pdf_file.write_text("fake pdf content")
+
+            result = create_pdf(10020)
+
+            assert result is not None
+            assert result == pdf_file
+            assert mock_popen.called
+
+            # Verify --no-sandbox flag is NOT present in arguments
+            call_args = mock_popen.call_args[0][0]
+            assert "--no-sandbox" not in call_args
+
 
 class TestFormatPrintButton:
     """Test format_print_button function."""
@@ -444,3 +534,98 @@ class TestFormatPrintButton:
 
         assert "Print This Page</button>" in result
         assert "Save as PDF</button>" in result
+
+
+class TestIsRunningInContainer:
+    """Test is_running_in_container function."""
+
+    @patch("ttmp32gme.print_handler.Path")
+    def test_dockerenv_exists(self, mock_path):
+        """Test container detection when .dockerenv file exists."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = True
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is True
+        mock_path.assert_called_once_with("/.dockerenv")
+
+    @patch("builtins.open", new_callable=mock_open, read_data="12:pids:/docker/abc123")
+    @patch("ttmp32gme.print_handler.Path")
+    def test_docker_in_cgroup(self, mock_path, mock_file):
+        """Test container detection from /proc/1/cgroup with docker."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = False
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is True
+        mock_file.assert_called_once_with("/proc/1/cgroup", "r")
+
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data="12:pids:/system.slice/containerd.service",
+    )
+    @patch("ttmp32gme.print_handler.Path")
+    def test_containerd_in_cgroup(self, mock_path, mock_file):
+        """Test container detection from /proc/1/cgroup with containerd."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = False
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is True
+
+    @patch(
+        "builtins.open", new_callable=mock_open, read_data="12:pids:/lxc/container123"
+    )
+    @patch("ttmp32gme.print_handler.Path")
+    def test_lxc_in_cgroup(self, mock_path, mock_file):
+        """Test container detection from /proc/1/cgroup with lxc."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = False
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is True
+
+    @patch("builtins.open", new_callable=mock_open, read_data="12:pids:/init.scope")
+    @patch("ttmp32gme.print_handler.Path")
+    def test_not_in_container(self, mock_path, mock_file):
+        """Test container detection returns False on normal system."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = False
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is False
+
+    @patch("builtins.open", side_effect=FileNotFoundError())
+    @patch("ttmp32gme.print_handler.Path")
+    def test_cgroup_not_found(self, mock_path, mock_file):
+        """Test container detection when /proc/1/cgroup doesn't exist."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = False
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is False
+
+    @patch("builtins.open", side_effect=PermissionError())
+    @patch("ttmp32gme.print_handler.Path")
+    def test_cgroup_permission_error(self, mock_path, mock_file):
+        """Test container detection when /proc/1/cgroup can't be read."""
+        mock_dockerenv = Mock()
+        mock_dockerenv.exists.return_value = False
+        mock_path.return_value = mock_dockerenv
+
+        result = is_running_in_container()
+
+        assert result is False

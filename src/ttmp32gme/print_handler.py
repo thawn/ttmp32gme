@@ -19,6 +19,30 @@ from ttmp32gme.tttool_handler import create_oids, get_sorted_tracks
 logger = logging.getLogger(__name__)
 
 
+def is_running_in_container() -> bool:
+    """Check if the application is running inside a container (Docker/Podman).
+
+    Returns:
+        True if running in a container, False otherwise
+    """
+    # Check for .dockerenv file (Docker)
+    if Path("/.dockerenv").exists():
+        return True
+
+    # Check /proc/1/cgroup for container runtime indicators
+    try:
+        with open("/proc/1/cgroup", "r") as f:
+            content = f.read()
+            # Look for docker, containerd, or other container runtimes
+            if "docker" in content or "containerd" in content or "lxc" in content:
+                return True
+    except (FileNotFoundError, PermissionError):
+        # /proc/1/cgroup doesn't exist or can't be read (not Linux or no permissions)
+        pass
+
+    return False
+
+
 def format_tracks(
     album: Dict[str, Any], oid_map: Dict[str, Dict[str, int]], db_handler: DBHandler
 ) -> str:
@@ -295,6 +319,13 @@ def create_pdf(
         f"--print-to-pdf={pdf_file}",
         f"http://localhost:{port}/pdf",
     ]
+
+    # Add --no-sandbox flag when running in containers (Docker/Podman)
+    # This is necessary because containers typically don't have the required
+    # Linux capabilities for Chromium's sandbox to work
+    if is_running_in_container():
+        args.insert(1, "--no-sandbox")  # Insert after chromium_path
+        logger.debug("Running in container, adding --no-sandbox flag to Chromium")
 
     logger.info(f"Creating PDF with {found_name}: {' '.join(args)}")
 
