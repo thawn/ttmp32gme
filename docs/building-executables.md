@@ -115,7 +115,19 @@ Or double-click the app bundle in Finder.
 
 **Bundled binaries not found**: Verify `lib/` directory structure in spec files
 
-**macOS Gatekeeper issues**: Users must right-click → Open first time. For distribution, sign and notarize with Apple Developer certificate.
+**macOS Gatekeeper issues**: Users must right-click → Open first time ([bypass instructions](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/mac))
+
+**Windows SmartScreen issues**: Users must click "More info" → "Run anyway" ([bypass instructions](https://support.microsoft.com/en-us/windows/what-is-smartscreen-and-how-can-it-help-protect-me-1c9a874a-6826-be5e-45b1-67fa445a74c8))
+
+## Code Signing
+
+The distributed executables are **not code-signed** as code signing certificates are not available. This causes security warnings on macOS and Windows:
+- **macOS**: Gatekeeper warning - users must right-click → Open
+- **Windows**: SmartScreen warning - users must click "More info" → "Run anyway"
+
+To sign executables for distribution, you would need:
+- **macOS**: Apple Developer account and notarization ($99/year)
+- **Windows**: Code signing certificate from trusted CA ($100-400/year)
 
 ## Notes
 

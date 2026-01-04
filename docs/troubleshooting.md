@@ -2,6 +2,8 @@
 
 ## Installation
 
+**Security warnings (Windows/macOS executables)**: The executables are unsigned. Windows SmartScreen: Click "More info" → "Run anyway". macOS Gatekeeper: Right-click → "Open", or System Settings → Privacy & Security → "Open Anyway". See [Installation](installation.md) for details.
+
 **Python version error**: Use Python 3.11+ (`python3.11 -m pip install -e .` or `uv pip install -e .`)
 
 **tttool not found**: Install tttool ([instructions](installation.md)), check PATH
