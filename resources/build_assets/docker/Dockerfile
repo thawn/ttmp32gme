@@ -19,7 +19,7 @@ RUN apt-get update && \
 
 # Install uv for faster, more reliable package management
 RUN wget -qO- https://astral.sh/uv/install.sh | sh && \
-    mv /root/.cargo/bin/uv /usr/local/bin/uv
+    mv /root/.local/bin/uv /usr/local/bin/uv
 
 # Install tttool (from releases)
 # Note: --no-check-certificate is required in some build environments due to SSL certificate chain issues.
