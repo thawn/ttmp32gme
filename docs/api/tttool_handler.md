@@ -2,13 +2,6 @@
 
 Interface to tttool for GME file operations.
 
-```{eval-rst}
-.. automodule:: ttmp32gme.tttool_handler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ## Key Functions
 
 **make_gme(album_id, db_handler, config)**: Create GME file from audio files
@@ -49,3 +42,10 @@ images = create_oids([2001, 2002], 24, db)
 ```
 
 GME creation takes 1-5 minutes depending on album size and format.
+
+```{eval-rst}
+.. automodule:: ttmp32gme.tttool_handler
+   :members:
+   :undoc-members:
+   :show-inheritance:
+```

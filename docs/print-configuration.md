@@ -1,10 +1,21 @@
-# Print Configuration
+# Printing
+
+## Print Process
+
+1. Select albums in library
+2. Click "Print Selected"
+3. Configure layout (gear icon)
+4. Open print dialog (Ctrl+P)
+5. **Print directly from browser** OR **save as PDF and print from PDF viewer**
+   - **Important**: When printing, use 100% scale (critical!) and highest quality/resolution
+   - **Do not use auto-scaling** - codes will not work if scaled
+   - When saving as PDF: ensure PDF viewer also prints at 100% scale
 
 ## OID Settings
 
 **Resolution (DPI)**:
-- 1200 DPI (recommended)
 - 600 DPI (minimum)
+- 1200 DPI (recommended)
 - 2400 DPI (high-end printers)
 
 **Pixels per dot**:
@@ -18,16 +29,6 @@
 **Tiles**: Compact grid, many albums per page
 
 **CD Booklet**: Standard CD case dimensions (12cm × 12cm)
-
-## Print Process
-
-1. Select albums in library
-2. Click "Print Selected"
-3. Configure layout (gear icon)
-4. Open print dialog (Ctrl+P)
-5. Set scale to 100% (critical!)
-6. Use highest quality/resolution
-7. Print or save as PDF
 
 ## Troubleshooting
 

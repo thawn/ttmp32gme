@@ -14,28 +14,26 @@ print_handler
 file_handler
 ```
 
-## REST API Endpoints
+## HTTP API Endpoints
 
-**Album Management**:
-- `GET /api/albums` - List albums
-- `POST /api/albums` - Create album
-- `PUT /api/albums/{oid}` - Update album
-- `DELETE /api/albums/{oid}` - Delete album
+**Pages**:
+- `GET /` - Upload page
+- `POST /` - Upload files
+- `GET /library` - Library page
+- `POST /library` - Library actions (create GME, copy to TipToi, delete album)
+- `GET /print` - Print page
+- `POST /print` - Print actions
+- `GET /pdf` - Generate PDF
+- `GET /config` - Config page
+- `POST /config` - Update config
+- `GET /help` - Help page
+- `GET /logs` - View logs
+- `POST /logs/level` - Set log level
 
-**GME Operations**:
-- `POST /api/create_gme` - Create GME file
-- `POST /api/copy_to_tiptoi` - Copy to pen
-
-**File Upload**:
-- `POST /api/upload` - Upload files
-
-**Configuration**:
-- `GET /api/config` - Get config
-- `POST /api/config` - Update config
-
-**System**:
-- `GET /api/tiptoi_status` - Check pen connection
-- `GET /api/version` - Get version
+**Resources**:
+- `GET /images/<filename>` - Serve OID images
+- `GET /download_gme/<oid>` - Download GME file
+- `GET /download_oid_images` - Download OID pattern test sheet
 
 ## Usage Examples
 
@@ -46,31 +44,35 @@ import requests
 
 base = "http://localhost:10020"
 
-# List albums
-albums = requests.get(f"{base}/api/albums").json()
+# Create GME file
+result = requests.post(f"{base}/library",
+                      data={"action": "create_gme", "uid": "123"}).json()
 
-# Create GME
-result = requests.post(f"{base}/api/create_gme", json={"uid": 123}).json()
+# Update config
+requests.post(f"{base}/config",
+             data={"audio_format": "mp3", "pen_language": "GERMAN"})
 
-# Update album
-requests.put(f"{base}/api/albums/123", json={"album_title": "New Title"})
+# Download GME
+response = requests.get(f"{base}/download_gme/123")
+with open("album.gme", "wb") as f:
+    f.write(response.content)
 ```
 
 ### cURL
 
 ```bash
-# List albums
-curl http://localhost:10020/api/albums
-
 # Create GME
-curl -X POST http://localhost:10020/api/create_gme \
-  -H "Content-Type: application/json" \
-  -d '{"uid": 123}'
+curl -X POST http://localhost:10020/library \
+  -d "action=create_gme" \
+  -d "uid=123"
 
 # Upload files
-curl -X POST http://localhost:10020/api/upload \
+curl -X POST http://localhost:10020/ \
   -F "files=@track1.mp3" \
   -F "cover=@cover.jpg"
+
+# Download GME
+curl -O http://localhost:10020/download_gme/123
 ```
 
 ## Data Models
@@ -80,5 +82,3 @@ curl -X POST http://localhost:10020/api/upload \
 **Track**: `{id, album_oid, track_number, track_title, filename}`
 
 **Config**: `{host, port, library_path, audio_format, pen_language}`
-
-**Error**: `{success: false, error: "message"}`

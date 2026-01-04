@@ -2,13 +2,6 @@
 
 Database layer for ttmp32gme with thread-safe SQLite access.
 
-```{eval-rst}
-.. automodule:: ttmp32gme.db_handler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-```
-
 ## DBHandler Class
 
 **CRITICAL**: All database operations MUST go through DBHandler methods.
@@ -70,4 +63,11 @@ try:
     db.update_album(validated.oid, validated.model_dump(exclude_none=True))
 except ValidationError as e:
     print(f"Error: {e}")
+```
+
+```{eval-rst}
+.. automodule:: ttmp32gme.db_handler
+   :members:
+   :undoc-members:
+   :show-inheritance:
 ```
