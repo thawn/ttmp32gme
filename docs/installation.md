@@ -56,8 +56,11 @@ ttmp32gme --host 0.0.0.0                   # Network access
 ttmp32gme --database /path/to/db.sqlite    # Custom database
 ttmp32gme --library /path/to/library       # Custom library
 ttmp32gme -v                               # Increase verbosity (-v for INFO, -vv for DEBUG)
+ttmp32gme --production                     # Use production WSGI server (Waitress)
 ttmp32gme --version                        # Show version
 ```
+
+**Note**: The Docker image automatically uses `--production` flag for production-ready deployment.
 
 ## Verification
 
