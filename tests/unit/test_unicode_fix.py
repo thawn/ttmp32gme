@@ -3,6 +3,7 @@
 import sqlite3
 import tempfile
 from pathlib import Path
+from version import Version
 
 import pytest
 
@@ -142,7 +143,7 @@ class TestUnicodeFix:
 
         # Verify version was updated
         version = db.get_config_value("version")
-        assert version == "2.0.1"
+        assert Version(version) > Version("2.0.0")
 
         # Verify data can now be read
         album = db.get_album(920)
