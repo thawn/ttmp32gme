@@ -812,11 +812,15 @@ def main():
         apply_log_level(log_level_str)
         logger.info(f"Log level set to {log_level_str} from config")
 
-    # Override config with command-line args
+    # Override config with command-line args and save to database
     if args.port:
         config["port"] = args.port
+        db.set_config_value("port", str(args.port))
+        logger.info(f"Port set to {args.port} from command line and saved to database")
     if args.host:
         config["host"] = args.host
+        db.set_config_value("host", args.host)
+        logger.info(f"Host set to {args.host} from command line and saved to database")
 
     port = int(config.get("port", 10020))
     host = config.get("host", "127.0.0.1")
