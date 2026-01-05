@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  packages: write  # Required by docker-build-test.yml reusable workflow
 
 jobs:
   docker-build-test-push:
