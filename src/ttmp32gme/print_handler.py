@@ -317,7 +317,7 @@ def create_pdf(
         "--disable-gpu",
         "--no-pdf-header-footer",
         f"--print-to-pdf={pdf_file}",
-        f"http://127.0.0.1:{port}/pdf",
+        f"http://localhost:{port}/pdf",
     ]
 
     # Add --no-sandbox flag when running in containers (Docker/Podman)
