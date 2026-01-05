@@ -12,13 +12,15 @@ on:
 
 permissions:
   contents: read
+  packages: write  # Required by docker-build-test.yml reusable workflow
 
 jobs:
   docker-build-test-push:
-    name: Build, Test, and Push to Docker Hub
+    name: Build, Test, and Push to Docker Hub and GHCR
     uses: ./.github/workflows/docker-build-test.yml
     with:
       push_to_registry: true
+      push_to_ghcr: true
       image_tag: ${{ github.event.release.tag_name || github.event.inputs.tag || 'latest' }}
     secrets:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
